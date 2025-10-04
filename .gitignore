@@ -1,0 +1,40 @@
+# Logs
+logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+node_modules
+dist
+dist-ssr
+*.local
+
+# Editor directories and files
+.vscode/*
+!.vscode/extensions.json
+.idea
+.DS_Store
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+# Configuration and documentation files
+AGENTS.md
+ARCHITECTURE.md
+FIREBASE_SETUP.md
+PRD-Trivia.md
+TriviaDesignSpec.md
+.cursorrules
+
+# Trivia Files directory
+Trivia Files/
+
+# Temporary files
+tmp_patch.txt
+*.tmp
+EOF

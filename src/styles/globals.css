@@ -1,0 +1,70 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    color-scheme: light;
+    --color-primary: #4f46e5;
+    --color-secondary: #22d3ee;
+    --color-surface: #f9fafb;
+    --color-background: #ffffff;
+    --color-border: #e5e7eb;
+    --color-text: #111827;
+    --color-muted: #6b7280;
+    --color-danger: #ef4444;
+    --color-success: #10b981;
+    --film-primary: var(--color-primary);
+    --film-accent: var(--color-secondary);
+    --film-bg: #eef2ff;
+    --film-text: var(--color-text);
+  }
+
+  body {
+    @apply m-0 min-h-screen bg-[var(--color-surface)] font-sans text-[var(--color-text)] antialiased;
+  }
+
+  a {
+    @apply text-inherit no-underline;
+  }
+
+  button {
+    @apply outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-primary)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--color-background)];
+  }
+}
+
+@layer components {
+  .card-surface {
+    @apply rounded-3xl border border-[var(--color-border)] bg-[var(--color-background)] shadow-lg shadow-slate-900/5;
+  }
+
+  .board-card {
+    @apply flex h-16 flex-col items-center justify-center gap-1 rounded-2xl border text-center text-sm transition;
+    background-color: var(--film-bg);
+    border-color: var(--film-primary);
+    color: var(--film-text);
+  }
+
+  .board-card[data-state='active'] {
+    @apply scale-[1.02];
+    background-color: var(--film-primary);
+    border-color: var(--film-primary);
+    color: #ffffff;
+    box-shadow: 0 16px 30px -12px var(--film-primary);
+  }
+
+  .board-card[data-state='answered'] {
+    background-color: #f3f4f6;
+    border-color: var(--color-border);
+    color: var(--color-muted);
+    text-decoration-thickness: 2px;
+  }
+
+  .board-column {
+    @apply flex min-w-[200px] flex-col gap-3 rounded-2xl border bg-white p-4 shadow-sm;
+    border-color: color-mix(in srgb, var(--film-primary) 30%, white 70%);
+    background-image: linear-gradient(135deg, color-mix(in srgb, var(--film-primary) 10%, white 90%), #ffffff);
+  }
+}
