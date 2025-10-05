@@ -31,7 +31,7 @@ export function TriviaCard({ tile, theme, onSelect }: TriviaCardProps) {
       type="button"
       className={clsx(
         'board-card text-lg font-semibold uppercase tracking-wide',
-        !isAvailable && 'cursor-not-allowed'
+        !isAvailable && 'cursor-not-allowed opacity-50'
       )}
       data-state={state}
       style={style}

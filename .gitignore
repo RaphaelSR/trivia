@@ -27,8 +27,33 @@ dist-ssr
 AGENTS.md
 ARCHITECTURE.md
 FIREBASE_SETUP.md
+SQUADS.md
+CONTEXT.md
+TICKETS.md
 PRD-Trivia.md
 TriviaDesignSpec.md
+README.md
+PROJECT_TEMPLATE.md
+QUICK_START.md
+AGENT_ROLES.md
+PERMISSIONS.md
+TICKET_WORKFLOW.md
+AUTOMATION.md
+AGENT_PROMPTS.md
+CHANGELOG.md
+IMPLEMENTATION_SUMMARY.md
+REPLICATION_CHECKLIST.md
+EPIC_USER_MANAGEMENT.md
+PROJECT_INIT.md
+
+AGENTS.md.template
+ARCHITECTURE.md.template
+CONTEXT.md.template
+PRD.md.template
+TICKETS.md.template
+SQUADS.md.template
+AGENTS.md.template
+
 .cursorrules
 
 # Trivia Files directory

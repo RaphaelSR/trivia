@@ -92,7 +92,7 @@ export function Timer({
     setRunning(false)
   }, [inputValue, seconds])
 
-  const containerClasses = variant === 'compact' ? 'flex flex-col gap-3' : 'card-surface flex flex-col gap-4 rounded-2xl p-4'
+  const containerClasses = variant === 'compact' ? 'flex flex-col gap-4' : 'card-surface flex flex-col gap-4 rounded-2xl p-4'
   const headerClasses = variant === 'compact' ? 'flex items-center justify-between gap-3' : 'flex items-center justify-between'
   const timeClasses = variant === 'compact' ? 'font-mono text-xl font-semibold text-[var(--color-text)]' : 'font-mono text-2xl font-semibold text-[var(--color-text)]'
 
@@ -137,7 +137,7 @@ export function Timer({
         />
       </div>
       {showControls ? (
-        <div className="flex items-center justify-between gap-2">
+        <div className="flex items-center justify-between gap-3">
           <Button
             variant="secondary"
             size="icon"

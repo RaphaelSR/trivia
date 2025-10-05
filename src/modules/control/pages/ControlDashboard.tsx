@@ -5,17 +5,23 @@ import {
   ClipboardList,
   Dice5,
   Eye,
+  Info,
   Palette,
   Plus,
   RefreshCw,
+  RotateCcw,
   Trash2,
   UserPlus,
   UsersRound,
+  Theater,
 } from 'lucide-react'
 import type { CSSProperties } from 'react'
 import { useEffect, useMemo, useState } from 'react'
 import { toast } from 'sonner'
 import { Button } from '../../../components/ui/Button'
+import { FilmRoulette } from '../../../components/ui/FilmRoulette'
+import { InfoModal } from '../../../components/ui/InfoModal'
+import { MimicaModal } from '../../../components/ui/MimicaModal'
 import { Modal } from '../../../components/ui/Modal'
 import { Navbar } from '../../../components/ui/Navbar'
 import { TeamBadge } from '../../../components/ui/TeamBadge'
@@ -24,7 +30,7 @@ import { TriviaBoard } from '../../../components/ui/TriviaBoard'
 import type { TriviaColumn, TriviaParticipant, TriviaQuestionTile, TriviaTeam } from '../../trivia/types'
 import { useTriviaSession } from '../../trivia/hooks/useTriviaSession'
 import { useTurnOrder } from '../../trivia/hooks/useTurnOrder'
-import { useThemeMode } from '../../../app/providers/ThemeModeProvider'
+import { useThemeMode } from '../../../app/providers/useThemeMode'
 
 type ParticipantDraft = {
   id: string
@@ -74,6 +80,9 @@ export function ControlDashboard() {
   const [openAccordions, setOpenAccordions] = useState<Record<string, boolean>>({})
   const [teamsModalOpen, setTeamsModalOpen] = useState(false)
   const [teamDrafts, setTeamDrafts] = useState<TeamDraft[]>([])
+  const [mimicaModalOpen, setMimicaModalOpen] = useState(false)
+  const [infoModalOpen, setInfoModalOpen] = useState(false)
+  const [filmRouletteOpen, setFilmRouletteOpen] = useState(false)
 
   const createTeamId = () => `team-${Date.now().toString(16)}-${Math.random().toString(16).slice(2)}`
   const createParticipantId = () =>
@@ -84,9 +93,9 @@ export function ControlDashboard() {
       '--color-primary': theme.palette.primary,
       '--color-secondary': theme.palette.accent,
       '--color-surface': theme.palette.surface,
-      '--color-background': '#ffffff',
+      '--color-background': theme.palette.background,
     } as CSSProperties
-  }, [theme.palette.accent, theme.palette.primary, theme.palette.surface])
+  }, [theme.palette.accent, theme.palette.primary, theme.palette.surface, theme.palette.background])
 
   const selectedTile = useMemo(() => {
     if (!selectedIds) return null
@@ -211,13 +220,15 @@ export function ControlDashboard() {
     {
       id: 'random',
       icon: <Dice5 size={18} />,
-      label: 'Sortear',
+      label: 'Sortear Pergunta',
+      description: 'Seleciona uma pergunta aleatória disponível',
       onClick: handleRandomQuestion,
     },
     {
       id: 'answer',
       icon: <Eye size={18} />,
-      label: 'Resposta',
+      label: 'Mostrar Resposta',
+      description: 'Exibe a resposta da pergunta selecionada',
       onClick: () => {
         if (!selectedTile) {
           toast.info('Selecione uma carta para exibir a resposta')
@@ -229,34 +240,60 @@ export function ControlDashboard() {
       disabled: !selectedTile,
     },
     {
+      id: 'mimica',
+      icon: <Theater size={18} />,
+      label: 'Modo Mímica',
+      description: 'Abre o modo de mímica para pontuação especial',
+      onClick: () => setMimicaModalOpen(true),
+    },
+    {
       id: 'scoreboard',
       icon: <ClipboardList size={18} />,
-      label: 'Pontuação',
+      label: 'Ranking',
+      description: 'Visualiza o ranking atual dos times',
       onClick: () => setScoreboardOpen(true),
     },
     {
       id: 'teams',
       icon: <UsersRound size={18} />,
-      label: 'Times',
+      label: 'Gerenciar Times',
+      description: 'Edita times, participantes e ordem de turno',
       onClick: () => setTeamsModalOpen(true),
     },
     {
       id: 'library',
       icon: <BookOpen size={18} />,
       label: 'Biblioteca',
+      description: 'Edita perguntas e respostas (requer PIN)',
       onClick: handleShowLibrary,
     },
     {
       id: 'theme',
       icon: <Palette size={18} />,
-      label: 'Tema',
+      label: 'Alterar Tema',
+      description: 'Muda o tema visual da aplicação',
       onClick: () => setThemeModalOpen(true),
     },
     {
       id: 'revert',
       icon: <RefreshCw size={18} />,
-      label: 'Reverter',
+      label: 'Reverter Ação',
+      description: 'Desfaz a última ação (em breve)',
       onClick: () => toast.warning('Reversão manual será liberada em breve'),
+    },
+    {
+      id: 'info',
+      icon: <Info size={18} />,
+      label: 'Informações',
+      description: 'Ajuda e informações sobre o sistema',
+      onClick: () => setInfoModalOpen(true),
+    },
+    {
+      id: 'roulette',
+      icon: <RotateCcw size={18} />,
+      label: 'Sorteio de Filmes',
+      description: 'Sorteia filmes aleatórios para o tabuleiro',
+      onClick: () => setFilmRouletteOpen(true),
     },
   ]
 
@@ -314,7 +351,7 @@ export function ControlDashboard() {
       {
         id: newTeamId,
         name: `Novo time ${prev.length + 1}`,
-        color: '#4f46e5',
+        color: 'var(--color-primary)',
         members: [
           {
             id: createParticipantId(),
@@ -428,7 +465,7 @@ export function ControlDashboard() {
     const newTeams: TriviaTeam[] = teamDrafts.map((team, index) => ({
       id: team.id,
       name: team.name.trim() || `Time ${index + 1}`,
-      color: team.color || '#4f46e5',
+      color: team.color || 'var(--color-primary)',
       order: index,
       members: team.members.map((member) => member.id),
     }))
@@ -459,8 +496,8 @@ export function ControlDashboard() {
       />
       <main className="flex-1 space-y-6 px-8 py-6">
         <section className="card-surface rounded-3xl p-6">
-          <div className="flex flex-col gap-4">
-            <div className="flex flex-wrap items-center justify-between gap-4">
+          <div className="flex flex-col gap-6">
+            <div className="flex flex-wrap items-center justify-between gap-6">
               <div className="space-y-1">
                 <p className="text-xs font-semibold uppercase tracking-[0.4em] text-[var(--color-muted)]">
                   Turno atual
@@ -470,42 +507,56 @@ export function ControlDashboard() {
                   {activeParticipantTeamName ? ` · ${activeParticipantTeamName}` : ''}
                 </p>
               </div>
-              <div className="flex flex-wrap items-center justify-end gap-2">
-                <div className="rounded-2xl border border-[var(--color-border)] bg-[var(--color-background)] px-3 py-2">
+              <div className="flex flex-wrap items-center justify-end gap-4">
+                <div className="rounded-2xl border border-[var(--color-border)] bg-[var(--color-background)] px-4 py-3 shadow-sm">
                   <Timer initialSeconds={45} variant="compact" editable />
                 </div>
                 {quickActions.map((action) => (
-                  <Button
-                    key={action.id}
-                    variant="ghost"
-                    size="icon"
-                    aria-label={action.label}
-                    title={action.label}
-                    onClick={action.onClick}
-                    disabled={action.disabled}
-                  >
-                    {action.icon}
-                  </Button>
+                  <div key={action.id} className="relative group">
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      aria-label={action.label}
+                      title={action.label}
+                      onClick={action.onClick}
+                      disabled={action.disabled}
+                      className="w-full h-full"
+                    >
+                      {action.icon}
+                    </Button>
+                    <div className="tooltip">
+                      <div className="font-semibold">{action.label}</div>
+                      <div className="text-xs opacity-90 mt-1">{action.description}</div>
+                    </div>
+                  </div>
                 ))}
-                <Button
-                  variant="secondary"
-                  title="Passar turno"
-                  onClick={() => {
-                    advanceTurn()
-                    if (nextParticipant) {
-                      toast.success(`Próximo turno: ${nextParticipant.name}`)
-                    }
-                  }}
-                >
-                  Passar turno
-                </Button>
+                <div className="relative group">
+                  <Button
+                    variant="secondary"
+                    title="Passar turno"
+                    onClick={() => {
+                      advanceTurn()
+                      if (nextParticipant) {
+                        toast.success(`Próximo turno: ${nextParticipant.name}`)
+                      }
+                    }}
+                  >
+                    Passar turno
+                  </Button>
+                  <div className="tooltip">
+                    <div className="font-semibold">Passar Turno</div>
+                    <div className="text-xs opacity-90 mt-1">Avança para o próximo participante</div>
+                  </div>
+                </div>
               </div>
             </div>
-            <div className="flex flex-wrap items-center gap-2">
-              {orderedTeams.map((team) => (
-                <TeamBadge key={team.id} team={team} isActive={team.id === activeTeam?.id} />
-              ))}
-              <span className="ml-auto inline-flex items-center gap-2 rounded-full border border-[var(--color-border)] bg-[var(--color-background)] px-3 py-1 text-xs font-semibold uppercase tracking-[0.3em] text-[var(--color-muted)]">
+            <div className="flex flex-wrap items-center gap-3">
+              <div className="flex flex-wrap items-center gap-2">
+                {orderedTeams.map((team) => (
+                  <TeamBadge key={team.id} team={team} isActive={team.id === activeTeam?.id} />
+                ))}
+              </div>
+              <span className="ml-auto inline-flex items-center gap-2 rounded-full border border-[var(--color-border)] bg-[var(--color-background)] px-4 py-2 text-xs font-semibold uppercase tracking-[0.3em] text-[var(--color-muted)] shadow-sm">
                 <UsersRound size={14} /> Próximo: {
                   nextParticipant
                     ? `${nextParticipant.name}${nextParticipantTeamName ? ` · ${nextParticipantTeamName}` : ''}`
@@ -517,7 +568,7 @@ export function ControlDashboard() {
         </section>
 
         <section className="card-surface rounded-3xl p-6">
-          <div className="mb-6 flex items-center justify-between">
+          <div className="mb-8 flex items-center justify-between">
             <div>
               <p className="text-xs font-semibold uppercase tracking-[0.4em] text-[var(--color-muted)]">
                 Tabuleiro
@@ -531,7 +582,7 @@ export function ControlDashboard() {
           <TriviaBoard columns={session.board} onSelectTile={handleSelectTile} />
         </section>
 
-        <section className="flex items-center justify-end">
+        <section className="flex items-center justify-end pt-2">
           <Button variant="outline" className="gap-2" onClick={() => setTeamsModalOpen(true)}>
             <UsersRound size={16} />
             Gerenciar times
@@ -572,6 +623,7 @@ export function ControlDashboard() {
           <ScoringControls
             teams={orderedTeams}
             activeTeamId={activeTeam?.id ?? null}
+            basePoints={selectedTile?.tile.points ?? 0}
             onConfirm={(mode, targetTeamId) => {
               if (!selectedTile) {
                 toast.info('Selecione uma carta para pontuar')
@@ -606,10 +658,8 @@ export function ControlDashboard() {
               setSelectedIds(null)
               setShowAnswer(false)
             }}
+            onClose={handleCloseQuestionModal}
           />
-          <Button variant="outline" onClick={handleCloseQuestionModal}>
-            Fechar
-          </Button>
         </div>
       </Modal>
 
@@ -697,7 +747,7 @@ export function ControlDashboard() {
               </div>
               <div className="space-y-3 px-4 pb-4">
                 {team.members.map((member, memberIndex) => (
-                  <div key={member.id} className="space-y-2 rounded-xl border border-[var(--color-border)] bg-white p-3">
+                  <div key={member.id} className="space-y-2 rounded-xl border border-[var(--color-border)] bg-[var(--color-background)] p-3">
                     <div className="flex flex-wrap items-center justify-between gap-2">
                       <input
                         value={member.name}
@@ -863,7 +913,7 @@ export function ControlDashboard() {
                         {Object.entries(pointSummary).map(([points, count]) => (
                           <span
                             key={`${column.id}-${points}`}
-                            className="rounded-full border border-[var(--color-border)] bg-white px-3 py-1 text-xs text-[var(--color-muted)]"
+                            className="rounded-full border border-[var(--color-border)] bg-[var(--color-background)] px-3 py-1 text-xs text-[var(--color-muted)]"
                           >
                             {points} pts · {count}
                           </span>
@@ -884,7 +934,7 @@ export function ControlDashboard() {
                     </div>
                     <div className="space-y-3">
                       {column.tiles.map((tile) => (
-                        <div key={tile.id} className="space-y-2 rounded-xl border border-[var(--color-border)] bg-white p-3">
+                        <div key={tile.id} className="space-y-2 rounded-xl border border-[var(--color-border)] bg-[var(--color-background)] p-3">
                           <div className="flex flex-wrap items-center justify-between gap-2">
                             <label className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.3em] text-[var(--color-muted)]">
                               Pontos
@@ -952,6 +1002,8 @@ export function ControlDashboard() {
               { id: 'light', label: 'Claro' },
               { id: 'dark', label: 'Escuro' },
               { id: 'cinema', label: 'Cinema' },
+              { id: 'retro', label: 'Retro 80s' },
+              { id: 'matrix', label: 'Matrix' },
             ] as const
           ).map((option) => (
             <button
@@ -966,12 +1018,58 @@ export function ControlDashboard() {
             >
               <span className="text-sm font-semibold text-[var(--color-text)]">{option.label}</span>
               <span className="text-xs text-[var(--color-muted)]">
-                Paleta {option.id === 'cinema' ? 'com tons quentes e contraste elevado' : option.label.toLowerCase()}
+                {option.id === 'cinema' ? 'Tons quentes e contraste elevado' : 
+                 option.id === 'retro' ? 'Neon e cores vibrantes dos anos 80' :
+                 option.id === 'matrix' ? 'Verde digital e efeito terminal' :
+                 `Paleta ${option.label.toLowerCase()}`}
               </span>
             </button>
           ))}
         </div>
       </Modal>
+
+      <MimicaModal
+        isOpen={mimicaModalOpen}
+        onClose={() => setMimicaModalOpen(false)}
+        teams={orderedTeams}
+        participants={participants}
+        activeParticipant={activeParticipant}
+        turnSequence={session.turnSequence}
+        onAdvanceTurn={advanceTurn}
+        onScore={(mode, targetTeamId, points) => {
+          let message = ''
+          switch (mode) {
+            case 'full-current':
+              message = `Mímica: ${points} pontos para ${activeTeam?.name ?? 'time da vez'}`
+              break
+            case 'half-current':
+              message = `Mímica: ${points} pontos para ${activeTeam?.name ?? 'time da vez'}`
+              break
+            case 'steal':
+              message = `Mímica: ${points} pontos transferidos para ${orderedTeams.find((team) => team.id === targetTeamId)?.name ?? 'outro time'}`
+              break
+            case 'everyone':
+              message = `Mímica: ${points} pontos distribuídos para todos os times`
+              break
+            case 'void':
+              message = `Mímica: sem pontuação`
+              break
+          }
+          toast.success(message)
+        }}
+      />
+
+      <InfoModal
+        isOpen={infoModalOpen}
+        onClose={() => setInfoModalOpen(false)}
+      />
+
+      <FilmRoulette
+        isOpen={filmRouletteOpen}
+        onClose={() => setFilmRouletteOpen(false)}
+        teams={orderedTeams}
+        participants={participants}
+      />
     </div>
   )
 }
@@ -981,10 +1079,12 @@ type ScoringMode = 'full-current' | 'half-current' | 'steal' | 'everyone' | 'voi
 type ScoringControlsProps = {
   teams: TriviaTeam[]
   activeTeamId: string | null
+  basePoints: number
   onConfirm: (mode: ScoringMode, targetTeamId: string | null) => void
+  onClose: () => void
 }
 
-function ScoringControls({ teams, activeTeamId, onConfirm }: ScoringControlsProps) {
+function ScoringControls({ teams, activeTeamId, basePoints, onConfirm, onClose }: ScoringControlsProps) {
   const [mode, setMode] = useState<ScoringMode | null>(null)
   const [selectedTeam, setSelectedTeam] = useState<string | null>(null)
 
@@ -1002,12 +1102,29 @@ function ScoringControls({ teams, activeTeamId, onConfirm }: ScoringControlsProp
     [teams, activeTeamId],
   )
 
-  const options: Array<{ id: ScoringMode; title: string; subtitle: string }> = [
-    { id: 'full-current', title: 'Valor cheio', subtitle: 'Time da vez recebe 100%' },
-    { id: 'half-current', title: 'Meio valor', subtitle: 'Time da vez recebe 50%' },
-    { id: 'steal', title: 'Roubo', subtitle: 'Transferir para outro time' },
-    { id: 'everyone', title: 'Todos', subtitle: 'Distribuir para todas as equipes' },
-    { id: 'void', title: 'Anular', subtitle: 'Pergunta sem pontuação' },
+  const getPointsValue = (mode: ScoringMode, basePoints: number) => {
+    switch (mode) {
+      case 'full-current':
+        return basePoints
+      case 'half-current':
+        return Math.round(basePoints / 2)
+      case 'steal':
+        return basePoints
+      case 'everyone':
+        return Math.round(basePoints / teams.length)
+      case 'void':
+        return 0
+      default:
+        return basePoints
+    }
+  }
+
+  const options: Array<{ id: ScoringMode; title: string; subtitle: string; points: number }> = [
+    { id: 'full-current', title: 'Valor cheio', subtitle: 'Time da vez recebe 100%', points: getPointsValue('full-current', basePoints) },
+    { id: 'half-current', title: 'Meio valor', subtitle: 'Time da vez recebe 50%', points: getPointsValue('half-current', basePoints) },
+    { id: 'steal', title: 'Roubo', subtitle: 'Transferir para outro time', points: getPointsValue('steal', basePoints) },
+    { id: 'everyone', title: 'Todos', subtitle: 'Distribuir para todas as equipes', points: getPointsValue('everyone', basePoints) },
+    { id: 'void', title: 'Anular', subtitle: 'Pergunta sem pontuação', points: getPointsValue('void', basePoints) },
   ]
 
   const canConfirm =
@@ -1032,8 +1149,15 @@ function ScoringControls({ teams, activeTeamId, onConfirm }: ScoringControlsProp
                   : 'border-[var(--color-border)] bg-[var(--color-background)]'
               }`}
             >
-              <span className="text-sm font-semibold text-[var(--color-text)]">{option.title}</span>
-              <p className="text-xs text-[var(--color-muted)]">{option.subtitle}</p>
+              <div className="flex items-center justify-between w-full">
+                <div>
+                  <span className="text-sm font-semibold text-[var(--color-text)]">{option.title}</span>
+                  <p className="text-xs text-[var(--color-muted)]">{option.subtitle}</p>
+                </div>
+                <span className="text-lg font-bold text-[var(--color-primary)]">
+                  {option.points} pts
+                </span>
+              </div>
             </button>
           ))}
           {mode === 'steal' ? (
@@ -1054,13 +1178,19 @@ function ScoringControls({ teams, activeTeamId, onConfirm }: ScoringControlsProp
           ) : null}
         </div>
       </details>
-      <Button
-        variant={mode ? 'secondary' : 'outline'}
-        disabled={!canConfirm}
-        onClick={() => onConfirm(mode ?? 'full-current', mode === 'steal' ? selectedTeam : null)}
-      >
-        Confirmar pontuação
-      </Button>
+      <div className="flex gap-3">
+        <Button
+          variant={mode ? 'secondary' : 'outline'}
+          disabled={!canConfirm}
+          onClick={() => onConfirm(mode ?? 'full-current', mode === 'steal' ? selectedTeam : null)}
+          className="flex-1"
+        >
+          Confirmar pontuação
+        </Button>
+        <Button variant="outline" onClick={onClose} className="flex-1">
+          Fechar
+        </Button>
+      </div>
     </div>
   )
 }
