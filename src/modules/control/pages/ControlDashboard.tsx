@@ -31,6 +31,9 @@ import type { TriviaColumn, TriviaParticipant, TriviaQuestionTile, TriviaTeam } 
 import { useTriviaSession } from '../../trivia/hooks/useTriviaSession'
 import { useTurnOrder } from '../../trivia/hooks/useTurnOrder'
 import { useThemeMode } from '../../../app/providers/useThemeMode'
+import { useGameMode } from '../../../hooks/useGameMode'
+import { usePinManagement } from '../../../hooks/usePinManagement'
+import { OfflineOnboardingModal } from '../../../components/ui/OfflineOnboardingModal'
 
 type ParticipantDraft = {
   id: string
@@ -45,7 +48,7 @@ type TeamDraft = {
   members: ParticipantDraft[]
 }
 
-const ACCESS_PIN = 'password123'
+// PIN será gerenciado pelo hook usePinManagement
 
 export function ControlDashboard() {
   const {
@@ -67,6 +70,8 @@ export function ControlDashboard() {
   } = useTriviaSession()
   const { advanceTurn } = useTurnOrder()
   const { theme: themeMode, setTheme } = useThemeMode()
+  const { gameMode, getModeDisplayName, getModeDescription } = useGameMode()
+  const { verifyPin, saveCustomPin } = usePinManagement()
 
   const [selectedIds, setSelectedIds] = useState<{ tileId: string; columnId: string } | null>(null)
   const [showAnswer, setShowAnswer] = useState(false)
@@ -83,6 +88,8 @@ export function ControlDashboard() {
   const [mimicaModalOpen, setMimicaModalOpen] = useState(false)
   const [infoModalOpen, setInfoModalOpen] = useState(false)
   const [filmRouletteOpen, setFilmRouletteOpen] = useState(false)
+  const [offlineOnboardingOpen, setOfflineOnboardingOpen] = useState(false)
+  const [showOnboardingSuggestion, setShowOnboardingSuggestion] = useState(false)
 
   const createTeamId = () => `team-${Date.now().toString(16)}-${Math.random().toString(16).slice(2)}`
   const createParticipantId = () =>
@@ -115,7 +122,7 @@ export function ControlDashboard() {
     return orderedTeams.map((team, index) => ({
       team,
       position: index + 1,
-      points: (orderedTeams.length - index) * 120,
+      points: 0, // Pontuações começam do zero no modo offline
     }))
   }, [orderedTeams])
 
@@ -150,6 +157,26 @@ export function ControlDashboard() {
       })
     }
   }, [libraryOpen, session.board])
+
+  // Fecha onboarding se mudar de modo
+  useEffect(() => {
+    if (gameMode !== 'offline') {
+      setOfflineOnboardingOpen(false)
+      setShowOnboardingSuggestion(false)
+    }
+  }, [gameMode])
+
+  // Mostra sugestão de onboarding de forma não forçada
+  useEffect(() => {
+    if (gameMode === 'offline' && orderedTeams.length === 0 && !showOnboardingSuggestion) {
+      // Aguarda 2 segundos antes de mostrar a sugestão
+      const timer = setTimeout(() => {
+        setShowOnboardingSuggestion(true)
+      }, 2000)
+      
+      return () => clearTimeout(timer)
+    }
+  }, [gameMode, orderedTeams.length, showOnboardingSuggestion])
 
   useEffect(() => {
     if (!teamsModalOpen) {
@@ -204,7 +231,7 @@ export function ControlDashboard() {
   }
 
   const confirmPin = () => {
-    if (pinInput.trim() === ACCESS_PIN) {
+    if (verifyPin(pinInput.trim())) {
       setLibraryUnlocked(true)
       setPinModalOpen(false)
       setPinInput('')
@@ -214,6 +241,94 @@ export function ControlDashboard() {
       return
     }
     setPinError('PIN inválido')
+  }
+
+  const handleStartOnboarding = () => {
+    setOfflineOnboardingOpen(true)
+    setShowOnboardingSuggestion(false)
+  }
+
+  const handleDismissOnboardingSuggestion = () => {
+    setShowOnboardingSuggestion(false)
+  }
+
+  const handleOfflineOnboardingComplete = (config: { 
+    theme: string; 
+    pin: string; 
+    sessionTitle: string; 
+    sessionDate: string;
+    customFilms: Array<{
+      name: string;
+      year?: number;
+      genre?: string;
+      streaming?: string;
+      link?: string;
+      notes?: string;
+    }>;
+    teams: Array<{
+      name: string;
+      color: string;
+      members: string[];
+    }>;
+  }) => {
+    try {
+      // Aplica o tema selecionado
+      setTheme(config.theme as "light" | "dark" | "cinema" | "retro" | "matrix")
+      
+      // Salva o PIN personalizado
+      saveCustomPin(config.pin)
+      
+      // Cria colunas para os filmes customizados
+      const filmColumns: string[] = []
+      config.customFilms.forEach(film => {
+        const columnId = addFilmColumn(film.name)
+        filmColumns.push(columnId)
+      })
+      
+      // Cria times e participantes
+      const newTeams: TriviaTeam[] = []
+      const newParticipants: TriviaParticipant[] = []
+      const turnSequence: string[] = []
+      
+      config.teams.forEach((teamConfig, index) => {
+        const teamId = createTeamId()
+        const team: TriviaTeam = {
+          id: teamId,
+          name: teamConfig.name,
+          color: teamConfig.color,
+          order: index,
+          members: []
+        }
+        
+        teamConfig.members.forEach((memberName) => {
+          const participantId = createParticipantId()
+          const participant: TriviaParticipant = {
+            id: participantId,
+            name: memberName,
+            role: 'player',
+            teamId: teamId
+          }
+          newParticipants.push(participant)
+          team.members.push(participantId)
+          turnSequence.push(participantId)
+        })
+        
+        newTeams.push(team)
+      })
+      
+      // Atualiza a sessão com os novos dados
+      updateTeamsAndParticipants(newTeams, newParticipants, turnSequence)
+      
+      // Fecha o modal de onboarding e sugestão
+      setOfflineOnboardingOpen(false)
+      setShowOnboardingSuggestion(false)
+      
+      toast.success('Configuração inicial concluída! Sessão pronta para jogar!')
+      
+    } catch (error) {
+      console.error('Erro ao configurar sessão offline:', error)
+      toast.error('Erro ao configurar sessão. Tente novamente.')
+    }
   }
 
   const quickActions = [
@@ -489,7 +604,7 @@ export function ControlDashboard() {
   return (
     <div className="flex min-h-screen flex-col" style={layoutStyle}>
       <Navbar
-        title={session.title}
+        title={`${session.title} - ${getModeDisplayName(gameMode)}`}
         mode="controle"
         onOpenSettings={() => setThemeModalOpen(true)}
         onExit={() => toast.info('Encerrando sessão atual')}
@@ -503,8 +618,29 @@ export function ControlDashboard() {
                   Turno atual
                 </p>
                 <p className="text-lg font-semibold text-[var(--color-text)]">
-                  {activeParticipant?.name ?? 'Aguardando início'}
+                  {gameMode === 'offline' && orderedTeams.length === 0 
+                    ? 'Configure times para começar'
+                    : activeParticipant?.name ?? 'Aguardando início'
+                  }
                   {activeParticipantTeamName ? ` · ${activeParticipantTeamName}` : ''}
+                </p>
+              </div>
+              <div className="space-y-1">
+                <p className="text-xs font-semibold uppercase tracking-[0.4em] text-[var(--color-muted)]">
+                  Modo de jogo
+                </p>
+                <div className="flex items-center gap-2">
+                  <div className={`h-2 w-2 rounded-full ${
+                    gameMode === 'demo' ? 'bg-blue-500' :
+                    gameMode === 'offline' ? 'bg-orange-500' :
+                    'bg-green-500'
+                  }`} />
+                  <p className="text-sm font-medium text-[var(--color-text)]">
+                    {getModeDisplayName(gameMode)}
+                  </p>
+                </div>
+                <p className="text-xs text-[var(--color-muted)]">
+                  {getModeDescription(gameMode)}
                 </p>
               </div>
               <div className="flex flex-wrap items-center justify-end gap-4">
@@ -566,6 +702,88 @@ export function ControlDashboard() {
             </div>
           </div>
         </section>
+
+        {/* Seção de instruções para modo offline */}
+        {gameMode === 'offline' && orderedTeams.length === 0 && (
+          <section className="card-surface rounded-3xl p-6 border-2 border-dashed border-[var(--color-primary)]/30">
+            <div className="text-center space-y-6">
+              <div className="mx-auto w-16 h-16 rounded-full bg-[var(--color-primary)]/10 flex items-center justify-center">
+                <UsersRound className="h-8 w-8 text-[var(--color-primary)]" />
+              </div>
+              
+              <div className="space-y-2">
+                <h3 className="text-xl font-semibold text-[var(--color-text)]">
+                  Bem-vindo ao Modo Offline!
+                </h3>
+                <p className="text-[var(--color-muted)] max-w-md mx-auto">
+                  Para começar sua sessão de trivia, você precisa configurar os times e participantes.
+                  Clique no botão "Gerenciar Times" para criar sua primeira equipe.
+                </p>
+              </div>
+              
+              {/* Opções de Configuração em Layout Horizontal */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 max-w-2xl mx-auto">
+                {/* Configuração Rápida */}
+                {showOnboardingSuggestion && (
+                  <div className="p-4 rounded-2xl bg-[var(--color-secondary)]/5 border border-[var(--color-secondary)]/20">
+                    <div className="space-y-3">
+                      <div className="flex items-center gap-2">
+                        <span className="text-2xl">🚀</span>
+                        <h4 className="font-semibold text-[var(--color-text)]">
+                          Configuração Rápida
+                        </h4>
+                      </div>
+                      <p className="text-sm text-[var(--color-muted)]">
+                        Assistente para configurar tema, PIN, filmes e times em poucos passos
+                      </p>
+                      <Button
+                        onClick={handleStartOnboarding}
+                        className="w-full text-sm"
+                      >
+                        Usar Assistente
+                      </Button>
+                    </div>
+                  </div>
+                )}
+                
+                {/* Configuração Manual */}
+                <div className="p-4 rounded-2xl bg-[var(--color-primary)]/5 border border-[var(--color-primary)]/20">
+                  <div className="space-y-3">
+                    <div className="flex items-center gap-2">
+                      <span className="text-2xl">⚙️</span>
+                      <h4 className="font-semibold text-[var(--color-text)]">
+                        Configuração Manual
+                      </h4>
+                    </div>
+                    <p className="text-sm text-[var(--color-muted)]">
+                      Configure cada parte separadamente: times, filmes e perguntas
+                    </p>
+                    <div className="space-y-2">
+                      <Button
+                        onClick={() => setTeamsModalOpen(true)}
+                        variant="outline"
+                        className="w-full text-sm"
+                      >
+                        <UserPlus className="h-4 w-4 mr-2" />
+                        Gerenciar Times
+                      </Button>
+                      {showOnboardingSuggestion && (
+                        <Button
+                          onClick={handleDismissOnboardingSuggestion}
+                          variant="ghost"
+                          className="w-full text-sm"
+                        >
+                          Dismissar Sugestão
+                        </Button>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              </div>
+              
+            </div>
+          </section>
+        )}
 
         <section className="card-surface rounded-3xl p-6">
           <div className="mb-8 flex items-center justify-between">
@@ -1069,6 +1287,13 @@ export function ControlDashboard() {
         onClose={() => setFilmRouletteOpen(false)}
         teams={orderedTeams}
         participants={participants}
+      />
+
+      <OfflineOnboardingModal
+        isOpen={offlineOnboardingOpen}
+        onClose={() => setOfflineOnboardingOpen(false)}
+        onComplete={handleOfflineOnboardingComplete}
+        onSkip={() => setOfflineOnboardingOpen(false)}
       />
     </div>
   )

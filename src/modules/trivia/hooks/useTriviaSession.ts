@@ -1,5 +1,5 @@
-import { useMemo } from 'react'
-import { useTriviaSessionContext } from '../providers/TriviaSessionProvider'
+import { useMemo } from "react";
+import { useTriviaSessionContext } from "./useTriviaSessionContext";
 
 export function useTriviaSession() {
   const {
@@ -17,10 +17,10 @@ export function useTriviaSession() {
     removeFilmColumn,
     addQuestionTile,
     removeQuestionTile,
-    updateTeamsAndParticipants,
-  } = useTriviaSessionContext()
+    updateTeamsAndParticipants
+  } = useTriviaSessionContext();
 
-  const orderedTeams = useMemo(() => teams, [teams])
+  const orderedTeams = useMemo(() => teams, [teams]);
 
   return {
     session,
@@ -38,6 +38,6 @@ export function useTriviaSession() {
     removeFilmColumn,
     addQuestionTile,
     removeQuestionTile,
-    updateTeamsAndParticipants,
-  }
+    updateTeamsAndParticipants
+  };
 }

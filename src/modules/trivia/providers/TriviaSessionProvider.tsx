@@ -1,7 +1,9 @@
-import { createContext, useContext, useMemo, useState, type ReactNode } from 'react'
+import { useMemo, useState, useEffect, type ReactNode } from 'react'
 import { getFilmMetadata } from '../../../data/films'
 import { slugify } from '../../../utils/slugify'
 import { createLocalSession } from '../utils/createLocalSession'
+import { createEmptySession } from '../utils/createEmptySession'
+import { useGameMode } from '../../../hooks/useGameMode'
 import type {
   TriviaColumn,
   TriviaParticipant,
@@ -9,39 +11,48 @@ import type {
   TriviaSession,
   TriviaTeam,
 } from '../types'
-
-type TriviaSessionContextValue = {
-  session: TriviaSession
-  teams: TriviaTeam[]
-  participants: TriviaParticipant[]
-  activeTeam: TriviaTeam | null
-  nextTeam: TriviaTeam | null
-  activeParticipant: TriviaParticipant | null
-  nextParticipant: TriviaParticipant | null
-  advanceTurn: () => void
-  setActiveTeam: (teamId: string) => void
-  updateTileState: (tileId: string, state: TriviaQuestionTile['state']) => void
-  updateTileContent: (tileId: string, updates: Partial<Pick<TriviaQuestionTile, 'question' | 'answer' | 'points'>>) => void
-  updateColumnTitle: (columnId: string, film: string) => void
-  addFilmColumn: (displayName?: string) => string
-  removeFilmColumn: (columnId: string) => void
-  addQuestionTile: (columnId: string, defaults?: Partial<TriviaQuestionTile>) => string
-  removeQuestionTile: (columnId: string, tileId: string) => void
-  updateTeamsAndParticipants: (
-    teams: TriviaTeam[],
-    participants: TriviaParticipant[],
-    turnSequence: string[],
-  ) => void
-}
-
-const TriviaSessionContext = createContext<TriviaSessionContextValue | null>(null)
+import { TriviaSessionContext } from '../context/TriviaSessionContext'
 
 type TriviaSessionProviderProps = {
   children: ReactNode
 }
 
 export function TriviaSessionProvider({ children }: TriviaSessionProviderProps) {
-  const [session, setSession] = useState<TriviaSession>(() => createLocalSession())
+  const { gameMode } = useGameMode()
+  
+  const [session, setSession] = useState<TriviaSession>(() => {
+    // Inicializa sessão baseada no modo de jogo
+    switch (gameMode) {
+      case 'demo':
+        return createLocalSession()
+      case 'offline':
+        return createEmptySession()
+      case 'online':
+        // Por enquanto usa sessão local, será implementado com Firebase
+        return createLocalSession()
+      default:
+        return createLocalSession()
+    }
+  })
+
+  // Reinicializa sessão quando o modo de jogo mudar
+  useEffect(() => {
+    const newSession = (() => {
+      switch (gameMode) {
+        case 'demo':
+          return createLocalSession()
+        case 'offline':
+          return createEmptySession()
+        case 'online':
+          // Por enquanto usa sessão local, será implementado com Firebase
+          return createLocalSession()
+        default:
+          return createLocalSession()
+      }
+    })()
+    
+    setSession(newSession)
+  }, [gameMode])
 
   const participantsById = useMemo(() => {
     const map = new Map<string, TriviaParticipant>()
@@ -276,10 +287,3 @@ export function TriviaSessionProvider({ children }: TriviaSessionProviderProps) 
   return <TriviaSessionContext.Provider value={value}>{children}</TriviaSessionContext.Provider>
 }
 
-export function useTriviaSessionContext(): TriviaSessionContextValue {
-  const context = useContext(TriviaSessionContext)
-  if (!context) {
-    throw new Error('useTriviaSessionContext must be used within TriviaSessionProvider')
-  }
-  return context
-}
