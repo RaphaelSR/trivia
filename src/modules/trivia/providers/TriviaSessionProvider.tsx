@@ -1,4 +1,4 @@
-import { useMemo, useState, useEffect, type ReactNode } from 'react'
+import { useMemo, useState, useEffect, useCallback, type ReactNode } from 'react'
 import { getFilmMetadata } from '../../../data/films'
 import { slugify } from '../../../utils/slugify'
 import { createLocalSession } from '../utils/createLocalSession'
@@ -26,6 +26,16 @@ export function TriviaSessionProvider({ children }: TriviaSessionProviderProps) 
       case 'demo':
         return createLocalSession()
       case 'offline':
+        // Tenta carregar sessão salva do localStorage
+        try {
+          const savedSession = localStorage.getItem('trivia-active-session')
+          if (savedSession) {
+            const parsed = JSON.parse(savedSession)
+            return parsed.session || createEmptySession()
+          }
+        } catch (error) {
+          console.error('Erro ao carregar sessão offline:', error)
+        }
         return createEmptySession()
       case 'online':
         // Por enquanto usa sessão local, será implementado com Firebase
@@ -42,6 +52,17 @@ export function TriviaSessionProvider({ children }: TriviaSessionProviderProps) 
         case 'demo':
           return createLocalSession()
         case 'offline':
+          // Tenta carregar sessão salva do localStorage
+          try {
+            const savedSession = localStorage.getItem('trivia-active-session')
+            if (savedSession) {
+              const parsed = JSON.parse(savedSession)
+              console.log('[TriviaSessionProvider] Sessão restaurada:', parsed.metadata?.name)
+              return parsed.session || createEmptySession()
+            }
+          } catch (error) {
+            console.error('Erro ao carregar sessão offline:', error)
+          }
           return createEmptySession()
         case 'online':
           // Por enquanto usa sessão local, será implementado com Firebase
@@ -255,6 +276,42 @@ export function TriviaSessionProvider({ children }: TriviaSessionProviderProps) 
     })
   }
 
+  const awardPoints = useCallback((tileId: string, teamId: string, participantId: string, pointsAwarded: number) => {
+    setSession((prev) => {
+      // Atualiza a pontuação do time
+      const updatedTeams = prev.teams.map((team) => 
+        team.id === teamId 
+          ? { ...team, score: (team.score || 0) + pointsAwarded }
+          : team
+      )
+
+      // Marca a pergunta como respondida
+      const updatedBoard = prev.board.map((column) => ({
+        ...column,
+        tiles: column.tiles.map((tile) =>
+          tile.id === tileId
+            ? {
+                ...tile,
+                state: 'answered' as const,
+                answeredBy: {
+                  participantId,
+                  teamId,
+                  pointsAwarded,
+                  timestamp: new Date().toISOString(),
+                },
+              }
+            : tile
+        ),
+      }))
+
+      return {
+        ...prev,
+        teams: updatedTeams,
+        board: updatedBoard,
+      }
+    })
+  }, [])
+
   const value = useMemo(() => {
     return {
       session,
@@ -274,6 +331,7 @@ export function TriviaSessionProvider({ children }: TriviaSessionProviderProps) 
       addQuestionTile,
       removeQuestionTile,
       updateTeamsAndParticipants,
+      awardPoints,
     }
   }, [
     activeParticipant,
@@ -282,6 +340,7 @@ export function TriviaSessionProvider({ children }: TriviaSessionProviderProps) 
     nextTeam,
     session,
     teams,
+    awardPoints,
   ])
 
   return <TriviaSessionContext.Provider value={value}>{children}</TriviaSessionContext.Provider>

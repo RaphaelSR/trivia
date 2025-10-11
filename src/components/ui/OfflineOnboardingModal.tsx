@@ -82,7 +82,8 @@ export function OfflineOnboardingModal({
 
   const handleThemeSelect = (themeId: string) => {
     setConfig((prev) => ({ ...prev, theme: themeId }));
-    setTheme(themeId as "light" | "dark" | "cinema");
+    console.log('Aplicando tema no onboarding:', themeId); // Debug
+    setTheme(themeId as "light" | "dark" | "cinema" | "retro" | "matrix");
   };
 
   const handlePinChange = (pin: string) => {

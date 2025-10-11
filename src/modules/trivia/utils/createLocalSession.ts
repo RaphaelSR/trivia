@@ -9,14 +9,16 @@ const defaultTeams: TriviaTeam[] = [
     name: "Absolute Cinema",
     color: "#4f46e5",
     order: 0,
-    members: ["participant-1", "participant-2", "participant-3"]
+    members: ["participant-1", "participant-2", "participant-3"],
+    score: 0
   },
   {
     id: "team-2",
     name: "Darth Aperol",
     color: "#22d3ee",
     order: 1,
-    members: ["participant-4", "participant-5", "participant-6"]
+    members: ["participant-4", "participant-5", "participant-6"],
+    score: 0
   }
 ];
 

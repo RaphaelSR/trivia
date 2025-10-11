@@ -10,6 +10,7 @@ export function useTriviaSession() {
     nextTeam,
     activeParticipant,
     nextParticipant,
+    advanceTurn,
     updateTileState,
     updateTileContent,
     updateColumnTitle,
@@ -17,7 +18,8 @@ export function useTriviaSession() {
     removeFilmColumn,
     addQuestionTile,
     removeQuestionTile,
-    updateTeamsAndParticipants
+    updateTeamsAndParticipants,
+    awardPoints
   } = useTriviaSessionContext();
 
   const orderedTeams = useMemo(() => teams, [teams]);
@@ -31,6 +33,7 @@ export function useTriviaSession() {
     nextTeam,
     activeParticipant,
     nextParticipant,
+    advanceTurn,
     updateTileState,
     updateTileContent,
     updateColumnTitle,
@@ -38,6 +41,7 @@ export function useTriviaSession() {
     removeFilmColumn,
     addQuestionTile,
     removeQuestionTile,
-    updateTeamsAndParticipants
+    updateTeamsAndParticipants,
+    awardPoints
   };
 }

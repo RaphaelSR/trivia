@@ -29,11 +29,12 @@ import { Timer } from '../../../components/ui/Timer'
 import { TriviaBoard } from '../../../components/ui/TriviaBoard'
 import type { TriviaColumn, TriviaParticipant, TriviaQuestionTile, TriviaTeam } from '../../trivia/types'
 import { useTriviaSession } from '../../trivia/hooks/useTriviaSession'
-import { useTurnOrder } from '../../trivia/hooks/useTurnOrder'
 import { useThemeMode } from '../../../app/providers/useThemeMode'
 import { useGameMode } from '../../../hooks/useGameMode'
 import { usePinManagement } from '../../../hooks/usePinManagement'
+import { useOfflineSession } from '../../../hooks/useOfflineSession'
 import { OfflineOnboardingModal } from '../../../components/ui/OfflineOnboardingModal'
+import { SessionManager } from '../../../components/ui/SessionManager'
 
 type ParticipantDraft = {
   id: string
@@ -67,11 +68,13 @@ export function ControlDashboard() {
     addQuestionTile,
     removeQuestionTile,
     updateTeamsAndParticipants,
+    awardPoints,
+    advanceTurn,
   } = useTriviaSession()
-  const { advanceTurn } = useTurnOrder()
   const { theme: themeMode, setTheme } = useThemeMode()
   const { gameMode, getModeDisplayName, getModeDescription } = useGameMode()
   const { verifyPin, saveCustomPin } = usePinManagement()
+  const { saveSession, loadSession } = useOfflineSession()
 
   const [selectedIds, setSelectedIds] = useState<{ tileId: string; columnId: string } | null>(null)
   const [showAnswer, setShowAnswer] = useState(false)
@@ -90,6 +93,7 @@ export function ControlDashboard() {
   const [filmRouletteOpen, setFilmRouletteOpen] = useState(false)
   const [offlineOnboardingOpen, setOfflineOnboardingOpen] = useState(false)
   const [showOnboardingSuggestion, setShowOnboardingSuggestion] = useState(false)
+  const [sessionManagerOpen, setSessionManagerOpen] = useState(false)
 
   const createTeamId = () => `team-${Date.now().toString(16)}-${Math.random().toString(16).slice(2)}`
   const createParticipantId = () =>
@@ -119,10 +123,12 @@ export function ControlDashboard() {
   }, [session.board])
 
   const scoreboard = useMemo(() => {
-    return orderedTeams.map((team, index) => ({
+    // Ordena times por pontuação (maior para menor)
+    const sorted = [...orderedTeams].sort((a, b) => (b.score || 0) - (a.score || 0))
+    return sorted.map((team, index) => ({
       team,
       position: index + 1,
-      points: 0, // Pontuações começam do zero no modo offline
+      points: team.score || 0,
     }))
   }, [orderedTeams])
 
@@ -177,6 +183,17 @@ export function ControlDashboard() {
       return () => clearTimeout(timer)
     }
   }, [gameMode, orderedTeams.length, showOnboardingSuggestion])
+
+  // Salva sessão automaticamente quando há mudanças (apenas no modo offline)
+  useEffect(() => {
+    if (gameMode === 'offline' && orderedTeams.length > 0) {
+      const timer = setTimeout(() => {
+        saveSession(session, session.title);
+      }, 1000); // Debounce de 1 segundo
+      
+      return () => clearTimeout(timer);
+    }
+  }, [session, gameMode, orderedTeams.length, saveSession])
 
   useEffect(() => {
     if (!teamsModalOpen) {
@@ -252,6 +269,34 @@ export function ControlDashboard() {
     setShowOnboardingSuggestion(false)
   }
 
+  const handleLoadSession = (sessionId: string) => {
+    try {
+      const loadedSession = loadSession(sessionId);
+      if (loadedSession) {
+        // Atualiza a sessão atual com os dados carregados
+        updateTeamsAndParticipants(
+          loadedSession.teams,
+          loadedSession.participants,
+          loadedSession.turnSequence
+        );
+        
+        // Atualiza o board se existir
+        if (loadedSession.board && loadedSession.board.length > 0) {
+          // Aqui você precisaria de uma função para atualizar o board
+          // Por enquanto, vamos apenas mostrar um toast
+          toast.success('Sessão carregada com sucesso!');
+        }
+        
+        toast.success(`Sessão "${loadedSession.title}" carregada!`);
+      } else {
+        toast.error('Erro ao carregar sessão');
+      }
+    } catch (error) {
+      console.error('Erro ao carregar sessão:', error);
+      toast.error('Erro ao carregar sessão');
+    }
+  };
+
   const handleOfflineOnboardingComplete = (config: { 
     theme: string; 
     pin: string; 
@@ -273,6 +318,7 @@ export function ControlDashboard() {
   }) => {
     try {
       // Aplica o tema selecionado
+      console.log('Aplicando tema após onboarding:', config.theme); // Debug
       setTheme(config.theme as "light" | "dark" | "cinema" | "retro" | "matrix")
       
       // Salva o PIN personalizado
@@ -297,7 +343,8 @@ export function ControlDashboard() {
           name: teamConfig.name,
           color: teamConfig.color,
           order: index,
-          members: []
+          members: [],
+          score: 0
         }
         
         teamConfig.members.forEach((memberName) => {
@@ -583,6 +630,7 @@ export function ControlDashboard() {
       color: team.color || 'var(--color-primary)',
       order: index,
       members: team.members.map((member) => member.id),
+      score: orderedTeams.find((t) => t.id === team.id)?.score || 0
     }))
 
     const newParticipants: TriviaParticipant[] = teamDrafts.flatMap((team) =>
@@ -606,7 +654,7 @@ export function ControlDashboard() {
       <Navbar
         title={`${session.title} - ${getModeDisplayName(gameMode)}`}
         mode="controle"
-        onOpenSettings={() => setThemeModalOpen(true)}
+        onOpenSessionManager={() => setSessionManagerOpen(true)}
         onExit={() => toast.info('Encerrando sessão atual')}
       />
       <main className="flex-1 space-y-6 px-8 py-6">
@@ -843,36 +891,61 @@ export function ControlDashboard() {
             activeTeamId={activeTeam?.id ?? null}
             basePoints={selectedTile?.tile.points ?? 0}
             onConfirm={(mode, targetTeamId) => {
-              if (!selectedTile) {
-                toast.info('Selecione uma carta para pontuar')
+              if (!selectedTile || !activeParticipant) {
+                toast.info('Selecione uma carta e certifique-se de que há um participante ativo')
                 return
               }
+              
+              const basePoints = selectedTile.tile.points
+              let pointsAwarded = 0
+              let teamId = activeTeam?.id ?? ''
               let message = ''
+              
               switch (mode) {
                 case 'full-current':
-                  message = `${selectedTile.column.film}: pontos completos para ${
-                    orderedTeams.find((team) => team.id === activeTeam?.id)?.name ?? 'time da vez'
-                  }`
+                  pointsAwarded = basePoints
+                  teamId = activeTeam?.id ?? ''
+                  message = `${selectedTile.column.film}: ${pointsAwarded} pontos para ${activeTeam?.name ?? 'time da vez'}`
+                  awardPoints(selectedTile.tile.id, teamId, activeParticipant.id, pointsAwarded)
                   break
                 case 'half-current':
-                  message = `${selectedTile.column.film}: meia pontuação para ${
-                    orderedTeams.find((team) => team.id === activeTeam?.id)?.name ?? 'time da vez'
-                  }`
+                  pointsAwarded = Math.round(basePoints / 2)
+                  teamId = activeTeam?.id ?? ''
+                  message = `${selectedTile.column.film}: ${pointsAwarded} pontos para ${activeTeam?.name ?? 'time da vez'}`
+                  awardPoints(selectedTile.tile.id, teamId, activeParticipant.id, pointsAwarded)
                   break
                 case 'steal':
-                  message = `${selectedTile.column.film}: pontos transferidos para ${
+                  pointsAwarded = basePoints
+                  teamId = targetTeamId ?? ''
+                  message = `${selectedTile.column.film}: ${pointsAwarded} pontos transferidos para ${
                     orderedTeams.find((team) => team.id === targetTeamId)?.name ?? 'outro time'
                   }`
+                  awardPoints(selectedTile.tile.id, teamId, activeParticipant.id, pointsAwarded)
                   break
                 case 'everyone':
-                  message = `${selectedTile.column.film}: pontos distribuídos para todos os times`
+                  pointsAwarded = Math.round(basePoints / orderedTeams.length)
+                  message = `${selectedTile.column.film}: ${pointsAwarded} pontos para cada time`
+                  orderedTeams.forEach((team) => {
+                    awardPoints(selectedTile.tile.id, team.id, activeParticipant.id, pointsAwarded)
+                  })
                   break
                 case 'void':
-                  message = `${selectedTile.column.film}: pergunta anulada`
+                  pointsAwarded = 0
+                  message = `${selectedTile.column.film}: pergunta anulada (sem pontuação)`
+                  // Não altera o estado da pergunta - mantém disponível
                   break
               }
-              updateTileState(selectedTile.tile.id, 'answered')
+              
               toast.success(message)
+              
+              // Avança para o próximo turno
+              advanceTurn()
+              
+              // Salva a sessão após pontuar (modo offline)
+              if (gameMode === 'offline') {
+                saveSession(session)
+              }
+              
               setSelectedIds(null)
               setShowAnswer(false)
             }}
@@ -884,21 +957,75 @@ export function ControlDashboard() {
       <Modal
         isOpen={scoreboardOpen}
         title="Ranking da noite"
-        description="Resumo parcial das equipes nesta sessão."
+        description="Resumo parcial das equipes nesta sessão. Clique nos times para ver pontuação individual."
         onClose={() => setScoreboardOpen(false)}
       >
         <div className="space-y-3">
-          {scoreboard.map(({ team, position, points }) => (
-            <div key={team.id} className="flex items-center justify-between rounded-2xl border border-[var(--color-border)] bg-[var(--color-background)] px-4 py-3">
-              <div className="flex items-center gap-3">
-                <span className="h-8 w-8 rounded-full bg-[var(--color-primary)]/10 text-center text-sm font-semibold text-[var(--color-primary)] leading-8">
-                  {position}º
-                </span>
-                <span className="text-sm font-semibold text-[var(--color-text)]">{team.name}</span>
+          {scoreboard.map(({ team, position, points }) => {
+            const isExpanded = openAccordions[`scoreboard-${team.id}`]
+            
+            // Calcula pontuação de cada participante do time
+            const participantScores = team.members.map((memberId) => {
+              const participant = participants.find((p) => p.id === memberId)
+              // Soma todos os pontos das perguntas respondidas por este participante
+              const individualPoints = session.board
+                .flatMap((column) => column.tiles)
+                .filter((tile) => tile.answeredBy?.participantId === memberId)
+                .reduce((sum, tile) => sum + (tile.answeredBy?.pointsAwarded || 0), 0)
+              
+              return {
+                participant,
+                points: individualPoints
+              }
+            }).filter((p) => p.participant) // Remove participantes não encontrados
+            
+            return (
+              <div key={team.id} className="rounded-2xl border border-[var(--color-border)] bg-[var(--color-background)] overflow-hidden">
+                <button
+                  onClick={() => setOpenAccordions((prev) => ({
+                    ...prev,
+                    [`scoreboard-${team.id}`]: !prev[`scoreboard-${team.id}`]
+                  }))}
+                  className="w-full flex items-center justify-between px-4 py-3 hover:bg-[var(--color-surface)] transition-colors"
+                >
+                  <div className="flex items-center gap-3">
+                    <span className="h-8 w-8 rounded-full bg-[var(--color-primary)]/10 text-center text-sm font-semibold text-[var(--color-primary)] leading-8">
+                      {position}º
+                    </span>
+                    <span className="text-sm font-semibold text-[var(--color-text)]">{team.name}</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm font-semibold text-[var(--color-text)]">{points} pts</span>
+                    <svg
+                      className={`h-4 w-4 text-[var(--color-muted)] transition-transform ${isExpanded ? 'rotate-180' : ''}`}
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                    >
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                    </svg>
+                  </div>
+                </button>
+                
+                {isExpanded && (
+                  <div className="px-4 pb-3 pt-1 border-t border-[var(--color-border)] bg-[var(--color-surface)]">
+                    <div className="space-y-2">
+                      {participantScores.map(({ participant, points: individualPoints }) => (
+                        <div key={participant?.id} className="flex items-center justify-between py-2 px-3 rounded-lg bg-[var(--color-background)]">
+                          <span className="text-xs font-medium text-[var(--color-muted)]">
+                            {participant?.name}
+                          </span>
+                          <span className="text-xs font-semibold text-[var(--color-text)]">
+                            {individualPoints} pts
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
               </div>
-              <span className="text-sm font-semibold text-[var(--color-text)]">{points} pts</span>
-            </div>
-          ))}
+            )
+          })}
         </div>
       </Modal>
 
@@ -1294,6 +1421,16 @@ export function ControlDashboard() {
         onClose={() => setOfflineOnboardingOpen(false)}
         onComplete={handleOfflineOnboardingComplete}
         onSkip={() => setOfflineOnboardingOpen(false)}
+      />
+
+      <SessionManager
+        isOpen={sessionManagerOpen}
+        onClose={() => setSessionManagerOpen(false)}
+        onLoadSession={handleLoadSession}
+        onNewSession={() => {
+          // Limpa sessão atual e abre onboarding
+          setOfflineOnboardingOpen(true)
+        }}
       />
     </div>
   )

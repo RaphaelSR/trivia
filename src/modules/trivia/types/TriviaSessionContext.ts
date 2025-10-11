@@ -33,4 +33,10 @@ export type TriviaSessionContextValue = {
     participants: TriviaParticipant[],
     turnSequence: string[]
   ) => void;
+  awardPoints: (
+    tileId: string,
+    teamId: string,
+    participantId: string,
+    pointsAwarded: number
+  ) => void;
 };
