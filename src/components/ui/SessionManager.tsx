@@ -29,7 +29,8 @@ export function SessionManager({ isOpen, onClose, onLoadSession, onNewSession, o
     currentSession,
     sessionHistory, 
     getSessionStatus, 
-    deleteSession 
+    deleteSession,
+    loadSession
   } = useOfflineSession();
   
   const [selectedSession, setSelectedSession] = useState<string | null>(null);
@@ -173,6 +174,45 @@ export function SessionManager({ isOpen, onClose, onLoadSession, onNewSession, o
                       {formatDuration(session.duration)}
                     </div>
                   </div>
+                  {(() => {
+                    const sessionData = loadSession(session.id)
+                    if (sessionData) {
+                      const filmsCount = sessionData.board?.length || 0
+                      const questionsCount = sessionData.board?.reduce((acc, column) => acc + column.tiles.length, 0) || 0
+                      const teamsCount = sessionData.teams?.length || 0
+                      const totalScore = sessionData.teams?.reduce((acc, team) => acc + (team.score || 0), 0) || 0
+                      
+                      return (
+                        <div className="flex items-center gap-3 mt-2 text-xs text-[var(--color-muted)]">
+                          {filmsCount > 0 && (
+                            <span className="flex items-center gap-1">
+                              <span className="font-semibold text-[var(--color-text)]">{filmsCount}</span>
+                              <span>filme{filmsCount !== 1 ? 's' : ''}</span>
+                            </span>
+                          )}
+                          {questionsCount > 0 && (
+                            <span className="flex items-center gap-1">
+                              <span className="font-semibold text-[var(--color-text)]">{questionsCount}</span>
+                              <span>pergunta{questionsCount !== 1 ? 's' : ''}</span>
+                            </span>
+                          )}
+                          {teamsCount > 0 && (
+                            <span className="flex items-center gap-1">
+                              <span className="font-semibold text-[var(--color-text)]">{teamsCount}</span>
+                              <span>time{teamsCount !== 1 ? 's' : ''}</span>
+                            </span>
+                          )}
+                          {totalScore > 0 && (
+                            <span className="flex items-center gap-1">
+                              <span className="font-semibold text-[var(--color-primary)]">{totalScore}</span>
+                              <span>pontos</span>
+                            </span>
+                          )}
+                        </div>
+                      )
+                    }
+                    return null
+                  })()}
                   <div className="flex items-center gap-2 mt-2">
                     <span className={`px-2 py-1 rounded-full text-xs font-medium ${
                       session.mode === 'demo' 

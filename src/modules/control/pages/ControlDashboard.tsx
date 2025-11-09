@@ -7,7 +7,6 @@ import {
   Palette,
   RefreshCw,
   RotateCcw,
-  Upload,
   UserPlus,
   UsersRound,
   Theater,
@@ -34,12 +33,11 @@ import { OfflineOnboardingModal } from '@/components/ui/OfflineOnboardingModal'
 import { SessionManager } from '@/components/ui/SessionManager'
 import { ResetGameModal } from '@/components/ui/ResetGameModal'
 import { GameEndModal } from '@/components/ui/GameEndModal'
-import { QuestionImportModal } from '@/components/ui/QuestionImportModal'
 import { QuestionLibraryModal } from '@/components/ui/QuestionLibraryModal'
 import { ScoreDetailView } from '@/components/ui/ScoreDetailView'
+import { ConfirmActionModal } from '@/components/ui/ConfirmActionModal'
 import { useControlDashboardState } from '../hooks/useControlDashboardState'
 import { useTeamManagement } from '../hooks/useTeamManagement'
-import { useQuestionManagement } from '../hooks/useQuestionManagement'
 import { useSessionManagement } from '../hooks/useSessionManagement'
 import { TeamsManagementModal } from '../components/TeamsManagementModal'
 import { ScoringControls } from '../components/ScoringControls'
@@ -69,6 +67,7 @@ export function ControlDashboard() {
     awardPoints,
     awardMimicaPoints,
     advanceTurn,
+    restoreSession,
   } = useTriviaSession()
   const { theme: themeMode, setTheme } = useThemeMode()
   const { gameMode, getModeDisplayName, getModeDescription } = useGameMode()
@@ -117,12 +116,14 @@ export function ControlDashboard() {
     setGameEndModalOpen,
     gameEndNotified,
     setGameEndNotified,
-    questionImportOpen,
-    setQuestionImportOpen,
     scoreDetailOpen,
     setScoreDetailOpen,
     selectedParticipantId,
     setSelectedParticipantId,
+    confirmActionOpen,
+    setConfirmActionOpen,
+    confirmActionConfig,
+    setConfirmActionConfig,
   } = dashboardState
 
   const teamManagement = useTeamManagement(
@@ -134,12 +135,6 @@ export function ControlDashboard() {
     }
   )
 
-  const questionManagement = useQuestionManagement(
-    addQuestionTile,
-    removeQuestionTile,
-    addFilmColumn,
-    removeFilmColumn
-  )
 
   const sessionManagement = useSessionManagement(
     orderedTeams,
@@ -153,6 +148,7 @@ export function ControlDashboard() {
     setTheme,
     saveCustomPin,
     loadSession,
+    restoreSession,
     setGameEndNotified
   )
 
@@ -233,10 +229,22 @@ export function ControlDashboard() {
     }
   }, [gameMode, setOfflineOnboardingOpen, setShowOnboardingSuggestion])
 
-  // Mostra sugestão de onboarding de forma não forçada
+  // Detecta primeira vez e mostra onboarding automaticamente
   useEffect(() => {
-    if (gameMode === 'offline' && orderedTeams.length === 0 && !showOnboardingSuggestion) {
-      // Aguarda 2 segundos antes de mostrar a sugestão
+    if (gameMode === 'offline') {
+      const hasSeenOnboarding = localStorage.getItem('trivia-onboarding-seen')
+      if (!hasSeenOnboarding && !offlineOnboardingOpen) {
+        // Primeira vez: abre onboarding automaticamente
+        setOfflineOnboardingOpen(true)
+      }
+    }
+  }, [gameMode, offlineOnboardingOpen, setOfflineOnboardingOpen])
+
+  // Mostra sugestão de onboarding de forma não forçada (apenas se já viu onboarding antes)
+  useEffect(() => {
+    const hasSeenOnboarding = localStorage.getItem('trivia-onboarding-seen')
+    if (gameMode === 'offline' && orderedTeams.length === 0 && !showOnboardingSuggestion && hasSeenOnboarding) {
+      // Aguarda 2 segundos antes de mostrar a sugestão (apenas se já viu antes)
       const timer = setTimeout(() => {
         setShowOnboardingSuggestion(true)
       }, 2000)
@@ -297,9 +305,18 @@ export function ControlDashboard() {
       toast.warning('Todas as cartas já foram utilizadas nesta sessão')
       return
     }
-    const random = availableTiles[Math.floor(Math.random() * availableTiles.length)]
-    handleSelectTile(random.tile, random.column)
-    toast.success('Pergunta sorteada!')
+    
+    setConfirmActionConfig({
+      title: 'Sortear Pergunta Aleatória',
+      description: 'Esta ação irá selecionar automaticamente uma pergunta aleatória disponível no tabuleiro. A pergunta será destacada e pronta para ser respondida.',
+      onConfirm: () => {
+        const random = availableTiles[Math.floor(Math.random() * availableTiles.length)]
+        handleSelectTile(random.tile, random.column)
+        toast.success('Pergunta sorteada!')
+      },
+      variant: 'info',
+    })
+    setConfirmActionOpen(true)
   }
 
   const handleShowLibrary = () => {
@@ -332,7 +349,41 @@ export function ControlDashboard() {
     setShowOnboardingSuggestion(false)
   }
 
-  const handleLoadSession = sessionManagement.loadSessionById
+  const handleLoadSession = (sessionId: string) => {
+    const hasCurrentData = 
+      session.board.length > 0 || 
+      orderedTeams.length > 0 || 
+      participants.length > 0 ||
+      session.board.some(column => column.tiles.some(tile => tile.state === 'answered')) ||
+      orderedTeams.some(team => (team.score || 0) > 0)
+
+    if (hasCurrentData) {
+      const filmsCount = session.board.length
+      const questionsCount = session.board.reduce((acc, column) => acc + column.tiles.length, 0)
+      const answeredCount = session.board.reduce((acc, column) => acc + column.tiles.filter(tile => tile.state === 'answered').length, 0)
+      const teamsCount = orderedTeams.length
+      const totalScore = orderedTeams.reduce((acc, team) => acc + (team.score || 0), 0)
+
+      const itemsToLose = []
+      if (filmsCount > 0) itemsToLose.push(`${filmsCount} filme${filmsCount !== 1 ? 's' : ''}`)
+      if (questionsCount > 0) itemsToLose.push(`${questionsCount} pergunta${questionsCount !== 1 ? 's' : ''}`)
+      if (answeredCount > 0) itemsToLose.push(`${answeredCount} pergunta${answeredCount !== 1 ? 's' : ''} respondida${answeredCount !== 1 ? 's' : ''}`)
+      if (teamsCount > 0) itemsToLose.push(`${teamsCount} time${teamsCount !== 1 ? 's' : ''}`)
+      if (totalScore > 0) itemsToLose.push(`${totalScore} pontos`)
+
+      setConfirmActionConfig({
+        title: 'Carregar Sessão Anterior',
+        description: `Você tem uma sessão ativa com dados: ${itemsToLose.join(', ')}. Ao carregar uma sessão anterior, todos esses dados serão substituídos pelos dados da sessão selecionada. Esta ação não pode ser desfeita.`,
+        onConfirm: () => {
+          sessionManagement.loadSessionById(sessionId)
+        },
+        variant: 'warning',
+      })
+      setConfirmActionOpen(true)
+    } else {
+      sessionManagement.loadSessionById(sessionId)
+    }
+  }
 
   const handleResetGame = sessionManagement.resetGame
 
@@ -437,6 +488,24 @@ export function ControlDashboard() {
       // Atualiza a sessão com os novos dados
       updateTeamsAndParticipants(newTeams, newParticipants, turnSequence)
       
+      // Atualiza título e data da sessão
+      const sessionTitle = config.sessionTitle || `Sessão ${new Date().toLocaleDateString('pt-BR')}`
+      const sessionDate = config.sessionDate || new Date().toISOString()
+      
+      // Aguarda um momento para garantir que o estado foi atualizado antes de salvar
+      setTimeout(() => {
+        const currentSession = {
+          ...session,
+          title: sessionTitle,
+          scheduledAt: sessionDate,
+        }
+        saveSession(currentSession, sessionTitle)
+        toast.success(`Nova sessão "${sessionTitle}" criada e salva!`)
+      }, 100)
+      
+      // Marca onboarding como visto
+      localStorage.setItem('trivia-onboarding-seen', 'true')
+      
       // Fecha o modal de onboarding e sugestão
       setOfflineOnboardingOpen(false)
       setShowOnboardingSuggestion(false)
@@ -449,9 +518,18 @@ export function ControlDashboard() {
     }
   }
 
-  const handleRegenerateTurnSequence = sessionManagement.regenerateTurnSequence
+  const handleRegenerateTurnSequence = () => {
+    setConfirmActionConfig({
+      title: 'Regenerar Sequência de Turnos',
+      description: 'Esta ação irá recriar completamente a sequência de turnos, alternando entre todos os times. A sequência atual será substituída por uma nova, garantindo que nenhum time jogue duas vezes consecutivas.',
+      onConfirm: () => {
+        sessionManagement.regenerateTurnSequence()
+      },
+      variant: 'warning',
+    })
+    setConfirmActionOpen(true)
+  }
 
-  const handleQuestionImport = questionManagement.importQuestions
 
   const quickActions = [
     {
@@ -505,14 +583,6 @@ export function ControlDashboard() {
       onClick: handleShowLibrary,
     },
     {
-      id: 'import',
-      icon: <Upload size={18} />,
-      label: 'Importar Perguntas',
-      description: 'Importa perguntas em lote de texto formatado',
-      onClick: () => setQuestionImportOpen(true),
-      disabled: session.board.length === 0,
-    },
-    {
       id: 'theme',
       icon: <Palette size={18} />,
       label: 'Alterar Tema',
@@ -551,7 +621,16 @@ export function ControlDashboard() {
   ]
 
   const handleAddFilm = () => {
-    addFilmColumn('Novo Filme')
+    setConfirmActionConfig({
+      title: 'Adicionar Novo Filme',
+      description: 'Esta ação irá adicionar uma nova coluna de filme ao tabuleiro. Você poderá adicionar perguntas a este filme posteriormente.',
+      onConfirm: () => {
+        addFilmColumn('Novo Filme')
+        toast.success('Filme adicionado!')
+      },
+      variant: 'info',
+    })
+    setConfirmActionOpen(true)
   }
 
   const handleRemoveFilm = (columnId: string, filmName: string) => {
@@ -858,47 +937,58 @@ export function ControlDashboard() {
                 return
               }
               
-              let message = ''
-              
               if (distributions.length === 0) {
-                // Anular pergunta - marca como answered mesmo sem pontos
-                updateTileState(selectedTile.tile.id, 'answered')
-                message = `${selectedTile.column.film}: pergunta anulada (sem pontuação)`
-                toast.success(message)
-                
-                // Avança para o próximo turno
-                advanceTurn()
-                
-                setSelectedIds(null)
-                setShowAnswer(false)
+                setConfirmActionConfig({
+                  title: 'Anular Pergunta',
+                  description: `Esta ação irá anular a pergunta "${selectedTile.tile.question}" do filme "${selectedTile.column.film}" sem atribuir pontos. A pergunta será marcada como respondida e o turno avançará automaticamente para o próximo participante.`,
+                  onConfirm: () => {
+                    updateTileState(selectedTile.tile.id, 'answered')
+                    const message = `${selectedTile.column.film}: pergunta anulada (sem pontuação)`
+                    toast.success(message)
+                    advanceTurn()
+                    setSelectedIds(null)
+                    setShowAnswer(false)
+                  },
+                  variant: 'warning',
+                })
+                setConfirmActionOpen(true)
                 return
               }
               
-              // Aplicar distribuições
-              distributions.forEach((distribution) => {
-                const team = orderedTeams.find(t => t.id === distribution.teamId)
-                const participant = distribution.participantId 
-                  ? participants.find(p => p.id === distribution.participantId)
-                  : null
-                
-                awardPoints(
-                  selectedTile.tile.id, 
-                  distribution.teamId, 
-                  distribution.participantId || activeParticipant.id, 
-                  distribution.points
-                )
-                
-                const recipient = participant ? `${participant.name} (${team?.name})` : team?.name ?? 'time'
-                message += `${team?.name}: ${distribution.points} pontos para ${recipient}\n`
+              const totalPoints = distributions.reduce((sum, d) => sum + d.points, 0)
+              const teamsAffected = [...new Set(distributions.map(d => d.teamId))].length
+              
+              setConfirmActionConfig({
+                title: 'Confirmar Pontuação',
+                description: `Esta ação irá atribuir ${totalPoints} pontos distribuídos entre ${teamsAffected} time(s) e avançará automaticamente para o próximo turno. A pergunta será marcada como respondida.`,
+                onConfirm: () => {
+                  let message = ''
+                  
+                  distributions.forEach((distribution) => {
+                    const team = orderedTeams.find(t => t.id === distribution.teamId)
+                    const participant = distribution.participantId 
+                      ? participants.find(p => p.id === distribution.participantId)
+                      : null
+                    
+                    awardPoints(
+                      selectedTile.tile.id, 
+                      distribution.teamId, 
+                      distribution.participantId || activeParticipant.id, 
+                      distribution.points
+                    )
+                    
+                    const recipient = participant ? `${participant.name} (${team?.name})` : team?.name ?? 'time'
+                    message += `${team?.name}: ${distribution.points} pontos para ${recipient}\n`
+                  })
+                  
+                  toast.success(message.trim())
+                  advanceTurn()
+                  setSelectedIds(null)
+                  setShowAnswer(false)
+                },
+                variant: 'info',
               })
-              
-              toast.success(message.trim())
-              
-              // Avança para o próximo turno
-              advanceTurn()
-              
-              setSelectedIds(null)
-              setShowAnswer(false)
+              setConfirmActionOpen(true)
             }}
             onClose={handleCloseQuestionModal}
           />
@@ -1213,6 +1303,49 @@ export function ControlDashboard() {
       <InfoModal
         isOpen={infoModalOpen}
         onClose={() => setInfoModalOpen(false)}
+        onOpenOnboarding={() => {
+          const hasExistingData = 
+            session.board.length > 0 || 
+            orderedTeams.length > 0 || 
+            participants.length > 0 ||
+            session.board.some(column => column.tiles.some(tile => tile.state === 'answered')) ||
+            orderedTeams.some(team => (team.score || 0) > 0)
+
+          if (hasExistingData) {
+            const filmsCount = session.board.length
+            const questionsCount = session.board.reduce((acc, column) => acc + column.tiles.length, 0)
+            const teamsCount = orderedTeams.length
+            const totalScore = orderedTeams.reduce((acc, team) => acc + (team.score || 0), 0)
+
+            const itemsToLose = []
+            if (filmsCount > 0) itemsToLose.push(`${filmsCount} filme${filmsCount !== 1 ? 's' : ''}`)
+            if (questionsCount > 0) itemsToLose.push(`${questionsCount} pergunta${questionsCount !== 1 ? 's' : ''}`)
+            if (teamsCount > 0) itemsToLose.push(`${teamsCount} time${teamsCount !== 1 ? 's' : ''}`)
+            if (totalScore > 0) itemsToLose.push(`${totalScore} pontos`)
+
+            setConfirmActionConfig({
+              title: 'Configurar Nova Sessão?',
+              description: `Você já tem uma sessão ativa com dados: ${itemsToLose.join(', ')}. O onboarding irá criar uma nova sessão, substituindo os dados atuais. Deseja continuar?`,
+              onConfirm: () => {
+                sessionManagement.resetGame({
+                  teams: true,
+                  participants: true,
+                  questions: true,
+                  films: true,
+                  points: true,
+                  themes: false,
+                })
+                setOfflineOnboardingOpen(true)
+                setInfoModalOpen(false)
+              },
+              variant: 'warning',
+            })
+            setConfirmActionOpen(true)
+          } else {
+            setOfflineOnboardingOpen(true)
+            setInfoModalOpen(false)
+          }
+        }}
       />
 
       <FilmRoulette
@@ -1225,9 +1358,17 @@ export function ControlDashboard() {
 
       <OfflineOnboardingModal
         isOpen={offlineOnboardingOpen}
-        onClose={() => setOfflineOnboardingOpen(false)}
+        onClose={() => {
+          // Marca como visto mesmo se fechar sem completar
+          localStorage.setItem('trivia-onboarding-seen', 'true')
+          setOfflineOnboardingOpen(false)
+        }}
         onComplete={handleOfflineOnboardingComplete}
-        onSkip={() => setOfflineOnboardingOpen(false)}
+        onSkip={() => {
+          // Marca como visto ao pular
+          localStorage.setItem('trivia-onboarding-seen', 'true')
+          setOfflineOnboardingOpen(false)
+        }}
       />
 
       <SessionManager
@@ -1235,8 +1376,27 @@ export function ControlDashboard() {
         onClose={() => setSessionManagerOpen(false)}
         onLoadSession={handleLoadSession}
         onNewSession={() => {
-          // Limpa sessão atual e abre onboarding
-          setOfflineOnboardingOpen(true)
+          // Mostra modal de confirmação antes de limpar tudo
+          setConfirmActionConfig({
+            title: 'Criar Nova Sessão',
+            description: 'Esta ação irá limpar completamente a sessão atual e iniciar uma nova. Serão removidos: todos os filmes, todas as perguntas, todos os times e participantes, e todas as pontuações. O tema visual será mantido. Após a confirmação, o assistente de configuração inicial será aberto.',
+            onConfirm: () => {
+              // Limpa completamente a sessão atual antes de abrir onboarding
+              sessionManagement.resetGame({
+                teams: true,
+                participants: true,
+                questions: true,
+                films: true,
+                points: true,
+                themes: false, // Mantém o tema atual
+              })
+              // Abre onboarding para nova sessão
+              setOfflineOnboardingOpen(true)
+              setSessionManagerOpen(false)
+            },
+            variant: 'warning',
+          })
+          setConfirmActionOpen(true)
         }}
         onResetGame={() => setResetGameModalOpen(true)}
       />
@@ -1256,13 +1416,6 @@ export function ControlDashboard() {
         onShowMimica={() => setMimicaModalOpen(true)}
       />
 
-      <QuestionImportModal
-        isOpen={questionImportOpen}
-        onClose={() => setQuestionImportOpen(false)}
-        columns={session.board}
-        onImport={handleQuestionImport}
-      />
-
       {selectedParticipantId && (
         <ScoreDetailView
           isOpen={scoreDetailOpen}
@@ -1276,6 +1429,20 @@ export function ControlDashboard() {
           mimicaScores={session.mimicaScores || []}
           allParticipants={participants}
           allTeams={orderedTeams}
+        />
+      )}
+
+      {confirmActionConfig && (
+        <ConfirmActionModal
+          isOpen={confirmActionOpen}
+          onClose={() => {
+            setConfirmActionOpen(false)
+            setConfirmActionConfig(null)
+          }}
+          onConfirm={confirmActionConfig.onConfirm}
+          title={confirmActionConfig.title}
+          description={confirmActionConfig.description}
+          variant={confirmActionConfig.variant}
         />
       )}
     </div>

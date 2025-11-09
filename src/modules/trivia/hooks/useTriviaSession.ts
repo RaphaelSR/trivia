@@ -20,7 +20,8 @@ export function useTriviaSession() {
     removeQuestionTile,
     updateTeamsAndParticipants,
     awardPoints,
-    awardMimicaPoints
+    awardMimicaPoints,
+    restoreSession
   } = useTriviaSessionContext();
 
   const orderedTeams = useMemo(() => teams, [teams]);
@@ -44,6 +45,7 @@ export function useTriviaSession() {
     removeQuestionTile,
     updateTeamsAndParticipants,
     awardPoints,
-    awardMimicaPoints
+    awardMimicaPoints,
+    restoreSession
   };
 }

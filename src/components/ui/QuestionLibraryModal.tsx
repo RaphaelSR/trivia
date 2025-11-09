@@ -124,37 +124,15 @@ export function QuestionLibraryModal({
               <Download size={16} />
               Exportar
             </Button>
-            <label className="cursor-pointer">
-              <span className="inline-flex items-center justify-center gap-2 h-9 px-4 text-sm rounded-2xl font-semibold transition-all duration-300 border border-[var(--color-border)] bg-transparent text-[var(--color-text)] hover:border-[var(--color-primary)] hover:text-[var(--color-primary)] focus-visible:ring-[var(--color-primary)] hover:bg-[color-mix(in_srgb,var(--color-primary)_5%,var(--color-background)_95%)]">
-                <Upload size={16} />
-                Importar
-              </span>
-              <input
-                type="file"
-                accept=".json,.txt"
-                className="hidden"
-                onChange={(e) => {
-                  const file = e.target.files?.[0]
-                  if (!file) return
-
-                  const reader = new FileReader()
-                  reader.onload = (event) => {
-                    try {
-                      const text = event.target?.result as string
-                      const data = JSON.parse(text)
-                      const result = importFilmsWithQuestions(data, board)
-                      setImportPreview(result)
-                      setShowImportModal(true)
-                    } catch (error) {
-                      console.error('Erro ao ler arquivo:', error)
-                      toast.error('Erro ao processar arquivo. Verifique se é um JSON válido.')
-                    }
-                  }
-                  reader.readAsText(file)
-                  e.target.value = ''
-                }}
-              />
-            </label>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setShowImportModal(true)}
+              className="gap-2"
+            >
+              <Upload size={16} />
+              Importar
+            </Button>
             <Button variant="outline" size="sm" onClick={onAddFilm} className="gap-2">
               <Plus size={16} />
               Adicionar filme
@@ -390,136 +368,295 @@ export function QuestionLibraryModal({
         </div>
       </div>
 
-      {showImportModal && importPreview && (
+      {showImportModal && (
         <Modal
           isOpen={showImportModal}
-          title="Preview de Importação"
-          description="Revise os filmes e perguntas antes de importar"
+          title={importPreview ? "Preview de Importação" : "Importar Filmes e Perguntas"}
+          description={importPreview ? "Revise os filmes e perguntas antes de importar" : "Importe filmes e perguntas de um arquivo JSON"}
           onClose={() => {
             setShowImportModal(false)
             setImportPreview(null)
           }}
         >
           <div className="space-y-4">
-            {importPreview.success && (
-              <div className="p-4 rounded-xl bg-[var(--color-success)]/10 border border-[var(--color-success)]/30">
-                <div className="flex items-start gap-3">
-                  <CheckCircle2 className="h-5 w-5 text-[var(--color-success)] mt-0.5 flex-shrink-0" />
-                  <div>
-                    <p className="text-sm font-semibold text-[var(--color-text)]">
-                      Arquivo válido! {importPreview.films.length} filme{importPreview.films.length !== 1 ? 's' : ''} encontrado{importPreview.films.length !== 1 ? 's' : ''}.
-                    </p>
-                    <p className="text-xs text-[var(--color-muted)] mt-1">
-                      Total de perguntas: {importPreview.films.reduce((sum, f) => sum + f.questions.length, 0)}
-                    </p>
+            {!importPreview && (
+              <>
+                <div className="p-4 rounded-xl bg-[var(--color-primary)]/5 border border-[var(--color-primary)]/20">
+                  <div className="flex items-start gap-3">
+                    <AlertCircle className="h-5 w-5 text-[var(--color-primary)] mt-0.5 flex-shrink-0" />
+                    <div className="flex-1 text-sm text-[var(--color-text)]">
+                      <p className="font-semibold mb-2">Como importar:</p>
+                      <ol className="list-decimal list-inside space-y-1 text-xs text-[var(--color-muted)]">
+                        <li>Exporte seus filmes e perguntas usando o botão "Exportar"</li>
+                        <li>Ou crie um arquivo JSON seguindo o formato abaixo</li>
+                        <li>Selecione o arquivo usando o botão abaixo</li>
+                      </ol>
+                    </div>
                   </div>
                 </div>
-              </div>
-            )}
 
-            {importPreview.errors.length > 0 && (
-              <div className="p-4 rounded-xl bg-[var(--color-danger)]/10 border border-[var(--color-danger)]/30">
-                <div className="flex items-start gap-3">
-                  <AlertCircle className="h-5 w-5 text-[var(--color-danger)] mt-0.5 flex-shrink-0" />
-                  <div className="flex-1">
-                    <p className="text-sm font-semibold text-[var(--color-text)] mb-2">Erros encontrados:</p>
-                    <ul className="text-xs text-[var(--color-muted)] space-y-1">
-                      {importPreview.errors.map((error, i) => (
-                        <li key={i}>• {error}</li>
-                      ))}
-                    </ul>
+                <div className="p-4 rounded-xl bg-[var(--color-surface)] border border-[var(--color-border)]">
+                  <div className="flex items-center justify-between mb-3">
+                    <p className="text-sm font-semibold text-[var(--color-text)]">Formato JSON esperado:</p>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => {
+                        const example = {
+                          version: '1.0',
+                          exportedAt: new Date().toISOString(),
+                          films: [
+                            {
+                              name: 'Matrix',
+                              year: 1999,
+                              genre: 'ficção-científica',
+                              streaming: 'netflix',
+                              link: 'https://example.com/matrix',
+                              notes: 'Filme clássico',
+                              addedBy: 'João',
+                              questions: [
+                                {
+                                  points: 10,
+                                  question: 'Qual é o nome do protagonista?',
+                                  answer: 'Neo'
+                                },
+                                {
+                                  points: 20,
+                                  question: 'Em que ano o filme foi lançado?',
+                                  answer: '1999'
+                                }
+                              ]
+                            },
+                            {
+                              name: 'Titanic',
+                              questions: [
+                                {
+                                  points: 15,
+                                  question: 'Qual é o nome do navio?',
+                                  answer: 'Titanic'
+                                }
+                              ]
+                            }
+                          ]
+                        }
+                        const blob = new Blob([JSON.stringify(example, null, 2)], { type: 'application/json' })
+                        const url = URL.createObjectURL(blob)
+                        const a = document.createElement('a')
+                        a.href = url
+                        a.download = 'exemplo-importacao.json'
+                        a.click()
+                        URL.revokeObjectURL(url)
+                        toast.success('Exemplo baixado!')
+                      }}
+                      className="text-xs"
+                    >
+                      Baixar exemplo
+                    </Button>
                   </div>
+                  <pre className="text-xs text-[var(--color-muted)] bg-[var(--color-background)] p-3 rounded-lg border border-[var(--color-border)] overflow-x-auto">
+{`{
+  "version": "1.0",
+  "exportedAt": "2024-01-01T00:00:00.000Z",
+  "films": [
+    {
+      "name": "Matrix",
+      "year": 1999,
+      "genre": "ficção-científica",
+      "streaming": "netflix",
+      "link": "https://example.com/matrix",
+      "notes": "Filme clássico",
+      "addedBy": "João",
+      "questions": [
+        {
+          "points": 10,
+          "question": "Qual é o nome do protagonista?",
+          "answer": "Neo"
+        },
+        {
+          "points": 20,
+          "question": "Em que ano o filme foi lançado?",
+          "answer": "1999"
+        }
+      ]
+    },
+    {
+      "name": "Titanic",
+      "questions": [
+        {
+          "points": 15,
+          "question": "Qual é o nome do navio?",
+          "answer": "Titanic"
+        }
+      ]
+    }
+  ]
+}`}
+                  </pre>
+                  <p className="text-xs text-[var(--color-muted)] mt-2">
+                    <strong className="text-[var(--color-text)]">Campos obrigatórios:</strong> name, questions (array com points, question, answer)
+                    <br />
+                    <strong className="text-[var(--color-text)]">Campos opcionais:</strong> year, genre, streaming, link, notes, addedBy
+                  </p>
                 </div>
-              </div>
-            )}
 
-            {importPreview.warnings.length > 0 && (
-              <div className="p-4 rounded-xl bg-[var(--color-secondary)]/10 border border-[var(--color-secondary)]/30">
-                <div className="flex items-start gap-3">
-                  <AlertCircle className="h-5 w-5 text-[var(--color-secondary)] mt-0.5 flex-shrink-0" />
-                  <div className="flex-1">
-                    <p className="text-sm font-semibold text-[var(--color-text)] mb-2">Avisos:</p>
-                    <ul className="text-xs text-[var(--color-muted)] space-y-1 max-h-32 overflow-y-auto">
-                      {importPreview.warnings.map((warning, i) => (
-                        <li key={i}>• {warning}</li>
-                      ))}
-                    </ul>
-                  </div>
-                </div>
-              </div>
-            )}
-
-            <div className="space-y-3 max-h-96 overflow-y-auto">
-              {importPreview.films.map((film, i) => (
-                <div
-                  key={i}
-                  className="p-4 rounded-xl border border-[var(--color-border)] bg-[var(--color-background)]"
-                >
-                  <div className="flex items-center justify-between mb-2">
-                    <h4 className="font-semibold text-sm text-[var(--color-text)]">{film.name}</h4>
-                    <span className="text-xs font-medium text-[var(--color-primary)] bg-[var(--color-primary)]/10 px-2 py-1 rounded-full">
-                      {film.questions.length} pergunta{film.questions.length !== 1 ? 's' : ''}
+                <div className="flex items-center justify-center p-6 border-2 border-dashed border-[var(--color-border)] rounded-xl">
+                  <label className="inline-flex items-center gap-2 px-6 py-3 rounded-xl border border-[var(--color-primary)] bg-[var(--color-primary)]/10 hover:bg-[var(--color-primary)]/20 cursor-pointer transition">
+                    <span className="flex items-center gap-2 text-sm font-semibold text-[var(--color-primary)]">
+                      <Upload size={18} />
+                      Selecionar arquivo JSON
                     </span>
-                  </div>
-                  <div className="space-y-1">
-                    {film.questions.slice(0, 3).map((q, j) => (
-                      <div
-                        key={j}
-                        className="text-xs text-[var(--color-muted)] flex items-start gap-2"
-                      >
-                        <span className="font-semibold text-[var(--color-primary)]">
-                          {q.points}pts
-                        </span>
-                        <span className="flex-1 line-clamp-1">{q.question}</span>
-                      </div>
-                    ))}
-                    {film.questions.length > 3 && (
-                      <p className="text-xs text-[var(--color-muted)] italic">
-                        + {film.questions.length - 3} pergunta{film.questions.length - 3 !== 1 ? 's' : ''}...
-                      </p>
-                    )}
-                  </div>
+                    <input
+                      type="file"
+                      accept=".json,.txt"
+                      className="hidden"
+                      onChange={(e) => {
+                        const file = e.target.files?.[0]
+                        if (!file) return
+
+                        const reader = new FileReader()
+                        reader.onload = (event) => {
+                          try {
+                            const text = event.target?.result as string
+                            const data = JSON.parse(text)
+                            const result = importFilmsWithQuestions(data, board)
+                            setImportPreview(result)
+                          } catch (error) {
+                            console.error('Erro ao ler arquivo:', error)
+                            toast.error('Erro ao processar arquivo. Verifique se é um JSON válido.')
+                          }
+                        }
+                        reader.readAsText(file)
+                        e.target.value = ''
+                      }}
+                    />
+                  </label>
                 </div>
-              ))}
-            </div>
+              </>
+            )}
 
-            <div className="flex gap-3">
-              <Button
-                variant="outline"
-                onClick={() => {
-                  setShowImportModal(false)
-                  setImportPreview(null)
-                }}
-                className="flex-1"
-              >
-                Cancelar
-              </Button>
-              <Button
-                variant="secondary"
-                onClick={() => {
-                  if (!importPreview.success || !onImportFilms) return
+            {importPreview && (
+              <div className="space-y-4">
+                {importPreview.success && (
+                  <div className="p-4 rounded-xl bg-[var(--color-success)]/10 border border-[var(--color-success)]/30">
+                    <div className="flex items-start gap-3">
+                      <CheckCircle2 className="h-5 w-5 text-[var(--color-success)] mt-0.5 flex-shrink-0" />
+                      <div>
+                        <p className="text-sm font-semibold text-[var(--color-text)]">
+                          Arquivo válido! {importPreview.films.length} filme{importPreview.films.length !== 1 ? 's' : ''} encontrado{importPreview.films.length !== 1 ? 's' : ''}.
+                        </p>
+                        <p className="text-xs text-[var(--color-muted)] mt-1">
+                          Total de perguntas: {importPreview.films.reduce((sum, f) => sum + f.questions.length, 0)}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                )}
 
-                  const createColumnId = () => `import-${Date.now()}-${Math.random().toString(16).slice(2)}`
-                  const columns = convertImportToColumns(
-                    importPreview,
-                    createColumnId,
-                    createQuestionTileId
-                  )
+                {importPreview.errors.length > 0 && (
+                  <div className="p-4 rounded-xl bg-[var(--color-danger)]/10 border border-[var(--color-danger)]/30">
+                    <div className="flex items-start gap-3">
+                      <AlertCircle className="h-5 w-5 text-[var(--color-danger)] mt-0.5 flex-shrink-0" />
+                      <div className="flex-1">
+                        <p className="text-sm font-semibold text-[var(--color-text)] mb-2">Erros encontrados:</p>
+                        <ul className="text-xs text-[var(--color-muted)] space-y-1">
+                          {importPreview.errors.map((error, i) => (
+                            <li key={i}>• {error}</li>
+                          ))}
+                        </ul>
+                      </div>
+                    </div>
+                  </div>
+                )}
 
-                  onImportFilms(columns)
-                  toast.success(
-                    `${importPreview.films.length} filme${importPreview.films.length !== 1 ? 's' : ''} importado${importPreview.films.length !== 1 ? 's' : ''} com sucesso!`
-                  )
-                  setShowImportModal(false)
-                  setImportPreview(null)
-                }}
-                disabled={!importPreview.success}
-                className="flex-1"
-              >
-                <CheckCircle2 className="h-4 w-4 mr-2" />
-                Importar Filmes
-              </Button>
-            </div>
+                {importPreview.warnings.length > 0 && (
+                  <div className="p-4 rounded-xl bg-[var(--color-secondary)]/10 border border-[var(--color-secondary)]/30">
+                    <div className="flex items-start gap-3">
+                      <AlertCircle className="h-5 w-5 text-[var(--color-secondary)] mt-0.5 flex-shrink-0" />
+                      <div className="flex-1">
+                        <p className="text-sm font-semibold text-[var(--color-text)] mb-2">Avisos:</p>
+                        <ul className="text-xs text-[var(--color-muted)] space-y-1 max-h-32 overflow-y-auto">
+                          {importPreview.warnings.map((warning, i) => (
+                            <li key={i}>• {warning}</li>
+                          ))}
+                        </ul>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                <div className="space-y-3 max-h-96 overflow-y-auto">
+                  {importPreview.films.map((film, i) => (
+                    <div
+                      key={i}
+                      className="p-4 rounded-xl border border-[var(--color-border)] bg-[var(--color-background)]"
+                    >
+                      <div className="flex items-center justify-between mb-2">
+                        <h4 className="font-semibold text-sm text-[var(--color-text)]">{film.name}</h4>
+                        <span className="text-xs font-medium text-[var(--color-primary)] bg-[var(--color-primary)]/10 px-2 py-1 rounded-full">
+                          {film.questions.length} pergunta{film.questions.length !== 1 ? 's' : ''}
+                        </span>
+                      </div>
+                      <div className="space-y-1">
+                        {film.questions.slice(0, 3).map((q, j) => (
+                          <div
+                            key={j}
+                            className="text-xs text-[var(--color-muted)] flex items-start gap-2"
+                          >
+                            <span className="font-semibold text-[var(--color-primary)]">
+                              {q.points}pts
+                            </span>
+                            <span className="flex-1 line-clamp-1">{q.question}</span>
+                          </div>
+                        ))}
+                        {film.questions.length > 3 && (
+                          <p className="text-xs text-[var(--color-muted)] italic">
+                            + {film.questions.length - 3} pergunta{film.questions.length - 3 !== 1 ? 's' : ''}...
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+
+                <div className="flex gap-3">
+                  <Button
+                    variant="outline"
+                    onClick={() => {
+                      setShowImportModal(false)
+                      setImportPreview(null)
+                    }}
+                    className="flex-1"
+                  >
+                    Voltar
+                  </Button>
+                  <Button
+                    variant="secondary"
+                    onClick={() => {
+                      if (!importPreview.success || !onImportFilms) return
+
+                      const createColumnId = () => `import-${Date.now()}-${Math.random().toString(16).slice(2)}`
+                      const columns = convertImportToColumns(
+                        importPreview,
+                        createColumnId,
+                        createQuestionTileId
+                      )
+
+                      onImportFilms(columns)
+                      toast.success(
+                        `${importPreview.films.length} filme${importPreview.films.length !== 1 ? 's' : ''} importado${importPreview.films.length !== 1 ? 's' : ''} com sucesso!`
+                      )
+                      setShowImportModal(false)
+                      setImportPreview(null)
+                    }}
+                    disabled={!importPreview.success}
+                    className="flex-1"
+                  >
+                    <CheckCircle2 className="h-4 w-4 mr-2" />
+                    Importar Filmes
+                  </Button>
+                </div>
+              </div>
+            )}
           </div>
         </Modal>
       )}

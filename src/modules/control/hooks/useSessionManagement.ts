@@ -1,5 +1,5 @@
 import { toast } from 'sonner'
-import type { TriviaTeam, TriviaParticipant } from '@/modules/trivia/types'
+import type { TriviaTeam, TriviaParticipant, TriviaSession } from '@/modules/trivia/types'
 import type { ResetGameOptions, OnboardingConfig } from '../types/control.types'
 import { generateTurnSequence } from '../utils/sessionUtils'
 import { createAlternatingTurnSequence } from '@/modules/trivia/utils/createAlternatingTurnSequence'
@@ -21,30 +21,40 @@ export function useSessionManagement(
   removeFilmColumn: (columnId: string) => void,
   setTheme: (theme: 'light' | 'dark' | 'brazil') => void,
   saveCustomPin: (pin: string) => void,
-  loadSession: (sessionId: string) => { teams: TriviaTeam[]; participants: TriviaParticipant[]; turnSequence: string[]; title: string; board?: Array<{ tiles: Array<unknown> }> } | null,
+  loadSession: (sessionId: string) => TriviaSession | null,
+  restoreSession: (session: TriviaSession) => void,
   setGameEndNotified: (value: boolean) => void
 ) {
-  const loadSessionById = (sessionId: string) => {
+  const loadSessionById = (sessionId: string): boolean => {
     try {
       const loadedSession = loadSession(sessionId)
       if (loadedSession) {
-        updateTeamsAndParticipants(
-          loadedSession.teams,
-          loadedSession.participants,
-          loadedSession.turnSequence
-        )
+        toast.info(`Carregando sessão "${loadedSession.title}"...`)
+        
+        restoreSession(loadedSession)
 
-        if (loadedSession.board && loadedSession.board.length > 0) {
-          toast.success('Sessão carregada com sucesso!')
-        }
+        const filmsCount = loadedSession.board?.length || 0
+        const questionsCount = loadedSession.board?.reduce((acc, column) => acc + column.tiles.length, 0) || 0
+        const teamsCount = loadedSession.teams?.length || 0
+        const totalScore = loadedSession.teams?.reduce((acc, team) => acc + (team.score || 0), 0) || 0
 
-        toast.success(`Sessão "${loadedSession.title}" carregada!`)
+        const details = []
+        if (filmsCount > 0) details.push(`${filmsCount} filme${filmsCount !== 1 ? 's' : ''}`)
+        if (questionsCount > 0) details.push(`${questionsCount} pergunta${questionsCount !== 1 ? 's' : ''}`)
+        if (teamsCount > 0) details.push(`${teamsCount} time${teamsCount !== 1 ? 's' : ''}`)
+        if (totalScore > 0) details.push(`${totalScore} pontos`)
+
+        const detailsText = details.length > 0 ? ` (${details.join(', ')})` : ''
+        toast.success(`Sessão "${loadedSession.title}" carregada!${detailsText}`)
+        return true
       } else {
         toast.error('Erro ao carregar sessão')
+        return false
       }
     } catch (error) {
       console.error('Erro ao carregar sessão:', error)
       toast.error('Erro ao carregar sessão')
+      return false
     }
   }
 

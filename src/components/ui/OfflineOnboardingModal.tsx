@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Button } from "./Button";
 import { Modal } from "./Modal";
-import { Palette, Lock, Users, Check, CheckCircle, Edit, Film, Plus, Trash2, X } from "lucide-react";
+import { Palette, Lock, Users, Check, CheckCircle, Edit, Film, Plus, Trash2, X, Info } from "lucide-react";
 import { useThemeMode } from "../../app/providers/useThemeMode";
 
 interface OfflineOnboardingModalProps {
@@ -333,7 +333,7 @@ export function OfflineOnboardingModal({
           Informações da Sessão
         </h3>
         <p className="text-[var(--color-muted)]">
-          Configure o nome e data da sua sessão de trivia
+          Configure o nome e data da sua sessão de trivia (opcional - pode configurar depois)
         </p>
       </div>
 
@@ -548,7 +548,7 @@ export function OfflineOnboardingModal({
             Criar Filmes
           </h3>
           <p className="text-[var(--color-muted)]">
-            Adicione pelo menos 2 filmes para o tabuleiro de trivia
+            Adicione pelo menos 2 filmes para o tabuleiro de trivia (opcional - pode adicionar depois pela Biblioteca)
           </p>
         </div>
 
@@ -629,7 +629,7 @@ export function OfflineOnboardingModal({
           Configurar Times
         </h3>
         <p className="text-[var(--color-muted)]">
-          Crie pelo menos 2 times com membros para começar o jogo
+          Crie pelo menos 2 times com membros para começar o jogo (opcional - pode configurar depois pelo botão "Times")
         </p>
       </div>
 
@@ -728,6 +728,20 @@ export function OfflineOnboardingModal({
         <p className="text-[var(--color-muted)]">
           Revise as configurações antes de finalizar
         </p>
+      </div>
+
+      <div className="p-4 rounded-2xl bg-[var(--color-primary)]/10 border border-[var(--color-primary)]/20">
+        <div className="flex items-start gap-3">
+          <Info className="h-5 w-5 text-[var(--color-primary)] mt-0.5 flex-shrink-0" />
+          <div>
+            <h4 className="font-semibold text-[var(--color-text)] text-sm mb-1">
+              Lembre-se
+            </h4>
+            <p className="text-xs text-[var(--color-muted)]">
+              Você pode acessar todas essas configurações a qualquer momento pelo dashboard principal. Use o botão "Times" para gerenciar times, "Biblioteca" para filmes e perguntas, e "Tema" para alterar o visual.
+            </p>
+          </div>
+        </div>
       </div>
 
       <div className="space-y-4">
@@ -837,6 +851,22 @@ export function OfflineOnboardingModal({
             />
           </div>
         </div>
+
+        {currentStep === 1 && (
+          <div className="mb-6 p-4 rounded-2xl bg-[var(--color-secondary)]/10 border border-[var(--color-secondary)]/20">
+            <div className="flex items-start gap-3">
+              <Info className="h-5 w-5 text-[var(--color-secondary)] mt-0.5 flex-shrink-0" />
+              <div>
+                <h4 className="font-semibold text-[var(--color-text)] text-sm mb-1">
+                  Todos os passos são opcionais
+                </h4>
+                <p className="text-xs text-[var(--color-muted)]">
+                  Você pode configurar tudo depois pelo dashboard principal. Este assistente apenas ajuda a configurar rapidamente na primeira vez.
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
 
         {renderCurrentStep()}
 

@@ -491,6 +491,10 @@ export function TriviaSessionProvider({ children }: TriviaSessionProviderProps) 
     })
   }, [])
 
+  const restoreSession = useCallback((sessionToRestore: TriviaSession) => {
+    setSession(sessionToRestore)
+  }, [])
+
   const value = useMemo(() => {
     return {
       session,
@@ -512,6 +516,7 @@ export function TriviaSessionProvider({ children }: TriviaSessionProviderProps) 
       updateTeamsAndParticipants,
       awardPoints,
       awardMimicaPoints,
+      restoreSession,
     }
   }, [
     activeParticipant,
@@ -523,6 +528,7 @@ export function TriviaSessionProvider({ children }: TriviaSessionProviderProps) 
     advanceTurn,
     awardPoints,
     awardMimicaPoints,
+    restoreSession,
   ])
 
   return <TriviaSessionContext.Provider value={value}>{children}</TriviaSessionContext.Provider>

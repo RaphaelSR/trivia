@@ -28,6 +28,13 @@ export function useControlDashboardState() {
   const [questionImportOpen, setQuestionImportOpen] = useState(false)
   const [scoreDetailOpen, setScoreDetailOpen] = useState(false)
   const [selectedParticipantId, setSelectedParticipantId] = useState<string | null>(null)
+  const [confirmActionOpen, setConfirmActionOpen] = useState(false)
+  const [confirmActionConfig, setConfirmActionConfig] = useState<{
+    title: string
+    description: string
+    onConfirm: () => void
+    variant?: 'danger' | 'warning' | 'info'
+  } | null>(null)
 
   const selectedTile = useMemo(() => {
     if (!selectedIds) return null
@@ -83,6 +90,10 @@ export function useControlDashboardState() {
     selectedParticipantId,
     setSelectedParticipantId,
     selectedTile,
+    confirmActionOpen,
+    setConfirmActionOpen,
+    confirmActionConfig,
+    setConfirmActionConfig,
   }
 }
 

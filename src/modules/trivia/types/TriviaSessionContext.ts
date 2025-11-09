@@ -49,4 +49,5 @@ export type TriviaSessionContextValue = {
     mode: 'full-current' | 'half-current' | 'steal' | 'everyone' | 'void',
     targetTeamId?: string
   ) => void;
+  restoreSession: (session: TriviaSession) => void;
 };
