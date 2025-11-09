@@ -140,10 +140,35 @@ Toda a documentação está em `docs/`:
 
 ## 🚀 Deploy
 
+### GitHub Pages (Automático)
+
+O projeto está configurado para deploy automático no GitHub Pages via GitHub Actions.
+
+**Configuração:**
+
+1. No repositório GitHub, vá em **Settings** → **Pages**
+2. Em **Source**, selecione **GitHub Actions**
+3. O workflow será executado automaticamente a cada push na branch `main`
+4. A aplicação estará disponível em: `https://raphaelsr.github.io/trivia/`
+
+**Workflow:**
+- Executa testes automaticamente
+- Faz build da aplicação
+- Faz deploy no GitHub Pages
+
+### Build Local
+
 ```bash
 # Build para produção
 npm run build
 
+# Preview do build local
+npm run preview
+```
+
+### Firebase Hosting (Opcional)
+
+```bash
 # Deploy no Firebase Hosting
 npm run deploy
 ```

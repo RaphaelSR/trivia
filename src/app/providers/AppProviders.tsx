@@ -11,11 +11,13 @@ type AppProvidersProps = {
 
 export function AppProviders({ children }: AppProvidersProps) {
   const [queryClient] = useState(() => new QueryClient())
+  
+  const basename = import.meta.env.PROD ? '/trivia' : '/'
 
   return (
     <QueryClientProvider client={queryClient}>
       <ThemeModeProvider>
-        <BrowserRouter>
+        <BrowserRouter basename={basename}>
           <TriviaSessionProvider>{children}</TriviaSessionProvider>
         </BrowserRouter>
       </ThemeModeProvider>
