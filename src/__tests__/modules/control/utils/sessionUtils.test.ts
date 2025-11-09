@@ -4,7 +4,7 @@ import {
   convertDraftsToTeams,
   convertDraftsToParticipants,
 } from '../../../../modules/control/utils/sessionUtils'
-import type { TriviaColumn, TriviaTeam, TriviaParticipant } from '../../../../modules/trivia/types'
+import type { TriviaColumn, TriviaTeam } from '../../../../modules/trivia/types'
 import { createBalancedTurnSequence } from '../../../../modules/trivia/utils/createBalancedTurnSequence'
 import { createAlternatingTurnSequence } from '../../../../modules/trivia/utils/createAlternatingTurnSequence'
 

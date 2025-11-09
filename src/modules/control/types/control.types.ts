@@ -1,4 +1,4 @@
-import type { TriviaParticipant, TriviaTeam } from '../../trivia/types'
+import type { TriviaParticipant } from '../../trivia/types'
 
 export type ParticipantDraft = {
   id: string

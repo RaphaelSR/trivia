@@ -1,9 +1,8 @@
 import { toast } from "sonner";
-import type { TriviaColumn, TriviaQuestionTile } from "@/modules/trivia/types";
+import type { TriviaQuestionTile } from "@/modules/trivia/types";
 import type { ParsedImport } from "@/components/ui/QuestionImportModal";
 import {
   processQuestionImports,
-  countImportedQuestions,
   createQuestionTileId
 } from "../utils/questionUtils";
 

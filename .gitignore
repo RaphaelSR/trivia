@@ -32,6 +32,11 @@ templates/
 # Trivia Files directory (now in docs/reference/)
 Trivia Files/
 
+# Testing
+coverage/
+*.lcov
+.nyc_output/
+
 # Temporary files
 tmp_patch.txt
 *.tmp

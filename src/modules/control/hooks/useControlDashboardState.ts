@@ -1,5 +1,4 @@
 import { useState, useMemo } from 'react'
-import type { TriviaColumn, TriviaQuestionTile } from '@/modules/trivia/types'
 
 /**
  * Hook para gerenciar estado local do ControlDashboard

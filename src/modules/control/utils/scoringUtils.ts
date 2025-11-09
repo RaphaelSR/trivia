@@ -1,4 +1,4 @@
-import type { TriviaTeam, TriviaParticipant } from '@/modules/trivia/types'
+import type { TriviaParticipant } from '@/modules/trivia/types'
 import type { PointDistribution, QuickScoringOption } from '../types/control.types'
 
 /**

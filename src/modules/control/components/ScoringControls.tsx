@@ -1,6 +1,6 @@
 import { Button } from '@/components/ui/Button'
 import type { TriviaTeam, TriviaParticipant } from '@/modules/trivia/types'
-import type { PointDistribution, QuickScoringOption } from '../types/control.types'
+import type { PointDistribution } from '../types/control.types'
 import { useScoringSystem } from '../hooks/useScoringSystem'
 
 type ScoringControlsProps = {
@@ -32,7 +32,7 @@ export function ScoringControls({
     setDistributions,
     selectedMultiplier,
     setSelectedMultiplier,
-    quickModeSelected,
+    quickModeSelected: _quickModeSelected,
     selectedQuickOption,
     quickOptions,
     isValid,
