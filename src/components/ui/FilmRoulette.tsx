@@ -15,6 +15,7 @@ type FilmRouletteProps = {
   onClose: () => void
   teams: TriviaTeam[]
   participants: TriviaParticipant[]
+  sessionFilms?: Array<{ id: string; name: string }>
 }
 
 type RouletteMode = 'one-per-person' | 'all-films' | 'specific-quantity'
@@ -52,8 +53,17 @@ type RouletteHistory = {
   uniqueFilms: number
 }
 
-export function FilmRoulette({ isOpen, onClose, teams, participants }: FilmRouletteProps) {
-  const { films: customFilms, addFilm, updateFilm, removeFilm } = useCustomFilms()
+export function FilmRoulette({ isOpen, onClose, teams, participants, sessionFilms }: FilmRouletteProps) {
+  const { films: globalCustomFilms, addFilm, updateFilm, removeFilm } = useCustomFilms()
+  
+  // Usa filmes da sessão se fornecidos, senão usa filmes globais (fallback)
+  const customFilms = sessionFilms && sessionFilms.length > 0 
+    ? sessionFilms.map(sf => globalCustomFilms.find(f => f.id === sf.id) || {
+        id: sf.id,
+        name: sf.name,
+        addedAt: new Date().toISOString()
+      } as CustomFilm)
+    : globalCustomFilms
   const [mode, setMode] = useState<RouletteMode>('one-per-person')
   const [selectedParticipants, setSelectedParticipants] = useState<SelectedParticipant[]>([])
   const [selectedFilms, setSelectedFilms] = useState<SelectedFilm[]>([])

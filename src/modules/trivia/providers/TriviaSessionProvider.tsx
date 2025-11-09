@@ -112,9 +112,10 @@ export function TriviaSessionProvider({ children }: TriviaSessionProviderProps) 
     return teams.find((team) => team.id === nextParticipant.teamId) ?? null
   }, [nextParticipant, teams])
 
-  const advanceTurn = () => {
+  const advanceTurn = useCallback(() => {
     setSession((prev) => {
       if (!prev.turnSequence.length) {
+        console.log('[advanceTurn] Sequência vazia, não avançando')
         return prev
       }
       const currentIndex = prev.activeParticipantId
@@ -124,13 +125,40 @@ export function TriviaSessionProvider({ children }: TriviaSessionProviderProps) 
       const nextParticipantId = prev.turnSequence[nextIndex]
       const participant = prev.participants.find((p) => p.id === nextParticipantId)
       const nextTeamId = participant?.teamId ?? prev.activeTeamId
+      const team = prev.teams.find((t) => t.id === nextTeamId)
+      
+      console.group('[🔄 ADVANCE TURN]')
+      console.log('FROM:', {
+        participant: prev.participants.find(p => p.id === prev.activeParticipantId)?.name,
+        participantId: prev.activeParticipantId,
+        team: prev.teams.find(t => t.id === prev.activeTeamId)?.name,
+        teamId: prev.activeTeamId,
+        index: currentIndex
+      })
+      console.log('TO:', {
+        participant: participant?.name,
+        participantId: nextParticipantId,
+        team: team?.name,
+        teamId: nextTeamId,
+        index: nextIndex
+      })
+      console.log('SEQUENCE INFO:', {
+        totalLength: prev.turnSequence.length,
+        fullSequence: prev.turnSequence.map((id, i) => {
+          const p = prev.participants.find(p => p.id === id)
+          const t = prev.teams.find(t => t.id === p?.teamId)
+          return `${i}: ${p?.name} (${t?.name})`
+        })
+      })
+      console.groupEnd()
+      
       return {
         ...prev,
         activeParticipantId: nextParticipantId ?? null,
         activeTeamId: nextTeamId ?? prev.activeTeamId,
       }
     })
-  }
+  }, [])
 
   const setActiveTeam = (teamId: string) => {
     setSession((prev) => ({ ...prev, activeTeamId: teamId }))
@@ -229,10 +257,13 @@ export function TriviaSessionProvider({ children }: TriviaSessionProviderProps) 
           answer: defaults.answer ?? '',
           state: 'available',
         }
+        
+        const updatedTiles = [...column.tiles, newTile].sort((a, b) => a.points - b.points)
+        
         return {
           ...column,
           theme: column.theme ?? metadata,
-          tiles: [...column.tiles, newTile],
+          tiles: updatedTiles,
         }
       }),
     }))
@@ -340,6 +371,7 @@ export function TriviaSessionProvider({ children }: TriviaSessionProviderProps) 
     nextTeam,
     session,
     teams,
+    advanceTurn,
     awardPoints,
   ])
 

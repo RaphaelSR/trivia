@@ -37,6 +37,7 @@ const themeOptions = [
   { id: "cinema", name: "Tema Cinema", description: "Atmosfera cinematográfica" },
   { id: "retro", name: "Tema Retro 80s", description: "Cores neon e nostalgia dos anos 80" },
   { id: "matrix", name: "Tema Matrix", description: "Verde digital e efeito terminal" },
+  { id: "brazil", name: "Tema Brasil 🇧🇷", description: "Cores verde e amarelo da bandeira brasileira" },
 ];
 
 const teamColors = [
@@ -238,7 +239,7 @@ export function OfflineOnboardingModal({
         </p>
       </div>
 
-      <div className="grid gap-4">
+      <div className="grid gap-4 max-h-[400px] overflow-y-auto pr-2">
         {themeOptions.map((theme) => (
           <button
             key={theme.id}

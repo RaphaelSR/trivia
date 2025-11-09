@@ -2,6 +2,7 @@ import { questionBank } from "../../../data/questionBank";
 import { getFilmMetadata } from "../../../data/films";
 import { slugify } from "../../../utils/slugify";
 import type { TriviaSession, TriviaTeam } from "../types";
+import { createAlternatingTurnSequence } from "./createAlternatingTurnSequence";
 
 const defaultTeams: TriviaTeam[] = [
   {
@@ -84,7 +85,7 @@ export function createLocalSession(): TriviaSession {
     };
   });
 
-  const turnSequence = defaultTeams.flatMap((team) => team.members);
+  const turnSequence = createAlternatingTurnSequence(defaultTeams);
   const activeParticipantId = turnSequence[0] ?? null;
 
   return {

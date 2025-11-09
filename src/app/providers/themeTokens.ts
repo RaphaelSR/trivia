@@ -1,4 +1,10 @@
-export type ThemeMode = "light" | "dark" | "cinema" | "retro" | "matrix";
+export type ThemeMode =
+  | "light"
+  | "dark"
+  | "cinema"
+  | "retro"
+  | "matrix"
+  | "brazil";
 
 export const themeTokens: Record<ThemeMode, Record<string, string>> = {
   light: {
@@ -70,6 +76,20 @@ export const themeTokens: Record<ThemeMode, Record<string, string>> = {
     "--color-shadow": "#00ff00",
     "--color-disabled": "#003300",
     "--color-disabled-text": "#00cc00"
+  },
+  brazil: {
+    "--color-primary": "#009739",
+    "--color-secondary": "#FFDF00",
+    "--color-surface": "#e8f5e9",
+    "--color-background": "#f1f8e9",
+    "--color-border": "#4caf50",
+    "--color-text": "#1b5e20",
+    "--color-muted": "#558b2f",
+    "--color-tooltip-bg": "#009739",
+    "--color-tooltip-text": "#FFDF00",
+    "--color-shadow": "#2e7d32",
+    "--color-disabled": "#c8e6c9",
+    "--color-disabled-text": "#7cb342"
   }
 };
 
@@ -82,7 +102,7 @@ export function applyTheme(mode: ThemeMode) {
   root.dataset.theme = mode;
 
   // Aplicar color-scheme para melhor suporte aos temas
-  if (mode === "light") {
+  if (mode === "light" || mode === "brazil") {
     root.style.colorScheme = "light";
   } else {
     root.style.colorScheme = "dark";

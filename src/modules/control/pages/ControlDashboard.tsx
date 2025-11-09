@@ -11,6 +11,7 @@ import {
   RefreshCw,
   RotateCcw,
   Trash2,
+  Upload,
   UserPlus,
   UsersRound,
   Theater,
@@ -33,8 +34,12 @@ import { useThemeMode } from '../../../app/providers/useThemeMode'
 import { useGameMode } from '../../../hooks/useGameMode'
 import { usePinManagement } from '../../../hooks/usePinManagement'
 import { useOfflineSession } from '../../../hooks/useOfflineSession'
+import { createAlternatingTurnSequence } from '../../trivia/utils/createAlternatingTurnSequence'
 import { OfflineOnboardingModal } from '../../../components/ui/OfflineOnboardingModal'
 import { SessionManager } from '../../../components/ui/SessionManager'
+import { ResetGameModal } from '../../../components/ui/ResetGameModal'
+import { GameEndModal } from '../../../components/ui/GameEndModal'
+import { QuestionImportModal, type ParsedImport } from '../../../components/ui/QuestionImportModal'
 
 type ParticipantDraft = {
   id: string
@@ -94,6 +99,10 @@ export function ControlDashboard() {
   const [offlineOnboardingOpen, setOfflineOnboardingOpen] = useState(false)
   const [showOnboardingSuggestion, setShowOnboardingSuggestion] = useState(false)
   const [sessionManagerOpen, setSessionManagerOpen] = useState(false)
+  const [resetGameModalOpen, setResetGameModalOpen] = useState(false)
+  const [gameEndModalOpen, setGameEndModalOpen] = useState(false)
+  const [gameEndNotified, setGameEndNotified] = useState(false)
+  const [questionImportOpen, setQuestionImportOpen] = useState(false)
 
   const createTeamId = () => `team-${Date.now().toString(16)}-${Math.random().toString(16).slice(2)}`
   const createParticipantId = () =>
@@ -122,6 +131,16 @@ export function ControlDashboard() {
     )
   }, [session.board])
 
+  // Detecta quando o jogo termina (todas as perguntas respondidas)
+  const isGameFinished = useMemo(() => {
+    const totalTiles = session.board.reduce((acc, column) => acc + column.tiles.length, 0)
+    const answeredTiles = session.board.reduce(
+      (acc, column) => acc + column.tiles.filter((tile) => tile.state === 'answered').length,
+      0
+    )
+    return totalTiles > 0 && totalTiles === answeredTiles
+  }, [session.board])
+
   const scoreboard = useMemo(() => {
     // Ordena times por pontuação (maior para menor)
     const sorted = [...orderedTeams].sort((a, b) => (b.score || 0) - (a.score || 0))
@@ -141,6 +160,21 @@ export function ControlDashboard() {
     if (!nextParticipant) return null
     return orderedTeams.find((team) => team.id === nextParticipant.teamId)?.name ?? null
   }, [nextParticipant, orderedTeams])
+
+  // Calcula o turno atual (rodada completa)
+  // Uma rodada completa = todos os times jogaram uma vez (um participante de cada time)
+  const currentRound = useMemo(() => {
+    if (!session.activeParticipantId || session.turnSequence.length === 0 || orderedTeams.length === 0) return 1;
+    const currentIndex = session.turnSequence.indexOf(session.activeParticipantId);
+    if (currentIndex === -1) return 1;
+    
+    // Uma rodada = número de times (um de cada time por rodada)
+    const teamsPerRound = orderedTeams.length;
+    if (teamsPerRound === 0) return 1;
+    
+    // Calcula quantas rodadas completas já passaram + 1 (rodada atual)
+    return Math.floor(currentIndex / teamsPerRound) + 1;
+  }, [session.activeParticipantId, session.turnSequence, orderedTeams.length])
 
   useEffect(() => {
     setOpenAccordions((prev) => {
@@ -194,6 +228,27 @@ export function ControlDashboard() {
       return () => clearTimeout(timer);
     }
   }, [session, gameMode, orderedTeams.length, saveSession])
+
+  // Reseta flag de notificação quando o board muda (perguntas resetadas ou respondidas)
+  useEffect(() => {
+    // Se o jogo não está mais finalizado mas já foi notificado, reseta a flag
+    if (!isGameFinished && gameEndNotified) {
+      setGameEndNotified(false)
+    }
+  }, [isGameFinished, gameEndNotified])
+
+  // Mostra modal de fim de jogo quando todas as perguntas forem respondidas
+  useEffect(() => {
+    if (isGameFinished && !gameEndModalOpen && !gameEndNotified) {
+      // Aguarda 1 segundo antes de mostrar o modal
+      const timer = setTimeout(() => {
+        setGameEndModalOpen(true);
+        setGameEndNotified(true);
+      }, 1000);
+
+      return () => clearTimeout(timer);
+    }
+  }, [isGameFinished, gameEndModalOpen, gameEndNotified])
 
   useEffect(() => {
     if (!teamsModalOpen) {
@@ -297,6 +352,74 @@ export function ControlDashboard() {
     }
   };
 
+  const handleResetGame = (options: {
+    teams: boolean;
+    participants: boolean;
+    questions: boolean;
+    themes: boolean;
+    points: boolean;
+    films: boolean;
+  }) => {
+    try {
+      // Reset pontos
+      if (options.points) {
+        const resetTeams = orderedTeams.map((team) => ({
+          ...team,
+          score: 0,
+        }));
+        updateTeamsAndParticipants(resetTeams, participants, session.turnSequence);
+      }
+
+      // Reset perguntas (remove todas as perguntas mas mantém os filmes/colunas)
+      if (options.questions) {
+        session.board.forEach((column) => {
+          // Remove todas as tiles da coluna
+          const tilesToRemove = [...column.tiles];
+          tilesToRemove.forEach((tile) => {
+            removeQuestionTile(column.id, tile.id);
+          });
+        });
+        setGameEndNotified(false);
+      }
+
+      // Reset filmes/colunas (remove todos os filmes customizados)
+      if (options.films) {
+        // Remove todas as colunas do board
+        const columnsToRemove = [...session.board];
+        columnsToRemove.forEach((column) => {
+          removeFilmColumn(column.id);
+        });
+        
+        // Limpa também o localStorage global de filmes
+        localStorage.removeItem('trivia-custom-films');
+        setGameEndNotified(false);
+      }
+
+      // Reset tema
+      if (options.themes) {
+        setTheme('light');
+      }
+
+      // Reset times e participantes (limpa tudo)
+      if (options.teams || options.participants) {
+        updateTeamsAndParticipants([], [], []);
+      }
+
+      const resetItems = [];
+      if (options.points) resetItems.push('pontos');
+      if (options.questions) resetItems.push('perguntas');
+      if (options.films) resetItems.push('filmes');
+      if (options.themes) resetItems.push('tema');
+      if (options.teams) resetItems.push('times');
+      if (options.participants) resetItems.push('participantes');
+
+      toast.success(`Jogo resetado: ${resetItems.join(', ')}`);
+    } catch (error) {
+      console.error('Erro ao resetar jogo:', error);
+      toast.error('Erro ao resetar o jogo');
+    }
+  };
+
   const handleOfflineOnboardingComplete = (config: { 
     theme: string; 
     pin: string; 
@@ -319,7 +442,7 @@ export function ControlDashboard() {
     try {
       // Aplica o tema selecionado
       console.log('Aplicando tema após onboarding:', config.theme); // Debug
-      setTheme(config.theme as "light" | "dark" | "cinema" | "retro" | "matrix")
+      setTheme(config.theme as "light" | "dark" | "cinema" | "retro" | "matrix" | "brazil")
       
       // Salva o PIN personalizado
       saveCustomPin(config.pin)
@@ -334,7 +457,6 @@ export function ControlDashboard() {
       // Cria times e participantes
       const newTeams: TriviaTeam[] = []
       const newParticipants: TriviaParticipant[] = []
-      const turnSequence: string[] = []
       
       config.teams.forEach((teamConfig, index) => {
         const teamId = createTeamId()
@@ -357,11 +479,35 @@ export function ControlDashboard() {
           }
           newParticipants.push(participant)
           team.members.push(participantId)
-          turnSequence.push(participantId)
         })
         
         newTeams.push(team)
       })
+      
+      // Cria sequência alternada de turnos (um de cada time por rodada)
+      const turnSequence = createAlternatingTurnSequence(newTeams)
+      
+      // Debug: log da sequência criada
+      console.group('[🎯 ONBOARDING] Criando sessão')
+      console.log('Times criados:', newTeams.map(t => ({ 
+        id: t.id,
+        name: t.name,
+        color: t.color,
+        membersIds: t.members,
+        membersNames: t.members.map(m => newParticipants.find(p => p.id === m)?.name) 
+      })))
+      console.log('Participantes criados:', newParticipants.map(p => ({
+        id: p.id,
+        name: p.name,
+        teamId: p.teamId,
+        teamName: newTeams.find(t => t.id === p.teamId)?.name
+      })))
+      console.log('Sequência de turnos (FINAL):', turnSequence.map((id, index) => {
+        const p = newParticipants.find(p => p.id === id)
+        const t = newTeams.find(t => t.id === p?.teamId)
+        return `${index + 1}. ${p?.name} (${t?.name})`
+      }))
+      console.groupEnd()
       
       // Atualiza a sessão com os novos dados
       updateTeamsAndParticipants(newTeams, newParticipants, turnSequence)
@@ -375,6 +521,70 @@ export function ControlDashboard() {
     } catch (error) {
       console.error('Erro ao configurar sessão offline:', error)
       toast.error('Erro ao configurar sessão. Tente novamente.')
+    }
+  }
+
+  const handleRegenerateTurnSequence = () => {
+    if (orderedTeams.length === 0) {
+      toast.warning('Nenhum time configurado')
+      return
+    }
+    
+    // Ordena os times por ordem
+    const sortedTeams = [...orderedTeams].sort((a, b) => a.order - b.order)
+    
+    // Cria nova sequência alternada de turnos
+    const newTurnSequence = createAlternatingTurnSequence(sortedTeams)
+    
+    // Debug: log da sequência regenerada
+    console.group('[🔄 REGENERANDO SEQUÊNCIA EXISTENTE]')
+    console.log('Times ordenados:', sortedTeams.map(t => ({ 
+      name: t.name, 
+      order: t.order,
+      members: t.members 
+    })))
+    console.log('Nova sequência:', newTurnSequence.map((id, index) => {
+      const p = participants.find(p => p.id === id)
+      const t = sortedTeams.find(t => t.id === p?.teamId)
+      return `${index + 1}. ${p?.name} (${t?.name})`
+    }))
+    console.groupEnd()
+    
+    // Atualiza apenas a sequência de turnos
+    updateTeamsAndParticipants(orderedTeams, participants, newTurnSequence)
+    toast.success('Sequência de turnos regenerada')
+  }
+
+  const handleQuestionImport = (imports: ParsedImport[]) => {
+    try {
+      let totalImported = 0
+      
+      imports.forEach((imp) => {
+        imp.questions.forEach((q) => {
+          const tileId = `${imp.columnId}-${q.points}-${Date.now()}-${Math.random().toString(16).slice(2)}`
+          
+          addQuestionTile(imp.columnId, {
+            id: tileId,
+            film: imp.filmName,
+            points: q.points,
+            question: q.question,
+            answer: q.answer,
+            state: 'available' as const,
+          })
+          
+          totalImported++
+        })
+      })
+      
+      if (gameMode === 'offline') {
+        saveSession(session)
+      }
+      
+      console.log(`[✅ IMPORT] ${totalImported} perguntas importadas para ${imports.length} filmes`)
+      toast.success(`${totalImported} perguntas importadas com sucesso!`)
+    } catch (error) {
+      console.error('Erro ao importar perguntas:', error)
+      toast.error('Erro ao importar perguntas')
     }
   }
 
@@ -430,6 +640,14 @@ export function ControlDashboard() {
       onClick: handleShowLibrary,
     },
     {
+      id: 'import',
+      icon: <Upload size={18} />,
+      label: 'Importar Perguntas',
+      description: 'Importa perguntas em lote de texto formatado',
+      onClick: () => setQuestionImportOpen(true),
+      disabled: session.board.length === 0,
+    },
+    {
       id: 'theme',
       icon: <Palette size={18} />,
       label: 'Alterar Tema',
@@ -456,6 +674,14 @@ export function ControlDashboard() {
       label: 'Sorteio de Filmes',
       description: 'Sorteia filmes aleatórios para o tabuleiro',
       onClick: () => setFilmRouletteOpen(true),
+    },
+    {
+      id: 'regenerate-turns',
+      icon: <RefreshCw size={18} />,
+      label: 'Regenerar Turnos',
+      description: 'Recria a sequência de turnos alternando entre times',
+      onClick: handleRegenerateTurnSequence,
+      disabled: orderedTeams.length === 0,
     },
   ]
 
@@ -642,11 +868,29 @@ export function ControlDashboard() {
       })),
     )
 
-    const newTurnSequence = teamDrafts.flatMap((team) => team.members.map((member) => member.id))
+    // Ordena os times por ordem antes de criar a sequência
+    const sortedTeams = [...newTeams].sort((a, b) => a.order - b.order)
+    
+    // Cria sequência alternada de turnos (um de cada time por rodada)
+    const newTurnSequence = createAlternatingTurnSequence(sortedTeams)
+
+    // Debug: log da sequência criada
+    console.group('[🔄 REGENERANDO SEQUÊNCIA]')
+    console.log('Times ordenados:', sortedTeams.map(t => ({ 
+      name: t.name, 
+      order: t.order,
+      members: t.members 
+    })))
+    console.log('Nova sequência:', newTurnSequence.map((id, index) => {
+      const p = newParticipants.find(p => p.id === id)
+      const t = sortedTeams.find(t => t.id === p?.teamId)
+      return `${index + 1}. ${p?.name} (${t?.name})`
+    }))
+    console.groupEnd()
 
     updateTeamsAndParticipants(newTeams, newParticipants, newTurnSequence)
     setTeamsModalOpen(false)
-    toast.success('Times atualizados')
+    toast.success('Times atualizados e sequência regenerada')
   }
 
   return (
@@ -714,24 +958,6 @@ export function ControlDashboard() {
                     </div>
                   </div>
                 ))}
-                <div className="relative group">
-                  <Button
-                    variant="secondary"
-                    title="Passar turno"
-                    onClick={() => {
-                      advanceTurn()
-                      if (nextParticipant) {
-                        toast.success(`Próximo turno: ${nextParticipant.name}`)
-                      }
-                    }}
-                  >
-                    Passar turno
-                  </Button>
-                  <div className="tooltip">
-                    <div className="font-semibold">Passar Turno</div>
-                    <div className="text-xs opacity-90 mt-1">Avança para o próximo participante</div>
-                  </div>
-                </div>
               </div>
             </div>
             <div className="flex flex-wrap items-center gap-3">
@@ -740,13 +966,41 @@ export function ControlDashboard() {
                   <TeamBadge key={team.id} team={team} isActive={team.id === activeTeam?.id} />
                 ))}
               </div>
-              <span className="ml-auto inline-flex items-center gap-2 rounded-full border border-[var(--color-border)] bg-[var(--color-background)] px-4 py-2 text-xs font-semibold uppercase tracking-[0.3em] text-[var(--color-muted)] shadow-sm">
-                <UsersRound size={14} /> Próximo: {
-                  nextParticipant
-                    ? `${nextParticipant.name}${nextParticipantTeamName ? ` · ${nextParticipantTeamName}` : ''}`
-                    : 'Defina a sequência'
-                }
-              </span>
+              <div className="ml-auto flex flex-col gap-2">
+                {/* Contador de Rodadas Completas */}
+                {orderedTeams.length > 0 && (
+                  <div className="inline-flex items-center justify-center gap-2 rounded-full border border-[var(--color-primary)]/30 bg-[var(--color-primary)]/10 px-4 py-1.5 text-xs font-bold uppercase tracking-[0.3em] text-[var(--color-primary)] shadow-sm">
+                    <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                    </svg>
+                    Rodada {currentRound}
+                  </div>
+                )}
+                
+                {/* Contador de Turnos */}
+                {orderedTeams.length > 0 && (
+                  <div className="inline-flex items-center justify-center gap-2 rounded-full border border-[var(--color-secondary)]/30 bg-[var(--color-secondary)]/10 px-4 py-1.5 text-xs font-semibold uppercase tracking-[0.3em] text-[var(--color-secondary)]">
+                    <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    Turno {session.turnSequence.indexOf(session.activeParticipantId || '') + 1} de {session.turnSequence.length}
+                  </div>
+                )}
+                
+                {/* Time e Participante Atual */}
+                {activeParticipant && activeTeam && (
+                  <div className="inline-flex items-center gap-2 rounded-full border-2 border-[var(--color-primary)] bg-[var(--color-primary)]/10 px-4 py-2 text-xs font-bold uppercase tracking-[0.3em] text-[var(--color-primary)] shadow-md">
+                    <UsersRound size={14} className="font-bold" /> 
+                    Vez de: {activeParticipant.name} · {activeTeam.name}
+                  </div>
+                )}
+                {/* Próximo Time e Participante */}
+                {nextParticipant && nextParticipantTeamName && (
+                  <span className="inline-flex items-center gap-2 rounded-full border border-[var(--color-border)] bg-[var(--color-background)] px-4 py-2 text-xs font-semibold uppercase tracking-[0.3em] text-[var(--color-muted)] shadow-sm">
+                    <UsersRound size={14} /> Próximo: {nextParticipant.name} · {nextParticipantTeamName}
+                  </span>
+                )}
+              </div>
             </div>
           </div>
         </section>
@@ -863,6 +1117,27 @@ export function ControlDashboard() {
         onClose={handleCloseQuestionModal}
       >
         <div className="space-y-4 text-[var(--color-text)]">
+          {/* Informação de quem está respondendo */}
+          {activeParticipant && activeTeam && (
+            <div className="flex items-center justify-between p-3 rounded-xl bg-[var(--color-primary)]/10 border border-[var(--color-primary)]/20">
+              <div className="flex items-center gap-2">
+                <div
+                  className="h-3 w-3 rounded-full"
+                  style={{ backgroundColor: activeTeam.color }}
+                />
+                <span className="text-sm font-semibold text-[var(--color-text)]">
+                  {activeParticipant.name}
+                </span>
+                <span className="text-sm text-[var(--color-muted)]">
+                  · {activeTeam.name}
+                </span>
+              </div>
+              <span className="text-xs font-semibold uppercase tracking-wider text-[var(--color-primary)]">
+                Respondendo
+              </span>
+            </div>
+          )}
+
           <Timer
             initialSeconds={selectedTile?.tile.points ? Math.min(90, selectedTile.tile.points * 4) : 45}
             variant="compact"
@@ -886,57 +1161,46 @@ export function ControlDashboard() {
               Revelar resposta
             </Button>
           )}
-          <ScoringControls
+          <ScoringControlsFlexible
             teams={orderedTeams}
+            participants={participants}
             activeTeamId={activeTeam?.id ?? null}
+            activeParticipantId={activeParticipant?.id ?? null}
             basePoints={selectedTile?.tile.points ?? 0}
-            onConfirm={(mode, targetTeamId) => {
+            onConfirm={(distributions) => {
               if (!selectedTile || !activeParticipant) {
                 toast.info('Selecione uma carta e certifique-se de que há um participante ativo')
                 return
               }
               
-              const basePoints = selectedTile.tile.points
-              let pointsAwarded = 0
-              let teamId = activeTeam?.id ?? ''
               let message = ''
               
-              switch (mode) {
-                case 'full-current':
-                  pointsAwarded = basePoints
-                  teamId = activeTeam?.id ?? ''
-                  message = `${selectedTile.column.film}: ${pointsAwarded} pontos para ${activeTeam?.name ?? 'time da vez'}`
-                  awardPoints(selectedTile.tile.id, teamId, activeParticipant.id, pointsAwarded)
-                  break
-                case 'half-current':
-                  pointsAwarded = Math.round(basePoints / 2)
-                  teamId = activeTeam?.id ?? ''
-                  message = `${selectedTile.column.film}: ${pointsAwarded} pontos para ${activeTeam?.name ?? 'time da vez'}`
-                  awardPoints(selectedTile.tile.id, teamId, activeParticipant.id, pointsAwarded)
-                  break
-                case 'steal':
-                  pointsAwarded = basePoints
-                  teamId = targetTeamId ?? ''
-                  message = `${selectedTile.column.film}: ${pointsAwarded} pontos transferidos para ${
-                    orderedTeams.find((team) => team.id === targetTeamId)?.name ?? 'outro time'
-                  }`
-                  awardPoints(selectedTile.tile.id, teamId, activeParticipant.id, pointsAwarded)
-                  break
-                case 'everyone':
-                  pointsAwarded = Math.round(basePoints / orderedTeams.length)
-                  message = `${selectedTile.column.film}: ${pointsAwarded} pontos para cada time`
-                  orderedTeams.forEach((team) => {
-                    awardPoints(selectedTile.tile.id, team.id, activeParticipant.id, pointsAwarded)
-                  })
-                  break
-                case 'void':
-                  pointsAwarded = 0
+              if (distributions.length === 0) {
+                // Anular pergunta
                   message = `${selectedTile.column.film}: pergunta anulada (sem pontuação)`
-                  // Não altera o estado da pergunta - mantém disponível
-                  break
+                toast.success(message)
+                return
               }
               
-              toast.success(message)
+              // Aplicar distribuições
+              distributions.forEach((distribution) => {
+                const team = orderedTeams.find(t => t.id === distribution.teamId)
+                const participant = distribution.participantId 
+                  ? participants.find(p => p.id === distribution.participantId)
+                  : null
+                
+                awardPoints(
+                  selectedTile.tile.id, 
+                  distribution.teamId, 
+                  distribution.participantId || activeParticipant.id, 
+                  distribution.points
+                )
+                
+                const recipient = participant ? `${participant.name} (${team?.name})` : team?.name ?? 'time'
+                message += `${team?.name}: ${distribution.points} pontos para ${recipient}\n`
+              })
+              
+              toast.success(message.trim())
               
               // Avança para o próximo turno
               advanceTurn()
@@ -1278,7 +1542,7 @@ export function ControlDashboard() {
                       </div>
                     </div>
                     <div className="space-y-3">
-                      {column.tiles.map((tile) => (
+                      {[...column.tiles].sort((a, b) => a.points - b.points).map((tile) => (
                         <div key={tile.id} className="space-y-2 rounded-xl border border-[var(--color-border)] bg-[var(--color-background)] p-3">
                           <div className="flex flex-wrap items-center justify-between gap-2">
                             <label className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.3em] text-[var(--color-muted)]">
@@ -1349,6 +1613,7 @@ export function ControlDashboard() {
               { id: 'cinema', label: 'Cinema' },
               { id: 'retro', label: 'Retro 80s' },
               { id: 'matrix', label: 'Matrix' },
+              { id: 'brazil', label: 'Brasil 🇧🇷' },
             ] as const
           ).map((option) => (
             <button
@@ -1366,6 +1631,7 @@ export function ControlDashboard() {
                 {option.id === 'cinema' ? 'Tons quentes e contraste elevado' : 
                  option.id === 'retro' ? 'Neon e cores vibrantes dos anos 80' :
                  option.id === 'matrix' ? 'Verde digital e efeito terminal' :
+                 option.id === 'brazil' ? 'Verde e amarelo da bandeira brasileira' :
                  `Paleta ${option.label.toLowerCase()}`}
               </span>
             </button>
@@ -1414,6 +1680,7 @@ export function ControlDashboard() {
         onClose={() => setFilmRouletteOpen(false)}
         teams={orderedTeams}
         participants={participants}
+        sessionFilms={session.board.map(column => ({ id: column.id, name: column.film }))}
       />
 
       <OfflineOnboardingModal
@@ -1431,120 +1698,394 @@ export function ControlDashboard() {
           // Limpa sessão atual e abre onboarding
           setOfflineOnboardingOpen(true)
         }}
+        onResetGame={() => setResetGameModalOpen(true)}
+      />
+
+      <ResetGameModal
+        isOpen={resetGameModalOpen}
+        onClose={() => setResetGameModalOpen(false)}
+        onConfirmReset={handleResetGame}
+      />
+
+      <GameEndModal
+        isOpen={gameEndModalOpen}
+        onClose={() => setGameEndModalOpen(false)}
+        teams={orderedTeams}
+        participants={participants}
+        board={session.board}
+        onShowMimica={() => setMimicaModalOpen(true)}
+      />
+
+      <QuestionImportModal
+        isOpen={questionImportOpen}
+        onClose={() => setQuestionImportOpen(false)}
+        columns={session.board}
+        onImport={handleQuestionImport}
       />
     </div>
   )
 }
 
-type ScoringMode = 'full-current' | 'half-current' | 'steal' | 'everyone' | 'void'
 
-type ScoringControlsProps = {
+// Novos tipos para sistema flexível
+type FlexibleScoringMode = 'quick' | 'advanced' | 'custom'
+
+type PointDistribution = {
+  teamId: string
+  participantId?: string // Se não especificado, distribui para o time inteiro
+  points: number
+  percentage: number
+}
+
+
+
+type QuickScoringOption = {
+  id: string
+  title: string
+  subtitle: string
+  multiplier: number
+  target: 'current-team' | 'other-team' | 'all-teams' | 'none'
+}
+
+
+// Componente flexível de pontuação
+type ScoringControlsFlexibleProps = {
   teams: TriviaTeam[]
+  participants: TriviaParticipant[]
   activeTeamId: string | null
+  activeParticipantId: string | null
   basePoints: number
-  onConfirm: (mode: ScoringMode, targetTeamId: string | null) => void
+  onConfirm: (distributions: PointDistribution[]) => void
   onClose: () => void
 }
 
-function ScoringControls({ teams, activeTeamId, basePoints, onConfirm, onClose }: ScoringControlsProps) {
-  const [mode, setMode] = useState<ScoringMode | null>(null)
-  const [selectedTeam, setSelectedTeam] = useState<string | null>(null)
+function ScoringControlsFlexible({ 
+  teams, 
+  participants, 
+  activeTeamId, 
+  activeParticipantId, 
+  basePoints, 
+  onConfirm, 
+  onClose 
+}: ScoringControlsFlexibleProps) {
+  const [mode, setMode] = useState<FlexibleScoringMode>('quick')
+  const [distributions, setDistributions] = useState<PointDistribution[]>([])
+  const [selectedMultiplier, setSelectedMultiplier] = useState<number>(1.0)
+  const [quickModeSelected, setQuickModeSelected] = useState<boolean>(false)
+  const [selectedQuickOption, setSelectedQuickOption] = useState<string | null>(null)
 
+
+  // Opções rápidas - apenas casos mais comuns
+  const quickOptions: QuickScoringOption[] = [
+    { 
+      id: 'full-current', 
+      title: 'Valor cheio', 
+      subtitle: 'Time da vez recebe 100%', 
+      multiplier: 1.0, 
+      target: 'current-team' 
+    },
+    { 
+      id: 'half-current', 
+      title: 'Meio valor', 
+      subtitle: 'Time da vez recebe 50%', 
+      multiplier: 0.5, 
+      target: 'current-team' 
+    },
+    { 
+      id: 'void', 
+      title: 'Anular', 
+      subtitle: 'Pergunta sem pontuação', 
+      multiplier: 0, 
+      target: 'none' 
+    },
+  ]
+
+  // Inicializar distribuições
   useEffect(() => {
-    if (!activeTeamId) {
-      setSelectedTeam(teams[0]?.id ?? null)
+    if (mode === 'quick') {
+      setDistributions([])
+      setQuickModeSelected(false)
+      setSelectedQuickOption(null)
+    } else if (mode === 'advanced') {
+      setDistributions([])
+      setQuickModeSelected(false)
+      setSelectedQuickOption(null)
+    }
+  }, [mode])
+
+  // Validação do botão de confirmar
+  const isValid = (mode === 'quick' && quickModeSelected) || (mode === 'advanced' && distributions.length > 0)
+
+  // Aplicar opção rápida
+  const applyQuickOption = (option: QuickScoringOption) => {
+    // Se já está selecionada, desmarca
+    if (selectedQuickOption === option.id) {
+      setSelectedQuickOption(null)
+      setQuickModeSelected(false)
+      setDistributions([])
       return
     }
-    const alternate = teams.find((team) => team.id !== activeTeamId)
-    setSelectedTeam(alternate?.id ?? teams[0]?.id ?? null)
-  }, [activeTeamId, teams])
 
-  const stealTargets = useMemo(
-    () => teams.filter((team) => team.id !== activeTeamId),
-    [teams, activeTeamId],
-  )
-
-  const getPointsValue = (mode: ScoringMode, basePoints: number) => {
-    switch (mode) {
-      case 'full-current':
-        return basePoints
-      case 'half-current':
-        return Math.round(basePoints / 2)
-      case 'steal':
-        return basePoints
-      case 'everyone':
-        return Math.round(basePoints / teams.length)
-      case 'void':
-        return 0
-      default:
-        return basePoints
+    // Marca como selecionada
+    setSelectedQuickOption(option.id)
+    setQuickModeSelected(true)
+    
+    const points = Math.round(basePoints * option.multiplier)
+    
+    switch (option.target) {
+      case 'current-team':
+        if (activeTeamId) {
+          setDistributions([{
+            teamId: activeTeamId,
+            participantId: activeParticipantId || undefined,
+            points,
+            percentage: Math.round((points / basePoints) * 100)
+          }])
+        }
+        break
+      case 'none':
+        setDistributions([])
+        break
     }
   }
 
-  const options: Array<{ id: ScoringMode; title: string; subtitle: string; points: number }> = [
-    { id: 'full-current', title: 'Valor cheio', subtitle: 'Time da vez recebe 100%', points: getPointsValue('full-current', basePoints) },
-    { id: 'half-current', title: 'Meio valor', subtitle: 'Time da vez recebe 50%', points: getPointsValue('half-current', basePoints) },
-    { id: 'steal', title: 'Roubo', subtitle: 'Transferir para outro time', points: getPointsValue('steal', basePoints) },
-    { id: 'everyone', title: 'Todos', subtitle: 'Distribuir para todas as equipes', points: getPointsValue('everyone', basePoints) },
-    { id: 'void', title: 'Anular', subtitle: 'Pergunta sem pontuação', points: getPointsValue('void', basePoints) },
-  ]
+  // Atualizar distribuição de um time
+  const updateTeamDistribution = (teamId: string, points: number) => {
+    const percentage = Math.round((points / basePoints) * 100)
+    setDistributions(prev => {
+      const filtered = prev.filter(d => d.teamId !== teamId)
+      if (points > 0) {
+        return [...filtered, { teamId, points, percentage }]
+      }
+      return filtered
+    })
+  }
 
-  const canConfirm =
-    mode !== null && (mode !== 'steal' || (mode === 'steal' && selectedTeam !== null))
+  // Obter participantes de um time
+  const getTeamParticipants = (teamId: string) => {
+    return participants.filter(p => p.teamId === teamId)
+  }
 
   return (
+    <div className="space-y-4">
+      {/* Toggle de modo */}
+      <div className="flex rounded-xl border border-[var(--color-border)] bg-[var(--color-background)] p-1">
+        <button
+          type="button"
+          onClick={() => setMode('quick')}
+          className={`flex-1 rounded-lg px-3 py-2 text-sm font-medium transition ${
+            mode === 'quick'
+              ? 'bg-[var(--color-primary)] text-white'
+              : 'text-[var(--color-muted)] hover:text-[var(--color-text)]'
+          }`}
+        >
+          Rápido
+        </button>
+        <button
+          type="button"
+          onClick={() => setMode('advanced')}
+          className={`flex-1 rounded-lg px-3 py-2 text-sm font-medium transition ${
+            mode === 'advanced'
+              ? 'bg-[var(--color-primary)] text-white'
+              : 'text-[var(--color-muted)] hover:text-[var(--color-text)]'
+          }`}
+        >
+          Avançado
+        </button>
+      </div>
+
+      {/* Modo Rápido */}
+      {mode === 'quick' && (
     <div className="space-y-3">
-      <details className="rounded-2xl border border-[var(--color-border)] bg-[var(--color-background)]">
-        <summary className="flex cursor-pointer items-center justify-between px-4 py-3 text-sm font-semibold text-[var(--color-text)]">
-          Distribuição de pontos
-          <span className="text-xs text-[var(--color-muted)]">Selecione uma opção</span>
-        </summary>
-        <div className="space-y-2 px-4 pb-4">
-          {options.map((option) => (
+          <div className="text-sm font-semibold text-[var(--color-text)]">
+            Opções Rápidas
+          </div>
+          <div className="grid gap-2">
+            {quickOptions.map((option) => {
+              const isSelected = selectedQuickOption === option.id
+              
+              return (
             <button
               key={option.id}
               type="button"
-              onClick={() => setMode(option.id)}
+                  onClick={() => applyQuickOption(option)}
               className={`w-full rounded-xl border px-4 py-3 text-left transition ${
-                mode === option.id
+                    isSelected
                   ? 'border-[var(--color-primary)] bg-[var(--color-primary)]/10'
-                  : 'border-[var(--color-border)] bg-[var(--color-background)]'
+                      : 'border-[var(--color-border)] bg-[var(--color-background)] hover:border-[var(--color-primary)]'
               }`}
             >
-              <div className="flex items-center justify-between w-full">
+                  <div className="flex items-center justify-between">
                 <div>
-                  <span className="text-sm font-semibold text-[var(--color-text)]">{option.title}</span>
+                      <span className="text-sm font-semibold text-[var(--color-text)]">
+                        {isSelected ? '✓ ' : ''}{option.title}
+                      </span>
                   <p className="text-xs text-[var(--color-muted)]">{option.subtitle}</p>
                 </div>
                 <span className="text-lg font-bold text-[var(--color-primary)]">
-                  {option.points} pts
+                      {Math.round(basePoints * option.multiplier)} pts
                 </span>
               </div>
             </button>
-          ))}
-          {mode === 'steal' ? (
-            <label className="flex flex-col gap-2 text-xs font-semibold uppercase tracking-[0.3em] text-[var(--color-muted)]">
-              Selecionar time
-              <select
-                value={selectedTeam ?? ''}
-                onChange={(event) => setSelectedTeam(event.target.value)}
-                className="rounded-xl border border-[var(--color-border)] bg-[var(--color-background)] px-3 py-2 text-sm text-[var(--color-text)]"
-              >
-                {stealTargets.map((team) => (
-                  <option key={team.id} value={team.id}>
-                    {team.name}
-                  </option>
-                ))}
-              </select>
-            </label>
-          ) : null}
+              )
+            })}
+          </div>
+
         </div>
-      </details>
+      )}
+
+      {/* Modo Avançado - Simplificado */}
+      {mode === 'advanced' && (
+        <div className="space-y-4">
+          <div className="text-sm font-semibold text-[var(--color-text)]">
+            Distribuição Personalizada
+          </div>
+
+          {/* Multiplicador Simples */}
+          <div className="space-y-2">
+            <label className="text-xs font-semibold uppercase tracking-[0.3em] text-[var(--color-muted)]">
+              Multiplicador
+            </label>
+            <div className="grid grid-cols-3 gap-2">
+              {[
+                { value: 0.5, label: '0.5x', desc: 'Meio' },
+                { value: 1.0, label: '1x', desc: 'Cheio' },
+                { value: 1.5, label: '1.5x', desc: 'Bônus' }
+              ].map((mult) => (
+                <button
+                  key={mult.value}
+                  type="button"
+                  onClick={() => setSelectedMultiplier(mult.value)}
+                  className={`rounded-lg border px-3 py-2 text-sm transition ${
+                    selectedMultiplier === mult.value
+                      ? 'border-[var(--color-primary)] bg-[var(--color-primary)]/10 text-[var(--color-primary)]'
+                      : 'border-[var(--color-border)] bg-[var(--color-background)] text-[var(--color-text)]'
+                  }`}
+                >
+                  <div className="font-semibold">{mult.label}</div>
+                  <div className="text-xs text-[var(--color-muted)]">{mult.desc}</div>
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Distribuição Simples por Time */}
+          <div className="space-y-3">
+            <div className="text-sm font-semibold text-[var(--color-text)]">
+              Quem recebe os pontos?
+            </div>
+            
+            {teams.map((team) => {
+              const teamDistribution = distributions.find(d => d.teamId === team.id)
+              const teamPoints = teamDistribution?.points || 0
+              const calculatedPoints = Math.round(basePoints * selectedMultiplier)
+
+              return (
+                <div key={team.id} className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm font-medium text-[var(--color-text)]">
+                      {team.name}
+                    </span>
+                    <span className="text-sm font-bold text-[var(--color-primary)]">
+                      {teamPoints} pts
+                    </span>
+                  </div>
+                  
+                  <div className="flex gap-2">
+                    <button
+                      type="button"
+                      onClick={() => updateTeamDistribution(team.id, calculatedPoints)}
+                      className={`flex-1 rounded-lg border px-3 py-2 text-sm transition ${
+                        teamPoints > 0
+                          ? 'border-[var(--color-primary)] bg-[var(--color-primary)]/10 text-[var(--color-primary)]'
+                          : 'border-[var(--color-border)] bg-[var(--color-background)] text-[var(--color-text)]'
+                      }`}
+                    >
+                      {teamPoints > 0 ? '✓ Selecionado' : `Dar ${calculatedPoints} pts`}
+                    </button>
+                    
+                    {teamPoints > 0 && (
+                      <button
+                        type="button"
+                        onClick={() => updateTeamDistribution(team.id, 0)}
+                        className="rounded-lg border border-red-300 bg-red-50 px-3 py-2 text-sm text-red-600 transition hover:bg-red-100"
+                      >
+                        ✕
+                      </button>
+                    )}
+                  </div>
+
+                  {/* Destinatário específico (só aparece se time selecionado) */}
+                  {teamPoints > 0 && (
+                    <div className="space-y-1">
+                      <label className="text-xs font-semibold uppercase tracking-[0.3em] text-[var(--color-muted)]">
+                        Para quem no time?
+                      </label>
+                      <select
+                        value={teamDistribution?.participantId || ''}
+                        onChange={(e) => {
+                          const participantId = e.target.value || undefined
+                          setDistributions(prev => 
+                            prev.map(d => 
+                              d.teamId === team.id 
+                                ? { ...d, participantId }
+                                : d
+                            )
+                          )
+                        }}
+                        className="w-full rounded-lg border border-[var(--color-border)] bg-[var(--color-background)] px-3 py-2 text-sm text-[var(--color-text)]"
+                      >
+                        <option value="">Time inteiro</option>
+                        {getTeamParticipants(team.id).map((participant) => (
+                          <option key={participant.id} value={participant.id}>
+                            {participant.name}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                  )}
+                </div>
+              )
+            })}
+          </div>
+
+          {/* Resumo Simples */}
+          {distributions.length > 0 && (
+            <div className="rounded-xl border border-[var(--color-border)] bg-[var(--color-background)] p-3">
+              <div className="text-sm font-semibold text-[var(--color-text)] mb-2">
+                Resumo
+              </div>
+              <div className="space-y-1">
+                {distributions.map((dist, index) => {
+                  const team = teams.find(t => t.id === dist.teamId)
+                  const participant = dist.participantId 
+                    ? participants.find(p => p.id === dist.participantId)
+                    : null
+                  
+                  return (
+                    <div key={index} className="flex justify-between text-sm">
+                      <span className="text-[var(--color-text)]">
+                        {team?.name}
+                        {participant && ` (${participant.name})`}
+                      </span>
+                      <span className="font-semibold text-[var(--color-primary)]">
+                        {dist.points} pts
+                      </span>
+                    </div>
+                  )
+                })}
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Botões de ação */}
       <div className="flex gap-3">
         <Button
-          variant={mode ? 'secondary' : 'outline'}
-          disabled={!canConfirm}
-          onClick={() => onConfirm(mode ?? 'full-current', mode === 'steal' ? selectedTeam : null)}
+          variant={isValid ? 'secondary' : 'outline'}
+          disabled={!isValid}
+          onClick={() => onConfirm(distributions)}
           className="flex-1"
         >
           Confirmar pontuação
@@ -1556,3 +2097,4 @@ function ScoringControls({ teams, activeTeamId, basePoints, onConfirm, onClose }
     </div>
   )
 }
+

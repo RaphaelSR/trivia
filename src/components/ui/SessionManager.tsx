@@ -1,15 +1,16 @@
 import { useState } from "react";
 import { Button } from "./Button";
 import { Modal } from "./Modal";
-import { 
-  Clock, 
-  Save, 
-  History, 
-  Play, 
-  Trash2, 
+import {
+  Clock,
+  Save,
+  History,
+  Play,
+  Trash2,
   Calendar,
   Settings,
-  AlertCircle
+  AlertCircle,
+  RefreshCw
 } from "lucide-react";
 import { useOfflineSession } from "../../hooks/useOfflineSession";
 import { useGameMode } from "../../hooks/useGameMode";
@@ -19,9 +20,10 @@ interface SessionManagerProps {
   onClose: () => void;
   onLoadSession?: (sessionId: string) => void;
   onNewSession?: () => void;
+  onResetGame?: () => void;
 }
 
-export function SessionManager({ isOpen, onClose, onLoadSession, onNewSession }: SessionManagerProps) {
+export function SessionManager({ isOpen, onClose, onLoadSession, onNewSession, onResetGame }: SessionManagerProps) {
   const { gameMode } = useGameMode();
   const { 
     currentSession,
@@ -225,16 +227,33 @@ export function SessionManager({ isOpen, onClose, onLoadSession, onNewSession }:
   return (
     <Modal isOpen={isOpen} onClose={onClose} title="Gerenciar Sessões">
       <div className="p-6 space-y-6">
-        {/* Botão Nova Sessão */}
+        {/* Botões de Ação */}
         {sessionStatus.hasActiveSession && (
-          <Button
-            variant="primary"
-            onClick={handleNewSession}
-            className="w-full"
-          >
-            <Play className="h-4 w-4 mr-2" />
-            Iniciar Nova Sessão
-          </Button>
+          <div className="flex gap-3">
+            <Button
+              variant="primary"
+              onClick={handleNewSession}
+              className="flex-1"
+            >
+              <Play className="h-4 w-4 mr-2" />
+              Nova Sessão
+            </Button>
+            {onResetGame && (
+              <Button
+                variant="outline"
+                onClick={() => {
+                  if (onResetGame) {
+                    onResetGame();
+                  }
+                  onClose();
+                }}
+                className="flex-1"
+              >
+                <RefreshCw className="h-4 w-4 mr-2" />
+                Resetar Jogo
+              </Button>
+            )}
+          </div>
         )}
         
         {/* Sessão Atual */}
