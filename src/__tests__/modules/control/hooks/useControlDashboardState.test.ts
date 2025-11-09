@@ -14,7 +14,7 @@ describe('useControlDashboardState', () => {
     expect(result.current.pinInput).toBe('')
     expect(result.current.pinError).toBe('')
     expect(result.current.themeModalOpen).toBe(false)
-    expect(result.current.openAccordions).toEqual({})
+    expect(result.current.scoreboardAccordions).toEqual({})
     expect(result.current.teamsModalOpen).toBe(false)
     expect(result.current.mimicaModalOpen).toBe(false)
     expect(result.current.infoModalOpen).toBe(false)
@@ -68,14 +68,14 @@ describe('useControlDashboardState', () => {
     expect(result.current.libraryOpen).toBe(true)
   })
 
-  it('deve permitir atualizar openAccordions', () => {
+  it('deve permitir atualizar scoreboardAccordions', () => {
     const { result } = renderHook(() => useControlDashboardState())
 
     act(() => {
-      result.current.setOpenAccordions({ 'col-1': true, 'col-2': false })
+      result.current.setScoreboardAccordions({ 'col-1': true, 'col-2': false })
     })
 
-    expect(result.current.openAccordions).toEqual({ 'col-1': true, 'col-2': false })
+    expect(result.current.scoreboardAccordions).toEqual({ 'col-1': true, 'col-2': false })
   })
 
   it('deve retornar selectedTile como null quando selectedIds é null', () => {

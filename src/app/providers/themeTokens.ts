@@ -19,7 +19,8 @@ export const themeTokens: Record<ThemeMode, Record<string, string>> = {
     "--color-tooltip-text": "#ffffff",
     "--color-shadow": "#0f172a",
     "--color-disabled": "#f3f4f6",
-    "--color-disabled-text": "#6b7280"
+    "--color-disabled-text": "#6b7280",
+    "--color-overlay": "rgba(0, 0, 0, 0.5)"
   },
   dark: {
     "--color-primary": "#818cf8",
@@ -33,7 +34,8 @@ export const themeTokens: Record<ThemeMode, Record<string, string>> = {
     "--color-tooltip-text": "#0f172a",
     "--color-shadow": "#000000",
     "--color-disabled": "#334155",
-    "--color-disabled-text": "#94a3b8"
+    "--color-disabled-text": "#94a3b8",
+    "--color-overlay": "rgba(0, 0, 0, 0.7)"
   },
   cinema: {
     "--color-primary": "#fb923c",
@@ -47,7 +49,8 @@ export const themeTokens: Record<ThemeMode, Record<string, string>> = {
     "--color-tooltip-text": "#0c0a09",
     "--color-shadow": "#000000",
     "--color-disabled": "#44403c",
-    "--color-disabled-text": "#a3a3a3"
+    "--color-disabled-text": "#a3a3a3",
+    "--color-overlay": "rgba(0, 0, 0, 0.7)"
   },
   retro: {
     "--color-primary": "#ff0080",
@@ -61,7 +64,8 @@ export const themeTokens: Record<ThemeMode, Record<string, string>> = {
     "--color-tooltip-text": "#00ffff",
     "--color-shadow": "#ff0080",
     "--color-disabled": "#4a1a69",
-    "--color-disabled-text": "#ff80ff"
+    "--color-disabled-text": "#ff80ff",
+    "--color-overlay": "rgba(0, 0, 0, 0.8)"
   },
   matrix: {
     "--color-primary": "#00ff00",
@@ -75,7 +79,8 @@ export const themeTokens: Record<ThemeMode, Record<string, string>> = {
     "--color-tooltip-text": "#00ff00",
     "--color-shadow": "#00ff00",
     "--color-disabled": "#003300",
-    "--color-disabled-text": "#00cc00"
+    "--color-disabled-text": "#00cc00",
+    "--color-overlay": "rgba(0, 0, 0, 0.9)"
   },
   brazil: {
     "--color-primary": "#009739",
@@ -89,7 +94,8 @@ export const themeTokens: Record<ThemeMode, Record<string, string>> = {
     "--color-tooltip-text": "#FFDF00",
     "--color-shadow": "#2e7d32",
     "--color-disabled": "#c8e6c9",
-    "--color-disabled-text": "#7cb342"
+    "--color-disabled-text": "#7cb342",
+    "--color-overlay": "rgba(0, 0, 0, 0.5)"
   }
 };
 

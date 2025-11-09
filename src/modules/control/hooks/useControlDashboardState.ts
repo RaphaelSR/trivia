@@ -14,7 +14,7 @@ export function useControlDashboardState() {
   const [pinInput, setPinInput] = useState('')
   const [pinError, setPinError] = useState('')
   const [themeModalOpen, setThemeModalOpen] = useState(false)
-  const [openAccordions, setOpenAccordions] = useState<Record<string, boolean>>({})
+  const [scoreboardAccordions, setScoreboardAccordions] = useState<Record<string, boolean>>({})
   const [teamsModalOpen, setTeamsModalOpen] = useState(false)
   const [mimicaModalOpen, setMimicaModalOpen] = useState(false)
   const [infoModalOpen, setInfoModalOpen] = useState(false)
@@ -52,8 +52,8 @@ export function useControlDashboardState() {
     setPinError,
     themeModalOpen,
     setThemeModalOpen,
-    openAccordions,
-    setOpenAccordions,
+    scoreboardAccordions,
+    setScoreboardAccordions,
     teamsModalOpen,
     setTeamsModalOpen,
     mimicaModalOpen,

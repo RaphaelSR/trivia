@@ -21,6 +21,7 @@
     --color-shadow: #0f172a;
     --color-disabled: #f3f4f6;
     --color-disabled-text: #6b7280;
+    --color-overlay: rgba(0, 0, 0, 0.5);
     --film-primary: var(--color-primary);
     --film-accent: var(--color-secondary);
     --film-bg: #eef2ff;

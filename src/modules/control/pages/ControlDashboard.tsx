@@ -5,10 +5,8 @@ import {
   Eye,
   Info,
   Palette,
-  Plus,
   RefreshCw,
   RotateCcw,
-  Trash2,
   Upload,
   UserPlus,
   UsersRound,
@@ -37,6 +35,7 @@ import { SessionManager } from '@/components/ui/SessionManager'
 import { ResetGameModal } from '@/components/ui/ResetGameModal'
 import { GameEndModal } from '@/components/ui/GameEndModal'
 import { QuestionImportModal } from '@/components/ui/QuestionImportModal'
+import { QuestionLibraryModal } from '@/components/ui/QuestionLibraryModal'
 import { useControlDashboardState } from '../hooks/useControlDashboardState'
 import { useTeamManagement } from '../hooks/useTeamManagement'
 import { useQuestionManagement } from '../hooks/useQuestionManagement'
@@ -94,8 +93,8 @@ export function ControlDashboard() {
     setPinError,
     themeModalOpen,
     setThemeModalOpen,
-    openAccordions,
-    setOpenAccordions,
+    scoreboardAccordions,
+    setScoreboardAccordions,
     teamsModalOpen,
     setTeamsModalOpen,
     mimicaModalOpen,
@@ -219,27 +218,6 @@ export function ControlDashboard() {
     return Math.floor(currentIndex / teamsPerRound) + 1;
   }, [session.activeParticipantId, session.turnSequence, orderedTeams.length])
 
-  useEffect(() => {
-    setOpenAccordions((prev) => {
-      const next: Record<string, boolean> = {}
-      session.board.forEach((column) => {
-        next[column.id] = prev[column.id] ?? false
-      })
-      return next
-    })
-  }, [session.board, setOpenAccordions])
-
-  useEffect(() => {
-    if (libraryOpen) {
-      setOpenAccordions(() => {
-        const next: Record<string, boolean> = {}
-        session.board.forEach((column) => {
-          next[column.id] = true
-        })
-        return next
-      })
-    }
-  }, [libraryOpen, session.board, setOpenAccordions])
 
   // Fecha onboarding se mudar de modo
   useEffect(() => {
@@ -566,29 +544,13 @@ export function ControlDashboard() {
     },
   ]
 
-  const handleToggleAccordion = (columnId: string) => {
-    setOpenAccordions((prev) => ({
-      ...prev,
-      [columnId]: !prev[columnId],
-    }))
-  }
-
   const handleAddFilm = () => {
-    const newId = addFilmColumn('Novo Filme')
-    setOpenAccordions((prev) => ({
-      ...prev,
-      [newId]: true,
-    }))
+    addFilmColumn('Novo Filme')
   }
 
   const handleRemoveFilm = (columnId: string, filmName: string) => {
     if (window.confirm(`Remover o filme "${filmName}" e todas as suas perguntas?`)) {
       removeFilmColumn(columnId)
-      setOpenAccordions((prev) => {
-        const next = { ...prev }
-        delete next[columnId]
-        return next
-      })
       toast.success('Filme removido da biblioteca')
     }
   }
@@ -599,10 +561,6 @@ export function ControlDashboard() {
       question: 'Nova pergunta',
       answer: '',
     })
-    setOpenAccordions((prev) => ({
-      ...prev,
-      [columnId]: true,
-    }))
     toast.success('Pergunta adicionada')
   }
 
@@ -949,7 +907,7 @@ export function ControlDashboard() {
       >
         <div className="space-y-3">
           {scoreboard.map(({ team, position, points }) => {
-            const isExpanded = openAccordions[`scoreboard-${team.id}`]
+            const isExpanded = scoreboardAccordions[`scoreboard-${team.id}`]
             
             // Calcula pontuação de cada participante do time
             const participantScores = team.members.map((memberId) => {
@@ -969,7 +927,7 @@ export function ControlDashboard() {
             return (
               <div key={team.id} className="rounded-2xl border border-[var(--color-border)] bg-[var(--color-background)] overflow-hidden">
                 <button
-                  onClick={() => setOpenAccordions((prev) => ({
+                  onClick={() => setScoreboardAccordions((prev: Record<string, boolean>) => ({
                     ...prev,
                     [`scoreboard-${team.id}`]: !prev[`scoreboard-${team.id}`]
                   }))}
@@ -1075,133 +1033,32 @@ export function ControlDashboard() {
         </div>
       </Modal>
 
-      <Modal
+      <QuestionLibraryModal
         isOpen={libraryOpen}
-        title="Biblioteca de perguntas"
-        description="Edite perguntas e respostas diretamente na sessão."
         onClose={() => setLibraryOpen(false)}
-      >
-        <div className="flex items-center justify-between pb-4">
-          <p className="text-sm text-[var(--color-muted)]">
-            Gerencie filmes, perguntas e respostas do tabuleiro.
-          </p>
-          <Button variant="outline" size="sm" onClick={handleAddFilm}>
-            <Plus size={14} /> Adicionar filme
-          </Button>
-        </div>
-        <div className="max-h-[60vh] space-y-4 overflow-y-auto pr-1">
-          {session.board.map((column) => {
-            const open = openAccordions[column.id] ?? false
-            const pointSummary = column.tiles.reduce<Record<number, number>>((acc, tile) => {
-              acc[tile.points] = (acc[tile.points] ?? 0) + 1
-              return acc
-            }, {})
-            return (
-              <div key={column.id} className="rounded-2xl border border-[var(--color-border)] bg-[var(--color-background)]">
-                <button
-                  type="button"
-                  className="flex w-full items-center justify-between px-4 py-3 text-left text-sm font-semibold text-[var(--color-text)]"
-                  onClick={() => handleToggleAccordion(column.id)}
-                >
-                  <span>{column.film}</span>
-                  <div className="flex items-center gap-3 text-xs text-[var(--color-muted)]">
-                    <span>
-                      {column.tiles.length} perguntas
-                    </span>
-                    <span className="uppercase tracking-[0.3em]">{open ? 'recolher' : 'expandir'}</span>
-                  </div>
-                </button>
-                {open ? (
-                  <div className="space-y-4 px-4 pb-4">
-                    <div className="flex flex-wrap items-center justify-between gap-3">
-                      <label className="flex flex-1 flex-col gap-2 text-xs font-semibold uppercase tracking-[0.3em] text-[var(--color-muted)]">
-                        Nome do filme
-                        <input
-                          value={column.film}
-                          onChange={(event) => updateColumnTitle(column.id, event.target.value)}
-                          className="rounded-xl border border-[var(--color-border)] bg-[var(--color-background)] px-3 py-2 text-sm text-[var(--color-text)]"
-                        />
-                      </label>
-                      <div className="flex flex-wrap items-center gap-2">
-                        {Object.entries(pointSummary).map(([points, count]) => (
-                          <span
-                            key={`${column.id}-${points}`}
-                            className="rounded-full border border-[var(--color-border)] bg-[var(--color-background)] px-3 py-1 text-xs text-[var(--color-muted)]"
-                          >
-                            {points} pts · {count}
-                          </span>
-                        ))}
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <Button variant="outline" size="sm" onClick={() => handleAddQuestion(column.id)}>
-                          <Plus size={14} /> Pergunta
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => handleRemoveFilm(column.id, column.film)}
-                        >
-                          <Trash2 size={14} /> Remover filme
-                        </Button>
-                      </div>
-                    </div>
-                    <div className="space-y-3">
-                      {[...column.tiles].sort((a, b) => a.points - b.points).map((tile) => (
-                        <div key={tile.id} className="space-y-2 rounded-xl border border-[var(--color-border)] bg-[var(--color-background)] p-3">
-                          <div className="flex flex-wrap items-center justify-between gap-2">
-                            <label className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.3em] text-[var(--color-muted)]">
-                              Pontos
-                              <input
-                                type="number"
-                                min={0}
-                                step={5}
-                                value={tile.points}
-                                onChange={(event) =>
-                                  updateTileContent(tile.id, { points: Number(event.target.value) })
-                                }
-                                className="w-20 rounded-lg border border-[var(--color-border)] bg-[var(--color-background)] px-2 py-1 text-sm text-[var(--color-text)]"
-                              />
-                            </label>
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              onClick={() => handleRemoveQuestion(column.id, tile.id)}
-                              aria-label="Remover pergunta"
-                            >
-                              <Trash2 size={16} />
-                            </Button>
-                          </div>
-                          <textarea
-                            value={tile.question}
-                            onChange={(event) =>
-                              updateTileContent(tile.id, { question: event.target.value })
-                            }
-                            className="w-full rounded-lg border border-[var(--color-border)] bg-[var(--color-background)] px-3 py-2 text-sm text-[var(--color-text)]"
-                            rows={2}
-                          />
-                          <textarea
-                            value={tile.answer}
-                            onChange={(event) =>
-                              updateTileContent(tile.id, { answer: event.target.value })
-                            }
-                            className="w-full rounded-lg border border-[var(--color-border)] bg-[var(--color-background)] px-3 py-2 text-sm text-[var(--color-text)]"
-                            rows={2}
-                          />
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                ) : null}
-              </div>
-            )
-          })}
-        </div>
-        <div className="mt-4 flex justify-end">
-          <Button variant="outline" onClick={() => setLibraryOpen(false)}>
-            Fechar
-          </Button>
-        </div>
-      </Modal>
+        board={session.board}
+        onUpdateColumnTitle={updateColumnTitle}
+        onAddQuestion={handleAddQuestion}
+        onRemoveQuestion={handleRemoveQuestion}
+        onUpdateTileContent={updateTileContent}
+        onAddFilm={handleAddFilm}
+        onRemoveFilm={handleRemoveFilm}
+        onImportFilms={(importData) => {
+          importData.forEach(({ column, tiles }) => {
+            const columnId = addFilmColumn(column.film)
+            tiles.forEach((tile) => {
+              addQuestionTile(columnId, {
+                points: tile.points,
+                question: tile.question,
+                answer: tile.answer,
+              })
+            })
+          })
+          toast.success(
+            `${importData.length} filme${importData.length !== 1 ? 's' : ''} importado${importData.length !== 1 ? 's' : ''} com sucesso!`
+          )
+        }}
+      />
 
       <Modal
         isOpen={themeModalOpen}
