@@ -37,6 +37,16 @@ export type TriviaSessionContextValue = {
     tileId: string,
     teamId: string,
     participantId: string,
-    pointsAwarded: number
+    pointsAwarded: number,
+    source?: 'trivia' | 'mimica'
+  ) => void;
+  awardMimicaPoints: (
+    participantId: string,
+    teamId: string,
+    pointsAwarded: number,
+    turnNumber: number,
+    roundNumber: number,
+    mode: 'full-current' | 'half-current' | 'steal' | 'everyone' | 'void',
+    targetTeamId?: string
   ) => void;
 };

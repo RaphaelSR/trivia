@@ -12,6 +12,7 @@ import type {
   TriviaQuestionTile,
   TriviaSession,
   TriviaTeam,
+  MimicaScore,
 } from '../types'
 import { TriviaSessionContext } from '../context/TriviaSessionContext'
 
@@ -407,7 +408,13 @@ export function TriviaSessionProvider({ children }: TriviaSessionProviderProps) 
     })
   }
 
-  const awardPoints = useCallback((tileId: string, teamId: string, participantId: string, pointsAwarded: number) => {
+  const awardPoints = useCallback((
+    tileId: string,
+    teamId: string,
+    participantId: string,
+    pointsAwarded: number,
+    source: 'trivia' | 'mimica' = 'trivia'
+  ) => {
     setSession((prev) => {
       // Atualiza a pontuação do time
       const updatedTeams = prev.teams.map((team) => 
@@ -416,7 +423,7 @@ export function TriviaSessionProvider({ children }: TriviaSessionProviderProps) 
           : team
       )
 
-      // Marca a pergunta como respondida
+      // Marca a pergunta como respondida (apenas para trivia)
       const updatedBoard = prev.board.map((column) => ({
         ...column,
         tiles: column.tiles.map((tile) =>
@@ -429,6 +436,7 @@ export function TriviaSessionProvider({ children }: TriviaSessionProviderProps) 
                   teamId,
                   pointsAwarded,
                   timestamp: new Date().toISOString(),
+                  source,
                 },
               }
             : tile
@@ -439,6 +447,46 @@ export function TriviaSessionProvider({ children }: TriviaSessionProviderProps) 
         ...prev,
         teams: updatedTeams,
         board: updatedBoard,
+      }
+    })
+  }, [])
+
+  const awardMimicaPoints = useCallback((
+    participantId: string,
+    teamId: string,
+    pointsAwarded: number,
+    turnNumber: number,
+    roundNumber: number,
+    mode: 'full-current' | 'half-current' | 'steal' | 'everyone' | 'void',
+    targetTeamId?: string
+  ) => {
+    setSession((prev) => {
+      // Atualiza a pontuação do time
+      const updatedTeams = prev.teams.map((team) => 
+        team.id === teamId 
+          ? { ...team, score: (team.score || 0) + pointsAwarded }
+          : team
+      )
+
+      // Cria entrada em mimicaScores
+      const mimicaScore: MimicaScore = {
+        id: `mimica-${Date.now()}-${Math.random().toString(16).slice(2)}`,
+        participantId,
+        teamId,
+        pointsAwarded,
+        timestamp: new Date().toISOString(),
+        turnNumber,
+        roundNumber,
+        mode,
+        targetTeamId,
+      }
+
+      const updatedMimicaScores = [...(prev.mimicaScores || []), mimicaScore]
+
+      return {
+        ...prev,
+        teams: updatedTeams,
+        mimicaScores: updatedMimicaScores,
       }
     })
   }, [])
@@ -463,6 +511,7 @@ export function TriviaSessionProvider({ children }: TriviaSessionProviderProps) 
       removeQuestionTile,
       updateTeamsAndParticipants,
       awardPoints,
+      awardMimicaPoints,
     }
   }, [
     activeParticipant,
@@ -473,6 +522,7 @@ export function TriviaSessionProvider({ children }: TriviaSessionProviderProps) 
     teams,
     advanceTurn,
     awardPoints,
+    awardMimicaPoints,
   ])
 
   return <TriviaSessionContext.Provider value={value}>{children}</TriviaSessionContext.Provider>

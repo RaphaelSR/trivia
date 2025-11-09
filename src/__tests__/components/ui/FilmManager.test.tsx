@@ -339,7 +339,8 @@ describe('FilmManager', () => {
         />
       )
 
-      expect(screen.getByText(/Adicionado por:/)).toBeInTheDocument()
+      const addedByElements = screen.getAllByText(/Adicionado por:/)
+      expect(addedByElements.length).toBeGreaterThan(0)
       expect(screen.getByText('João')).toBeInTheDocument()
     })
 

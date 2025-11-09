@@ -108,6 +108,7 @@ export function createLocalSession(): TriviaSession {
     board,
     activeTeamId: defaultTeams[0].id,
     activeParticipantId,
-    turnSequence
+    turnSequence,
+    mimicaScores: []
   };
 }

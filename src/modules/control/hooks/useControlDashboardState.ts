@@ -26,6 +26,8 @@ export function useControlDashboardState() {
   const [gameEndModalOpen, setGameEndModalOpen] = useState(false)
   const [gameEndNotified, setGameEndNotified] = useState(false)
   const [questionImportOpen, setQuestionImportOpen] = useState(false)
+  const [scoreDetailOpen, setScoreDetailOpen] = useState(false)
+  const [selectedParticipantId, setSelectedParticipantId] = useState<string | null>(null)
 
   const selectedTile = useMemo(() => {
     if (!selectedIds) return null
@@ -76,6 +78,10 @@ export function useControlDashboardState() {
     setGameEndNotified,
     questionImportOpen,
     setQuestionImportOpen,
+    scoreDetailOpen,
+    setScoreDetailOpen,
+    selectedParticipantId,
+    setSelectedParticipantId,
     selectedTile,
   }
 }

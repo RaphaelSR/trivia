@@ -41,7 +41,23 @@ export type TriviaQuestionTile = {
     teamId: string;
     pointsAwarded: number;
     timestamp: string;
+    source?: 'trivia' | 'mimica';
+    turnNumber?: number;
+    roundNumber?: number;
+    mimicaMode?: 'full-current' | 'half-current' | 'steal' | 'everyone' | 'void';
   };
+};
+
+export type MimicaScore = {
+  id: string;
+  participantId: string;
+  teamId: string;
+  pointsAwarded: number;
+  timestamp: string;
+  turnNumber: number;
+  roundNumber: number;
+  mode: 'full-current' | 'half-current' | 'steal' | 'everyone' | 'void';
+  targetTeamId?: string;
 };
 
 export type TriviaColumn = {
@@ -68,4 +84,5 @@ export type TriviaSession = {
   activeTeamId: string;
   activeParticipantId: string | null;
   turnSequence: string[];
+  mimicaScores?: MimicaScore[];
 };

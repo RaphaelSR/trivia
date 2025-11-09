@@ -89,10 +89,11 @@ export function FilmForm({ film, participants = [], onSubmit, onCancel }: FilmFo
     <form onSubmit={handleSubmit} className="space-y-4">
       <div className="grid gap-4 md:grid-cols-2">
         <div className="space-y-2">
-          <label className="text-sm font-semibold text-[var(--color-text)]">
+          <label htmlFor="film-name" className="text-sm font-semibold text-[var(--color-text)]">
             Nome do Filme *
           </label>
           <input
+            id="film-name"
             type="text"
             value={formData.name}
             onChange={(e) => handleInputChange('name', e.target.value)}
@@ -105,10 +106,11 @@ export function FilmForm({ film, participants = [], onSubmit, onCancel }: FilmFo
         </div>
 
         <div className="space-y-2">
-          <label className="text-sm font-semibold text-[var(--color-text)]">
+          <label htmlFor="film-year" className="text-sm font-semibold text-[var(--color-text)]">
             Ano
           </label>
           <input
+            id="film-year"
             type="number"
             min="1900"
             max={new Date().getFullYear() + 2}
@@ -123,10 +125,11 @@ export function FilmForm({ film, participants = [], onSubmit, onCancel }: FilmFo
         </div>
 
         <div className="space-y-2">
-          <label className="text-sm font-semibold text-[var(--color-text)]">
+          <label htmlFor="film-genre" className="text-sm font-semibold text-[var(--color-text)]">
             Gênero
           </label>
           <select
+            id="film-genre"
             value={formData.genre || ''}
             onChange={(e) => handleInputChange('genre', e.target.value || undefined)}
             className="w-full rounded-xl border border-[var(--color-border)] bg-[var(--color-background)] px-3 py-2 text-sm text-[var(--color-text)]"
@@ -141,10 +144,11 @@ export function FilmForm({ film, participants = [], onSubmit, onCancel }: FilmFo
         </div>
 
         <div className="space-y-2">
-          <label className="text-sm font-semibold text-[var(--color-text)]">
+          <label htmlFor="film-streaming" className="text-sm font-semibold text-[var(--color-text)]">
             Streaming
           </label>
           <select
+            id="film-streaming"
             value={formData.streaming || ''}
             onChange={(e) => handleInputChange('streaming', e.target.value || undefined)}
             className="w-full rounded-xl border border-[var(--color-border)] bg-[var(--color-background)] px-3 py-2 text-sm text-[var(--color-text)]"
@@ -188,7 +192,7 @@ export function FilmForm({ film, participants = [], onSubmit, onCancel }: FilmFo
         </div>
 
         <div className="space-y-2">
-          <label className="text-sm font-semibold text-[var(--color-text)]">
+          <label htmlFor="film-addedBy" className="text-sm font-semibold text-[var(--color-text)]">
             Adicionado por
           </label>
           
@@ -221,6 +225,7 @@ export function FilmForm({ film, participants = [], onSubmit, onCancel }: FilmFo
 
           {!useCustomName && participants.length > 0 ? (
             <select
+              id="film-addedBy"
               value={formData.addedBy}
               onChange={(e) => handleInputChange('addedBy', e.target.value)}
               className="w-full rounded-xl border border-[var(--color-border)] bg-[var(--color-background)] px-3 py-2 text-sm text-[var(--color-text)]"
@@ -234,6 +239,7 @@ export function FilmForm({ film, participants = [], onSubmit, onCancel }: FilmFo
             </select>
           ) : (
             <input
+              id="film-addedBy"
               type="text"
               value={formData.addedBy}
               onChange={(e) => handleInputChange('addedBy', e.target.value)}

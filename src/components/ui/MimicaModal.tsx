@@ -1,9 +1,10 @@
-import { UsersRound } from 'lucide-react'
+import { HelpCircle, UsersRound } from 'lucide-react'
 import { useEffect, useMemo, useState } from 'react'
 import { toast } from 'sonner'
 import { Button } from './Button'
 import { Modal } from './Modal'
 import { Timer } from './Timer'
+import { Tooltip } from './Tooltip'
 import type { TriviaParticipant, TriviaTeam } from '../../modules/trivia/types'
 
 type MimicaModalProps = {
@@ -14,7 +15,13 @@ type MimicaModalProps = {
   activeParticipant: TriviaParticipant | null
   turnSequence: string[]
   onAdvanceTurn: () => void
-  onScore: (mode: ScoringMode, targetTeamId?: string, points?: number) => void
+  onScore: (
+    mode: ScoringMode,
+    targetTeamId: string | undefined,
+    points: number,
+    turnNumber: number,
+    roundNumber: number
+  ) => void
 }
 
 type ScoringMode = 'full-current' | 'half-current' | 'steal' | 'everyone' | 'void'
@@ -44,6 +51,7 @@ export function MimicaModal({
   const [mimicaPoints, setMimicaPoints] = useState(50)
   const [shuffleMode, setShuffleMode] = useState<'alternate' | 'shuffle' | 'team-shuffle'>('alternate')
   const [shuffledSequence, setShuffledSequence] = useState<string[]>([])
+  const [roundNumber, setRoundNumber] = useState(1)
 
   // Função para embaralhar array (Fisher-Yates)
   const shuffleArray = (array: string[]) => {
@@ -54,6 +62,13 @@ export function MimicaModal({
     }
     return shuffled
   }
+
+  // Reset roundNumber quando modal abre
+  useEffect(() => {
+    if (isOpen) {
+      setRoundNumber(1)
+    }
+  }, [isOpen])
 
   // Gerar sequência baseada no modo escolhido
   useEffect(() => {
@@ -119,6 +134,10 @@ export function MimicaModal({
     return alternateParticipants.findIndex(p => p.id === activeParticipant.id)
   }, [activeParticipant, alternateParticipants])
 
+  const turnNumber = useMemo(() => {
+    return (roundNumber - 1) * alternateParticipants.length + currentParticipantIndex + 1
+  }, [roundNumber, currentParticipantIndex, alternateParticipants.length])
+
   const nextParticipant = useMemo(() => {
     const nextIndex = (currentParticipantIndex + 1) % alternateParticipants.length
     return alternateParticipants[nextIndex]
@@ -161,22 +180,25 @@ export function MimicaModal({
         break
     }
     
-    onScore(mode, targetTeamId, points)
+    onScore(mode, targetTeamId, points, turnNumber, roundNumber)
     setScoringMode(null)
     setSelectedTeam(null)
     
     // Avançar automaticamente para próxima pessoa
     setTimeout(() => {
-      // Se ainda há participantes na sequência embaralhada, avança
+      // Se ainda há participantes na sequência, avança
       if (currentParticipantIndex < alternateParticipants.length - 1) {
         onAdvanceTurn()
         if (nextParticipant) {
           toast.success(`Próximo turno: ${nextParticipant.name}`)
         }
       } else {
-        // Fim da mímica
-        toast.success('Mímica finalizada! Todos participaram.')
-        onClose()
+        // Volta ao primeiro participante e incrementa a volta
+        setRoundNumber(prev => prev + 1)
+        onAdvanceTurn()
+        if (alternateParticipants[0]) {
+          toast.success(`Volta ${roundNumber + 1} iniciada! Próximo turno: ${alternateParticipants[0].name}`)
+        }
       }
     }, 500) // Pequeno delay para mostrar o feedback
   }
@@ -219,6 +241,22 @@ export function MimicaModal({
               </p>
             </div>
           </div>
+          <div className="mt-3 pt-3 border-t border-[var(--color-primary)]/20">
+            <div className="flex items-center justify-center gap-4">
+              <div className="inline-flex items-center gap-2 rounded-full border border-[var(--color-primary)]/30 bg-[var(--color-primary)]/10 px-3 py-1.5 text-xs font-semibold uppercase tracking-[0.3em] text-[var(--color-primary)]">
+                <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                </svg>
+                Volta {roundNumber}
+              </div>
+              <div className="inline-flex items-center gap-2 rounded-full border border-[var(--color-secondary)]/30 bg-[var(--color-secondary)]/10 px-3 py-1.5 text-xs font-semibold uppercase tracking-[0.3em] text-[var(--color-secondary)]">
+                <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                Turno {turnNumber}
+              </div>
+            </div>
+          </div>
         </div>
 
         <div className="space-y-4">
@@ -244,14 +282,34 @@ export function MimicaModal({
               </div>
               
               <div className="space-y-2">
-                <label className="text-sm font-medium text-[var(--color-text)]">
-                  Ordem de participação:
-                </label>
+                <div className="flex items-center gap-2">
+                  <label className="text-sm font-medium text-[var(--color-text)]">
+                    Ordem de participação:
+                  </label>
+                  <Tooltip content="A mimica continua até você decidir finalizar manualmente. Quando todos participaram, recomeça do primeiro.">
+                    <HelpCircle size={14} className="text-[var(--color-muted)] cursor-help" />
+                  </Tooltip>
+                </div>
                 <div className="space-y-2">
                   {[
-                    { id: 'alternate', label: 'Alternada', description: '1 de cada time por vez' },
-                    { id: 'shuffle', label: 'Embaralhada', description: 'Ordem completamente aleatória' },
-                    { id: 'team-shuffle', label: 'Por time', description: 'Embaralha dentro de cada time' }
+                    { 
+                      id: 'alternate', 
+                      label: 'Alternada', 
+                      description: '1 de cada time por vez',
+                      tooltip: 'Cada time participa uma vez por vez, em ordem. Quando todos participaram, recomeça do primeiro.'
+                    },
+                    { 
+                      id: 'shuffle', 
+                      label: 'Embaralhada', 
+                      description: 'Ordem completamente aleatória',
+                      tooltip: 'Ordem completamente aleatória de todos os participantes.'
+                    },
+                    { 
+                      id: 'team-shuffle', 
+                      label: 'Por time', 
+                      description: 'Embaralha dentro de cada time',
+                      tooltip: 'Embaralha participantes dentro de cada time, mas mantém alternância entre times.'
+                    }
                   ].map((option) => (
                     <label key={option.id} className="flex items-center gap-3 cursor-pointer">
                       <input
@@ -262,8 +320,13 @@ export function MimicaModal({
                         onChange={(e) => setShuffleMode(e.target.value as 'alternate' | 'shuffle' | 'team-shuffle')}
                         className="text-[var(--color-primary)]"
                       />
-                      <div>
-                        <span className="text-sm font-medium text-[var(--color-text)]">{option.label}</span>
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2">
+                          <span className="text-sm font-medium text-[var(--color-text)]">{option.label}</span>
+                          <Tooltip content={option.tooltip}>
+                            <HelpCircle size={12} className="text-[var(--color-muted)] cursor-help" />
+                          </Tooltip>
+                        </div>
                         <p className="text-xs text-[var(--color-muted)]">{option.description}</p>
                       </div>
                     </label>
@@ -383,9 +446,13 @@ export function MimicaModal({
           </Button>
         </div>
 
-        <Button variant="outline" onClick={handleClose} className="w-full">
-          Fechar mímica
-        </Button>
+        <Tooltip content="A mimica continua até você decidir finalizar manualmente">
+          <div>
+            <Button variant="outline" onClick={handleClose} className="w-full">
+              Fechar mímica
+            </Button>
+          </div>
+        </Tooltip>
       </div>
     </Modal>
   )

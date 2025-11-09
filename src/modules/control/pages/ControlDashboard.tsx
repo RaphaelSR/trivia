@@ -36,6 +36,7 @@ import { ResetGameModal } from '@/components/ui/ResetGameModal'
 import { GameEndModal } from '@/components/ui/GameEndModal'
 import { QuestionImportModal } from '@/components/ui/QuestionImportModal'
 import { QuestionLibraryModal } from '@/components/ui/QuestionLibraryModal'
+import { ScoreDetailView } from '@/components/ui/ScoreDetailView'
 import { useControlDashboardState } from '../hooks/useControlDashboardState'
 import { useTeamManagement } from '../hooks/useTeamManagement'
 import { useQuestionManagement } from '../hooks/useQuestionManagement'
@@ -66,6 +67,7 @@ export function ControlDashboard() {
     removeQuestionTile,
     updateTeamsAndParticipants,
     awardPoints,
+    awardMimicaPoints,
     advanceTurn,
   } = useTriviaSession()
   const { theme: themeMode, setTheme } = useThemeMode()
@@ -117,6 +119,10 @@ export function ControlDashboard() {
     setGameEndNotified,
     questionImportOpen,
     setQuestionImportOpen,
+    scoreDetailOpen,
+    setScoreDetailOpen,
+    selectedParticipantId,
+    setSelectedParticipantId,
   } = dashboardState
 
   const teamManagement = useTeamManagement(
@@ -913,14 +919,23 @@ export function ControlDashboard() {
             const participantScores = team.members.map((memberId) => {
               const participant = participants.find((p) => p.id === memberId)
               // Soma todos os pontos das perguntas respondidas por este participante
-              const individualPoints = session.board
+              const triviaPoints = session.board
                 .flatMap((column) => column.tiles)
                 .filter((tile) => tile.answeredBy?.participantId === memberId)
                 .reduce((sum, tile) => sum + (tile.answeredBy?.pointsAwarded || 0), 0)
               
+              // Soma pontos de mimica
+              const mimicaPoints = (session.mimicaScores || [])
+                .filter((score) => score.participantId === memberId)
+                .reduce((sum, score) => sum + score.pointsAwarded, 0)
+              
+              const individualPoints = triviaPoints + mimicaPoints
+              
               return {
                 participant,
-                points: individualPoints
+                points: individualPoints,
+                triviaPoints,
+                mimicaPoints,
               }
             }).filter((p) => p.participant) // Remove participantes não encontrados
             
@@ -955,14 +970,39 @@ export function ControlDashboard() {
                 {isExpanded && (
                   <div className="px-4 pb-3 pt-1 border-t border-[var(--color-border)] bg-[var(--color-surface)]">
                     <div className="space-y-2">
-                      {participantScores.map(({ participant, points: individualPoints }) => (
+                      {participantScores.map(({ participant, points: individualPoints, triviaPoints, mimicaPoints }) => (
                         <div key={participant?.id} className="flex items-center justify-between py-2 px-3 rounded-lg bg-[var(--color-background)]">
-                          <span className="text-xs font-medium text-[var(--color-muted)]">
-                            {participant?.name}
-                          </span>
-                          <span className="text-xs font-semibold text-[var(--color-text)]">
-                            {individualPoints} pts
-                          </span>
+                          <div className="flex-1">
+                            <span className="text-xs font-medium text-[var(--color-muted)]">
+                              {participant?.name}
+                            </span>
+                            <div className="flex items-center gap-2 mt-1">
+                              <span className="text-xs text-[var(--color-muted)]">
+                                {triviaPoints} pts trivia
+                              </span>
+                              {mimicaPoints > 0 && (
+                                <span className="text-xs text-[var(--color-muted)]">
+                                  · {mimicaPoints} pts mimica
+                                </span>
+                              )}
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <span className="text-xs font-semibold text-[var(--color-text)]">
+                              {individualPoints} pts
+                            </span>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => {
+                                setSelectedParticipantId(participant?.id || null)
+                                setScoreDetailOpen(true)
+                              }}
+                              className="text-xs"
+                            >
+                              Ver detalhes
+                            </Button>
+                          </div>
                         </div>
                       ))}
                     </div>
@@ -1108,47 +1148,56 @@ export function ControlDashboard() {
         activeParticipant={activeParticipant}
         turnSequence={session.turnSequence}
         onAdvanceTurn={advanceTurn}
-        onScore={(mode, targetTeamId, points) => {
+        onScore={(mode, targetTeamId, points, turnNumber, roundNumber) => {
           let message = ''
           
           try {
+            if (!activeParticipant) {
+              toast.error('Nenhum participante ativo')
+              return
+            }
+
+            const participantId = activeParticipant.id
+            let teamId = activeTeam?.id
+
             switch (mode) {
               case 'full-current':
-                if (activeTeam && activeParticipant) {
-                  // Cria um tileId fictício para mímica (não associado a pergunta)
-                  const mimicaTileId = `mimica-${Date.now()}-${Math.random().toString(16).slice(2)}`
-                  awardPoints(mimicaTileId, activeTeam.id, activeParticipant.id, points ?? 0)
+                if (activeTeam) {
+                  teamId = activeTeam.id
+                  awardMimicaPoints(participantId, teamId, points, turnNumber, roundNumber, mode)
                   message = `Mímica: ${points} pontos para ${activeTeam.name}`
                 }
                 break
               case 'half-current':
-                if (activeTeam && activeParticipant) {
-                  const mimicaTileId = `mimica-${Date.now()}-${Math.random().toString(16).slice(2)}`
-                  awardPoints(mimicaTileId, activeTeam.id, activeParticipant.id, points ?? 0)
+                if (activeTeam) {
+                  teamId = activeTeam.id
+                  awardMimicaPoints(participantId, teamId, points, turnNumber, roundNumber, mode)
                   message = `Mímica: ${points} pontos para ${activeTeam.name}`
                 }
                 break
               case 'steal':
-                if (targetTeamId && activeParticipant) {
+                if (targetTeamId) {
                   const targetTeam = orderedTeams.find((team) => team.id === targetTeamId)
                   if (targetTeam) {
-                    const mimicaTileId = `mimica-${Date.now()}-${Math.random().toString(16).slice(2)}`
-                    awardPoints(mimicaTileId, targetTeamId, activeParticipant.id, points ?? 0)
+                    teamId = targetTeamId
+                    awardMimicaPoints(participantId, teamId, points, turnNumber, roundNumber, mode, targetTeamId)
                     message = `Mímica: ${points} pontos transferidos para ${targetTeam.name}`
                   }
                 }
                 break
-              case 'everyone':
-                if (activeParticipant) {
-                  const pointsPerTeam = points
-                  orderedTeams.forEach((team) => {
-                    const mimicaTileId = `mimica-${Date.now()}-${Math.random().toString(16).slice(2)}-${team.id}`
-                    awardPoints(mimicaTileId, team.id, activeParticipant.id, pointsPerTeam ?? 0)
-                  })
-                  message = `Mímica: ${pointsPerTeam} pontos distribuídos para todos os times`
-                }
+              case 'everyone': {
+                const pointsPerTeam = points
+                orderedTeams.forEach((team) => {
+                  awardMimicaPoints(participantId, team.id, pointsPerTeam, turnNumber, roundNumber, mode)
+                })
+                message = `Mímica: ${pointsPerTeam} pontos distribuídos para todos os times`
                 break
+              }
               case 'void':
+                if (activeTeam) {
+                  teamId = activeTeam.id
+                  awardMimicaPoints(participantId, teamId, 0, turnNumber, roundNumber, mode)
+                }
                 message = `Mímica: sem pontuação`
                 break
             }
@@ -1213,6 +1262,22 @@ export function ControlDashboard() {
         columns={session.board}
         onImport={handleQuestionImport}
       />
+
+      {selectedParticipantId && (
+        <ScoreDetailView
+          isOpen={scoreDetailOpen}
+          onClose={() => {
+            setScoreDetailOpen(false)
+            setSelectedParticipantId(null)
+          }}
+          participant={participants.find((p) => p.id === selectedParticipantId)!}
+          team={orderedTeams.find((t) => t.id === participants.find((p) => p.id === selectedParticipantId)?.teamId) || orderedTeams[0]}
+          board={session.board}
+          mimicaScores={session.mimicaScores || []}
+          allParticipants={participants}
+          allTeams={orderedTeams}
+        />
+      )}
     </div>
   )
 }

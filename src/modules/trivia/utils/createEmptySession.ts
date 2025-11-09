@@ -25,6 +25,7 @@ export function createEmptySession(): TriviaSession {
     board: [],
     activeTeamId: "",
     activeParticipantId: null,
-    turnSequence: []
+    turnSequence: [],
+    mimicaScores: []
   };
 }
