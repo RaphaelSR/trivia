@@ -23,15 +23,13 @@ dist-ssr
 *.sln
 *.sw?
 
-# Configuration and documentation files
-AGENTS.md
-ARCHITECTURE.md
-FIREBASE_SETUP.md
-PRD-Trivia.md
-TriviaDesignSpec.md
-.cursorrules
+# Documentation directory
+docs/
 
-# Trivia Files directory
+# Templates directory (now in docs/)
+templates/
+
+# Trivia Files directory (now in docs/reference/)
 Trivia Files/
 
 # Temporary files

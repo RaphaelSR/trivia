@@ -1,4 +1,4 @@
-import { LogOut, Settings } from 'lucide-react'
+import { LogOut, Database } from 'lucide-react'
 import clsx from 'clsx'
 import { Button } from './Button'
 
@@ -8,7 +8,7 @@ type NavbarProps = {
   className?: string
   title: string
   mode: SessionMode
-  onOpenSettings?: () => void
+  onOpenSessionManager?: () => void
   onExit?: () => void
 }
 
@@ -17,7 +17,7 @@ const modeLabels: Record<SessionMode, string> = {
   exibição: 'Modo Exibição',
 }
 
-export function Navbar({ className, title, mode, onOpenSettings, onExit }: NavbarProps) {
+export function Navbar({ className, title, mode, onOpenSessionManager, onExit }: NavbarProps) {
   return (
     <header
       className={clsx(
@@ -38,8 +38,8 @@ export function Navbar({ className, title, mode, onOpenSettings, onExit }: Navba
       </div>
 
       <div className="flex items-center gap-3">
-        <Button variant="outline" size="icon" aria-label="Abrir configurações" onClick={onOpenSettings}>
-          <Settings size={18} />
+        <Button variant="outline" size="icon" aria-label="Gerenciar sessões" onClick={onOpenSessionManager}>
+          <Database size={18} />
         </Button>
         <Button variant="outline" size="icon" aria-label="Sair" onClick={onExit}>
           <LogOut size={18} />

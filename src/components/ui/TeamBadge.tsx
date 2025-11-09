@@ -18,7 +18,7 @@ export function TeamBadge({ team, isActive = false }: TeamBadgeProps) {
         'inline-flex min-w-[7.5rem] items-center justify-center rounded-full border px-4 py-2 text-sm font-semibold uppercase tracking-wide transition-colors',
         isActive
           ? 'border-transparent bg-[var(--team-color)] text-white shadow-md'
-          : 'border-[var(--color-border)] bg-[var(--color-background)] text-[var(--color-text)]'
+          : 'border-[var(--team-color)] bg-[var(--team-color)]/10 text-[var(--team-color)] font-bold'
       )}
       style={style}
     >

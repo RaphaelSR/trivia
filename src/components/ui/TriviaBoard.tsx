@@ -28,13 +28,15 @@ export function TriviaBoard({ columns, onSelectTile }: TriviaBoardProps) {
             : undefined
           const columnStyle = style as CSSProperties | undefined
 
+          const sortedTiles = [...column.tiles].sort((a, b) => a.points - b.points)
+
           return (
             <div key={column.id} className="board-column" style={columnStyle}>
-              <h4 className="text-center text-sm font-semibold text-[var(--film-text)] uppercase tracking-[0.35em]">
+              <h4 className="text-center text-sm font-bold text-[var(--color-primary)] uppercase tracking-[0.35em] drop-shadow-[0_2px_4px_rgba(0,0,0,0.3)] [text-shadow:_0_1px_3px_rgb(0_0_0_/_40%)]">
                 {column.film}
               </h4>
               <div className="grid gap-2">
-                {column.tiles.map((tile) => (
+                {sortedTiles.map((tile) => (
                   <TriviaCard
                     key={tile.id}
                     tile={tile}
