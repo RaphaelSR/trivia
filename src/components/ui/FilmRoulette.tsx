@@ -1,4 +1,4 @@
-import { Film, History, RotateCcw, Shuffle, Users, X, Settings, Play, CheckCircle } from 'lucide-react'
+import { Film, History, RotateCcw, Shuffle, Users, X, Settings, Play, CheckCircle, HelpCircle } from 'lucide-react'
 import { createPortal } from 'react-dom'
 import { useEffect, useState } from 'react'
 import { Button } from './Button'
@@ -9,6 +9,7 @@ import { MultiSelectField } from './MultiSelectField'
 import { useCustomFilms } from '../../hooks/useCustomFilms'
 import { getStreamingPlatformInfo, getFilmGenreInfo, type CustomFilm, type StreamingPlatform, type FilmGenre } from '../../data/customFilms'
 import type { TriviaParticipant, TriviaTeam } from '../../modules/trivia/types'
+import { drawUniqueFilms, type RouletteResult as DrawRouletteResult } from '../../modules/trivia/utils/drawUniqueFilms'
 
 type FilmRouletteProps = {
   isOpen: boolean
@@ -18,7 +19,10 @@ type FilmRouletteProps = {
   sessionFilms?: Array<{ id: string; name: string }>
 }
 
-type RouletteMode = 'one-per-person' | 'all-films' | 'specific-quantity'
+type RouletteConfig = {
+  maxFilms: number
+  allowMultiplePerPerson: boolean
+}
 
 type SelectedParticipant = {
   id: string
@@ -37,17 +41,12 @@ type SelectedFilm = {
   selected: boolean
 }
 
-type RouletteResult = {
-  participantId: string
-  participantName: string
-  teamName: string
-  film: CustomFilm
-}
+type RouletteResult = DrawRouletteResult
 
 type RouletteHistory = {
   id: string
   timestamp: string
-  mode: RouletteMode
+  config: RouletteConfig
   results: RouletteResult[]
   participantCount: number
   uniqueFilms: number
@@ -64,10 +63,9 @@ export function FilmRoulette({ isOpen, onClose, teams, participants, sessionFilm
         addedAt: new Date().toISOString()
       } as CustomFilm)
     : globalCustomFilms
-  const [mode, setMode] = useState<RouletteMode>('one-per-person')
+  const [config, setConfig] = useState<RouletteConfig>({ maxFilms: 5, allowMultiplePerPerson: false })
   const [selectedParticipants, setSelectedParticipants] = useState<SelectedParticipant[]>([])
   const [selectedFilms, setSelectedFilms] = useState<SelectedFilm[]>([])
-  const [specificQuantity, setSpecificQuantity] = useState(3)
   const [isSpinning, setIsSpinning] = useState(false)
   const [results, setResults] = useState<RouletteResult[]>([])
   const [history, setHistory] = useState<RouletteHistory[]>([])
@@ -119,13 +117,14 @@ export function FilmRoulette({ isOpen, onClose, teams, participants, sessionFilm
   }, [isOpen, participants, teams, customFilms])
 
   const saveToHistory = (newResults: RouletteResult[]) => {
+    const uniqueFilms = new Set(newResults.map(r => r.film.name.toLowerCase().trim())).size
     const historyEntry: RouletteHistory = {
       id: `roulette-${Date.now()}`,
       timestamp: new Date().toISOString(),
-      mode,
+      config,
       results: newResults,
       participantCount: newResults.length,
-      uniqueFilms: new Set(newResults.map(r => r.film.id)).size
+      uniqueFilms
     }
     
     const newHistory = [historyEntry, ...history].slice(0, 10)
@@ -190,50 +189,26 @@ export function FilmRoulette({ isOpen, onClose, teams, participants, sessionFilm
     setTimeout(() => {
       const selected = selectedParticipants.filter(p => p.selected)
       const filmsToUse = getSelectedFilms()
-      const newResults: RouletteResult[] = []
-
-      switch (mode) {
-        case 'one-per-person': {
-          selected.forEach(participant => {
-            const randomFilm = filmsToUse[Math.floor(Math.random() * filmsToUse.length)]
-            newResults.push({
-              participantId: participant.id,
-              participantName: participant.name,
-              teamName: participant.teamName,
-              film: randomFilm
-            })
-          })
-          break
-        }
-        case 'all-films': {
-          const shuffledFilms = [...filmsToUse].sort(() => Math.random() - 0.5)
-          selected.forEach((participant, index) => {
-            const film = shuffledFilms[index % shuffledFilms.length]
-            newResults.push({
-              participantId: participant.id,
-              participantName: participant.name,
-              teamName: participant.teamName,
-              film
-            })
-          })
-          break
-        }
-        case 'specific-quantity': {
-          const shuffledFilms = [...filmsToUse].sort(() => Math.random() - 0.5)
-          const filmsToUseLimited = shuffledFilms.slice(0, specificQuantity)
-          
-          selected.forEach(participant => {
-            const randomFilm = filmsToUseLimited[Math.floor(Math.random() * filmsToUseLimited.length)]
-            newResults.push({
-              participantId: participant.id,
-              participantName: participant.name,
-              teamName: participant.teamName,
-              film: randomFilm
-            })
-          })
-          break
-        }
-      }
+      
+      const participantsMap = new Map<string, { name: string; teamName: string }>()
+      selected.forEach(p => {
+        participantsMap.set(p.id, { name: p.name, teamName: p.teamName })
+      })
+      
+      const filmsWithAddedBy = filmsToUse.map(film => ({
+        ...film,
+        addedBy: film.addedBy || participants.find(p => 
+          participantsMap.has(p.id) && p.name.toLowerCase().trim() === (film.addedBy || '').toLowerCase().trim()
+        )?.name || film.addedBy
+      }))
+      
+      const maxFilms = Math.min(config.maxFilms, filmsToUse.length)
+      const newResults = drawUniqueFilms(
+        filmsWithAddedBy,
+        participantsMap,
+        maxFilms,
+        config.allowMultiplePerPerson
+      )
 
       setResults(newResults)
       setIsSpinning(false)
@@ -435,9 +410,8 @@ export function FilmRoulette({ isOpen, onClose, teams, participants, sessionFilm
                           </p>
                         </div>
                         <span className="rounded-full bg-[var(--color-primary)]/10 px-3 py-1 text-sm font-medium text-[var(--color-primary)]">
-                          {entry.mode === 'one-per-person' ? '1 por pessoa' :
-                           entry.mode === 'all-films' ? 'Todos os filmes' :
-                           `Quantidade específica`}
+                          {entry.config.maxFilms} filme{entry.config.maxFilms !== 1 ? 's' : ''}
+                          {entry.config.allowMultiplePerPerson ? ' · Múltiplos por pessoa' : ''}
                         </span>
                       </div>
                       <div className="space-y-2">
@@ -506,47 +480,70 @@ export function FilmRoulette({ isOpen, onClose, teams, participants, sessionFilm
             </div>
           ) : currentStep === 'setup' ? (
             <div className="space-y-8">
-              {/* Tipo de Sorteio */}
+              {/* Configuração do Sorteio */}
               <div className="space-y-6">
-                <h3 className="text-2xl font-semibold text-[var(--color-text)]">Tipo de Sorteio</h3>
-                <div className="grid gap-6 md:grid-cols-3">
-                  {[
-                    { id: 'one-per-person', label: '1 por pessoa', description: 'Cada participante sorteia 1 filme', icon: '👤' },
-                    { id: 'all-films', label: 'Todos os filmes', description: 'Distribui todos os filmes selecionados', icon: '🎬' },
-                    { id: 'specific-quantity', label: 'Quantidade específica', description: 'Sorteia de uma quantidade definida', icon: '🎯' }
-                  ].map((option) => (
-                    <button
-                      key={option.id}
-                      type="button"
-                      onClick={() => setMode(option.id as RouletteMode)}
-                      className={`p-8 rounded-2xl border-2 transition-all ${
-                        mode === option.id
-                          ? 'border-[var(--color-primary)] bg-[var(--color-primary)]/10'
-                          : 'border-[var(--color-border)] bg-[var(--color-background)] hover:border-[var(--color-primary)]/50'
-                      }`}
-                    >
-                      <div className="text-4xl mb-4">{option.icon}</div>
-                      <h4 className="text-xl font-semibold text-[var(--color-text)] mb-3">{option.label}</h4>
-                      <p className="text-base text-[var(--color-muted)]">{option.description}</p>
-                    </button>
-                  ))}
+                <div className="flex items-center gap-3">
+                  <h3 className="text-2xl font-semibold text-[var(--color-text)]">🎬 Filmes para o Próximo Trivia</h3>
+                  <Tooltip content="Os filmes sorteados serão assistidos no próximo trivia">
+                    <HelpCircle className="h-5 w-5 text-[var(--color-muted)]" />
+                  </Tooltip>
                 </div>
+                <p className="text-base text-[var(--color-muted)]">
+                  Os filmes sorteados serão assistidos no próximo trivia
+                </p>
                 
-                {mode === 'specific-quantity' && (
-                  <div className="mt-6">
-                    <label className="flex flex-col gap-3 text-base font-semibold text-[var(--color-text)]">
-                      Quantidade de filmes
+                <div className="space-y-4 rounded-2xl border border-[var(--color-border)] bg-[var(--color-background)] p-6">
+                  <div className="space-y-3">
+                    <label className="flex flex-col gap-2 text-base font-semibold text-[var(--color-text)]">
+                      Máximo de filmes a sortear
                       <input
                         type="number"
                         min="1"
                         max={getSelectedFilmsCount()}
-                        value={specificQuantity}
-                        onChange={(e) => setSpecificQuantity(Math.max(1, Math.min(getSelectedFilmsCount(), parseInt(e.target.value) || 1)))}
-                        className="rounded-xl border border-[var(--color-border)] bg-[var(--color-background)] px-6 py-4 text-lg text-[var(--color-text)] w-40"
+                        value={config.maxFilms}
+                        onChange={(e) => {
+                          const value = Math.max(1, Math.min(getSelectedFilmsCount(), parseInt(e.target.value) || 1))
+                          setConfig(prev => ({ ...prev, maxFilms: value }))
+                        }}
+                        className="rounded-xl border border-[var(--color-border)] bg-[var(--color-background)] px-4 py-3 text-lg text-[var(--color-text)] w-40"
                       />
+                      <span className="text-sm text-[var(--color-muted)]">
+                        {config.maxFilms} filme{config.maxFilms !== 1 ? 's' : ''} único{config.maxFilms !== 1 ? 's' : ''} serão sorteados
+                      </span>
+                      {config.maxFilms > getSelectedFilmsCount() && (
+                        <span className="text-sm text-red-500">
+                          ⚠️ Máximo não pode ser maior que {getSelectedFilmsCount()} filmes disponíveis
+                        </span>
+                      )}
                     </label>
                   </div>
-                )}
+                  
+                  <div className="space-y-3">
+                    <label className="flex items-center gap-3 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={config.allowMultiplePerPerson}
+                        onChange={(e) => setConfig(prev => ({ ...prev, allowMultiplePerPerson: e.target.checked }))}
+                        className="w-5 h-5 rounded border-[var(--color-border)] text-[var(--color-primary)] focus:ring-2 focus:ring-[var(--color-primary)]"
+                      />
+                      <div className="flex-1">
+                        <span className="text-base font-semibold text-[var(--color-text)]">
+                          Permitir múltiplos filmes por pessoa
+                        </span>
+                        <Tooltip content="Se desmarcado: cada pessoa terá no máximo 1 filme sorteado. Se marcado: uma pessoa pode ter múltiplos filmes se indicou múltiplos.">
+                          <div className="flex items-center gap-2 mt-1">
+                            <HelpCircle className="h-4 w-4 text-[var(--color-muted)]" />
+                            <span className="text-sm text-[var(--color-muted)]">
+                              {config.allowMultiplePerPerson 
+                                ? 'Uma pessoa pode ter múltiplos filmes se indicou múltiplos'
+                                : 'Cada pessoa terá no máximo 1 filme sorteado'}
+                            </span>
+                          </div>
+                        </Tooltip>
+                      </div>
+                    </label>
+                  </div>
+                </div>
               </div>
 
               {/* Seleção de Participantes */}
@@ -749,7 +746,7 @@ export function FilmRoulette({ isOpen, onClose, teams, participants, sessionFilm
                           </div>
                           <p className="text-sm text-[var(--color-muted)] mb-2">
                             <Users size={14} className="inline mr-1" />
-                            {result.participantName} · {result.teamName}
+                            Indicado por: {result.film.addedBy || result.participantName} · {result.teamName}
                           </p>
                           {result.film.link && (
                             <a
@@ -770,22 +767,24 @@ export function FilmRoulette({ isOpen, onClose, teams, participants, sessionFilm
 
               <div className="rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] p-6">
                 <h4 className="text-lg font-semibold text-[var(--color-text)] mb-4">📊 Resumo do Sorteio</h4>
-                <div className="grid gap-4 md:grid-cols-3">
+                <div className="grid gap-4 md:grid-cols-4">
                   <div className="text-center">
                     <div className="text-2xl font-bold text-[var(--color-primary)]">{results.length}</div>
-                    <div className="text-sm text-[var(--color-muted)]">Participantes</div>
+                    <div className="text-sm text-[var(--color-muted)]">Filmes Sorteados</div>
                   </div>
                   <div className="text-center">
-                    <div className="text-2xl font-bold text-[var(--color-primary)]">{new Set(results.map(r => r.film.id)).size}</div>
+                    <div className="text-2xl font-bold text-[var(--color-primary)]">{new Set(results.map(r => r.film.name.toLowerCase().trim())).size}</div>
                     <div className="text-sm text-[var(--color-muted)]">Filmes Únicos</div>
                   </div>
                   <div className="text-center">
+                    <div className="text-2xl font-bold text-[var(--color-primary)]">{new Set(results.map(r => r.participantName.toLowerCase().trim())).size}</div>
+                    <div className="text-sm text-[var(--color-muted)]">Pessoas que Indicaram</div>
+                  </div>
+                  <div className="text-center">
                     <div className="text-2xl font-bold text-[var(--color-primary)]">
-                      {mode === 'one-per-person' ? '1 por pessoa' :
-                       mode === 'all-films' ? 'Todos' :
-                       specificQuantity}
+                      {config.maxFilms}
                     </div>
-                    <div className="text-sm text-[var(--color-muted)]">Modo de Sorteio</div>
+                    <div className="text-sm text-[var(--color-muted)]">Máximo Configurado</div>
                   </div>
                 </div>
               </div>

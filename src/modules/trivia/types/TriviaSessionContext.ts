@@ -31,7 +31,7 @@ export type TriviaSessionContextValue = {
   updateTeamsAndParticipants: (
     teams: TriviaTeam[],
     participants: TriviaParticipant[],
-    turnSequence: string[]
+    turnSequence?: string[]
   ) => void;
   awardPoints: (
     tileId: string,

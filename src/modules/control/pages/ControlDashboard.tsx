@@ -1,6 +1,4 @@
 import {
-  ArrowDown,
-  ArrowUp,
   BookOpen,
   ClipboardList,
   Dice5,
@@ -17,42 +15,37 @@ import {
   Theater,
 } from 'lucide-react'
 import type { CSSProperties } from 'react'
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo } from 'react'
 import { toast } from 'sonner'
-import { Button } from '../../../components/ui/Button'
-import { FilmRoulette } from '../../../components/ui/FilmRoulette'
-import { InfoModal } from '../../../components/ui/InfoModal'
-import { MimicaModal } from '../../../components/ui/MimicaModal'
-import { Modal } from '../../../components/ui/Modal'
-import { Navbar } from '../../../components/ui/Navbar'
-import { TeamBadge } from '../../../components/ui/TeamBadge'
-import { Timer } from '../../../components/ui/Timer'
-import { TriviaBoard } from '../../../components/ui/TriviaBoard'
-import type { TriviaColumn, TriviaParticipant, TriviaQuestionTile, TriviaTeam } from '../../trivia/types'
-import { useTriviaSession } from '../../trivia/hooks/useTriviaSession'
-import { useThemeMode } from '../../../app/providers/useThemeMode'
-import { useGameMode } from '../../../hooks/useGameMode'
-import { usePinManagement } from '../../../hooks/usePinManagement'
-import { useOfflineSession } from '../../../hooks/useOfflineSession'
-import { createAlternatingTurnSequence } from '../../trivia/utils/createAlternatingTurnSequence'
-import { OfflineOnboardingModal } from '../../../components/ui/OfflineOnboardingModal'
-import { SessionManager } from '../../../components/ui/SessionManager'
-import { ResetGameModal } from '../../../components/ui/ResetGameModal'
-import { GameEndModal } from '../../../components/ui/GameEndModal'
-import { QuestionImportModal, type ParsedImport } from '../../../components/ui/QuestionImportModal'
-
-type ParticipantDraft = {
-  id: string
-  name: string
-  role: TriviaParticipant['role']
-}
-
-type TeamDraft = {
-  id: string
-  name: string
-  color: string
-  members: ParticipantDraft[]
-}
+import { Button } from '@/components/ui/Button'
+import { FilmRoulette } from '@/components/ui/FilmRoulette'
+import { InfoModal } from '@/components/ui/InfoModal'
+import { MimicaModal } from '@/components/ui/MimicaModal'
+import { Modal } from '@/components/ui/Modal'
+import { Navbar } from '@/components/ui/Navbar'
+import { TeamBadge } from '@/components/ui/TeamBadge'
+import { Timer } from '@/components/ui/Timer'
+import { TriviaBoard } from '@/components/ui/TriviaBoard'
+import type { TriviaColumn, TriviaParticipant, TriviaQuestionTile, TriviaTeam } from '@/modules/trivia/types'
+import { useTriviaSession } from '@/modules/trivia/hooks/useTriviaSession'
+import { useThemeMode } from '@/app/providers/useThemeMode'
+import { useGameMode } from '@/hooks/useGameMode'
+import { usePinManagement } from '@/hooks/usePinManagement'
+import { useOfflineSession } from '@/hooks/useOfflineSession'
+import { OfflineOnboardingModal } from '@/components/ui/OfflineOnboardingModal'
+import { SessionManager } from '@/components/ui/SessionManager'
+import { ResetGameModal } from '@/components/ui/ResetGameModal'
+import { GameEndModal } from '@/components/ui/GameEndModal'
+import { QuestionImportModal } from '@/components/ui/QuestionImportModal'
+import { useControlDashboardState } from '../hooks/useControlDashboardState'
+import { useTeamManagement } from '../hooks/useTeamManagement'
+import { useQuestionManagement } from '../hooks/useQuestionManagement'
+import { useSessionManagement } from '../hooks/useSessionManagement'
+import { TeamsManagementModal } from '../components/TeamsManagementModal'
+import { ScoringControls } from '../components/ScoringControls'
+import { createTeamId, createParticipantId } from '../utils/teamUtils'
+import { createBalancedTurnSequence } from '@/modules/trivia/utils/createBalancedTurnSequence'
+import { createAlternatingTurnSequence } from '@/modules/trivia/utils/createAlternatingTurnSequence'
 
 // PIN será gerenciado pelo hook usePinManagement
 
@@ -81,32 +74,82 @@ export function ControlDashboard() {
   const { verifyPin, saveCustomPin } = usePinManagement()
   const { saveSession, loadSession } = useOfflineSession()
 
-  const [selectedIds, setSelectedIds] = useState<{ tileId: string; columnId: string } | null>(null)
-  const [showAnswer, setShowAnswer] = useState(false)
-  const [scoreboardOpen, setScoreboardOpen] = useState(false)
-  const [libraryOpen, setLibraryOpen] = useState(false)
-  const [libraryUnlocked, setLibraryUnlocked] = useState(false)
-  const [pinModalOpen, setPinModalOpen] = useState(false)
-  const [pinInput, setPinInput] = useState('')
-  const [pinError, setPinError] = useState('')
-  const [themeModalOpen, setThemeModalOpen] = useState(false)
-  const [openAccordions, setOpenAccordions] = useState<Record<string, boolean>>({})
-  const [teamsModalOpen, setTeamsModalOpen] = useState(false)
-  const [teamDrafts, setTeamDrafts] = useState<TeamDraft[]>([])
-  const [mimicaModalOpen, setMimicaModalOpen] = useState(false)
-  const [infoModalOpen, setInfoModalOpen] = useState(false)
-  const [filmRouletteOpen, setFilmRouletteOpen] = useState(false)
-  const [offlineOnboardingOpen, setOfflineOnboardingOpen] = useState(false)
-  const [showOnboardingSuggestion, setShowOnboardingSuggestion] = useState(false)
-  const [sessionManagerOpen, setSessionManagerOpen] = useState(false)
-  const [resetGameModalOpen, setResetGameModalOpen] = useState(false)
-  const [gameEndModalOpen, setGameEndModalOpen] = useState(false)
-  const [gameEndNotified, setGameEndNotified] = useState(false)
-  const [questionImportOpen, setQuestionImportOpen] = useState(false)
+  const dashboardState = useControlDashboardState()
+  const {
+    selectedIds,
+    setSelectedIds,
+    showAnswer,
+    setShowAnswer,
+    scoreboardOpen,
+    setScoreboardOpen,
+    libraryOpen,
+    setLibraryOpen,
+    libraryUnlocked,
+    setLibraryUnlocked,
+    pinModalOpen,
+    setPinModalOpen,
+    pinInput,
+    setPinInput,
+    pinError,
+    setPinError,
+    themeModalOpen,
+    setThemeModalOpen,
+    openAccordions,
+    setOpenAccordions,
+    teamsModalOpen,
+    setTeamsModalOpen,
+    mimicaModalOpen,
+    setMimicaModalOpen,
+    infoModalOpen,
+    setInfoModalOpen,
+    filmRouletteOpen,
+    setFilmRouletteOpen,
+    offlineOnboardingOpen,
+    setOfflineOnboardingOpen,
+    showOnboardingSuggestion,
+    setShowOnboardingSuggestion,
+    sessionManagerOpen,
+    setSessionManagerOpen,
+    resetGameModalOpen,
+    setResetGameModalOpen,
+    gameEndModalOpen,
+    setGameEndModalOpen,
+    gameEndNotified,
+    setGameEndNotified,
+    questionImportOpen,
+    setQuestionImportOpen,
+  } = dashboardState
 
-  const createTeamId = () => `team-${Date.now().toString(16)}-${Math.random().toString(16).slice(2)}`
-  const createParticipantId = () =>
-    `participant-${Date.now().toString(16)}-${Math.random().toString(16).slice(2)}`
+  const teamManagement = useTeamManagement(
+    orderedTeams,
+    participants,
+    session.board,
+    (teams, participants, turnSequence?: string[]) => {
+      updateTeamsAndParticipants(teams, participants, turnSequence)
+    }
+  )
+
+  const questionManagement = useQuestionManagement(
+    addQuestionTile,
+    removeQuestionTile,
+    addFilmColumn,
+    removeFilmColumn
+  )
+
+  const sessionManagement = useSessionManagement(
+    orderedTeams,
+    participants,
+    session.board,
+    (teams, participants, turnSequence?: string[]) => {
+      updateTeamsAndParticipants(teams, participants, turnSequence)
+    },
+    removeQuestionTile,
+    removeFilmColumn,
+    setTheme,
+    saveCustomPin,
+    loadSession,
+    setGameEndNotified
+  )
 
   const layoutStyle = useMemo(() => {
     return {
@@ -184,7 +227,7 @@ export function ControlDashboard() {
       })
       return next
     })
-  }, [session.board])
+  }, [session.board, setOpenAccordions])
 
   useEffect(() => {
     if (libraryOpen) {
@@ -196,7 +239,7 @@ export function ControlDashboard() {
         return next
       })
     }
-  }, [libraryOpen, session.board])
+  }, [libraryOpen, session.board, setOpenAccordions])
 
   // Fecha onboarding se mudar de modo
   useEffect(() => {
@@ -204,7 +247,7 @@ export function ControlDashboard() {
       setOfflineOnboardingOpen(false)
       setShowOnboardingSuggestion(false)
     }
-  }, [gameMode])
+  }, [gameMode, setOfflineOnboardingOpen, setShowOnboardingSuggestion])
 
   // Mostra sugestão de onboarding de forma não forçada
   useEffect(() => {
@@ -216,7 +259,7 @@ export function ControlDashboard() {
       
       return () => clearTimeout(timer)
     }
-  }, [gameMode, orderedTeams.length, showOnboardingSuggestion])
+  }, [gameMode, orderedTeams.length, showOnboardingSuggestion, setShowOnboardingSuggestion])
 
   // Salva sessão automaticamente quando há mudanças (apenas no modo offline)
   useEffect(() => {
@@ -235,7 +278,7 @@ export function ControlDashboard() {
     if (!isGameFinished && gameEndNotified) {
       setGameEndNotified(false)
     }
-  }, [isGameFinished, gameEndNotified])
+  }, [isGameFinished, gameEndNotified, setGameEndNotified])
 
   // Mostra modal de fim de jogo quando todas as perguntas forem respondidas
   useEffect(() => {
@@ -248,27 +291,8 @@ export function ControlDashboard() {
 
       return () => clearTimeout(timer);
     }
-  }, [isGameFinished, gameEndModalOpen, gameEndNotified])
+  }, [isGameFinished, gameEndModalOpen, gameEndNotified, setGameEndModalOpen, setGameEndNotified])
 
-  useEffect(() => {
-    if (!teamsModalOpen) {
-      return
-    }
-    const drafts: TeamDraft[] = orderedTeams.map((team) => ({
-      id: team.id,
-      name: team.name,
-      color: team.color,
-      members: team.members.map((memberId) => {
-        const participant = participants.find((p) => p.id === memberId)
-        return {
-          id: participant?.id ?? memberId,
-          name: participant?.name ?? 'Participante',
-          role: participant?.role ?? 'player',
-        }
-      }),
-    }))
-    setTeamDrafts(drafts)
-  }, [teamsModalOpen, orderedTeams, participants])
 
   const handleSelectTile = (tile: TriviaQuestionTile, column: TriviaColumn) => {
     updateTileState(tile.id, 'active')
@@ -324,101 +348,9 @@ export function ControlDashboard() {
     setShowOnboardingSuggestion(false)
   }
 
-  const handleLoadSession = (sessionId: string) => {
-    try {
-      const loadedSession = loadSession(sessionId);
-      if (loadedSession) {
-        // Atualiza a sessão atual com os dados carregados
-        updateTeamsAndParticipants(
-          loadedSession.teams,
-          loadedSession.participants,
-          loadedSession.turnSequence
-        );
-        
-        // Atualiza o board se existir
-        if (loadedSession.board && loadedSession.board.length > 0) {
-          // Aqui você precisaria de uma função para atualizar o board
-          // Por enquanto, vamos apenas mostrar um toast
-          toast.success('Sessão carregada com sucesso!');
-        }
-        
-        toast.success(`Sessão "${loadedSession.title}" carregada!`);
-      } else {
-        toast.error('Erro ao carregar sessão');
-      }
-    } catch (error) {
-      console.error('Erro ao carregar sessão:', error);
-      toast.error('Erro ao carregar sessão');
-    }
-  };
+  const handleLoadSession = sessionManagement.loadSessionById
 
-  const handleResetGame = (options: {
-    teams: boolean;
-    participants: boolean;
-    questions: boolean;
-    themes: boolean;
-    points: boolean;
-    films: boolean;
-  }) => {
-    try {
-      // Reset pontos
-      if (options.points) {
-        const resetTeams = orderedTeams.map((team) => ({
-          ...team,
-          score: 0,
-        }));
-        updateTeamsAndParticipants(resetTeams, participants, session.turnSequence);
-      }
-
-      // Reset perguntas (remove todas as perguntas mas mantém os filmes/colunas)
-      if (options.questions) {
-        session.board.forEach((column) => {
-          // Remove todas as tiles da coluna
-          const tilesToRemove = [...column.tiles];
-          tilesToRemove.forEach((tile) => {
-            removeQuestionTile(column.id, tile.id);
-          });
-        });
-        setGameEndNotified(false);
-      }
-
-      // Reset filmes/colunas (remove todos os filmes customizados)
-      if (options.films) {
-        // Remove todas as colunas do board
-        const columnsToRemove = [...session.board];
-        columnsToRemove.forEach((column) => {
-          removeFilmColumn(column.id);
-        });
-        
-        // Limpa também o localStorage global de filmes
-        localStorage.removeItem('trivia-custom-films');
-        setGameEndNotified(false);
-      }
-
-      // Reset tema
-      if (options.themes) {
-        setTheme('light');
-      }
-
-      // Reset times e participantes (limpa tudo)
-      if (options.teams || options.participants) {
-        updateTeamsAndParticipants([], [], []);
-      }
-
-      const resetItems = [];
-      if (options.points) resetItems.push('pontos');
-      if (options.questions) resetItems.push('perguntas');
-      if (options.films) resetItems.push('filmes');
-      if (options.themes) resetItems.push('tema');
-      if (options.teams) resetItems.push('times');
-      if (options.participants) resetItems.push('participantes');
-
-      toast.success(`Jogo resetado: ${resetItems.join(', ')}`);
-    } catch (error) {
-      console.error('Erro ao resetar jogo:', error);
-      toast.error('Erro ao resetar o jogo');
-    }
-  };
+  const handleResetGame = sessionManagement.resetGame
 
   const handleOfflineOnboardingComplete = (config: { 
     theme: string; 
@@ -484,8 +416,16 @@ export function ControlDashboard() {
         newTeams.push(team)
       })
       
-      // Cria sequência alternada de turnos (um de cada time por rodada)
-      const turnSequence = createAlternatingTurnSequence(newTeams)
+      // Calcula total de perguntas do board para usar sequência balanceada
+      const totalQuestions = session.board.reduce(
+        (acc, column) => acc + column.tiles.length,
+        0
+      )
+      
+      // Cria sequência balanceada se houver perguntas, senão usa alternada
+      const turnSequence = totalQuestions > 0
+        ? createBalancedTurnSequence(newTeams, totalQuestions)
+        : createAlternatingTurnSequence(newTeams)
       
       // Debug: log da sequência criada
       console.group('[🎯 ONBOARDING] Criando sessão')
@@ -502,6 +442,7 @@ export function ControlDashboard() {
         teamId: p.teamId,
         teamName: newTeams.find(t => t.id === p.teamId)?.name
       })))
+      console.log('Total de perguntas:', totalQuestions)
       console.log('Sequência de turnos (FINAL):', turnSequence.map((id, index) => {
         const p = newParticipants.find(p => p.id === id)
         const t = newTeams.find(t => t.id === p?.teamId)
@@ -524,69 +465,9 @@ export function ControlDashboard() {
     }
   }
 
-  const handleRegenerateTurnSequence = () => {
-    if (orderedTeams.length === 0) {
-      toast.warning('Nenhum time configurado')
-      return
-    }
-    
-    // Ordena os times por ordem
-    const sortedTeams = [...orderedTeams].sort((a, b) => a.order - b.order)
-    
-    // Cria nova sequência alternada de turnos
-    const newTurnSequence = createAlternatingTurnSequence(sortedTeams)
-    
-    // Debug: log da sequência regenerada
-    console.group('[🔄 REGENERANDO SEQUÊNCIA EXISTENTE]')
-    console.log('Times ordenados:', sortedTeams.map(t => ({ 
-      name: t.name, 
-      order: t.order,
-      members: t.members 
-    })))
-    console.log('Nova sequência:', newTurnSequence.map((id, index) => {
-      const p = participants.find(p => p.id === id)
-      const t = sortedTeams.find(t => t.id === p?.teamId)
-      return `${index + 1}. ${p?.name} (${t?.name})`
-    }))
-    console.groupEnd()
-    
-    // Atualiza apenas a sequência de turnos
-    updateTeamsAndParticipants(orderedTeams, participants, newTurnSequence)
-    toast.success('Sequência de turnos regenerada')
-  }
+  const handleRegenerateTurnSequence = sessionManagement.regenerateTurnSequence
 
-  const handleQuestionImport = (imports: ParsedImport[]) => {
-    try {
-      let totalImported = 0
-      
-      imports.forEach((imp) => {
-        imp.questions.forEach((q) => {
-          const tileId = `${imp.columnId}-${q.points}-${Date.now()}-${Math.random().toString(16).slice(2)}`
-          
-          addQuestionTile(imp.columnId, {
-            id: tileId,
-            film: imp.filmName,
-            points: q.points,
-            question: q.question,
-            answer: q.answer,
-            state: 'available' as const,
-          })
-          
-          totalImported++
-        })
-      })
-      
-      if (gameMode === 'offline') {
-        saveSession(session)
-      }
-      
-      console.log(`[✅ IMPORT] ${totalImported} perguntas importadas para ${imports.length} filmes`)
-      toast.success(`${totalImported} perguntas importadas com sucesso!`)
-    } catch (error) {
-      console.error('Erro ao importar perguntas:', error)
-      toast.error('Erro ao importar perguntas')
-    }
-  }
+  const handleQuestionImport = questionManagement.importQuestions
 
   const quickActions = [
     {
@@ -732,166 +613,6 @@ export function ControlDashboard() {
     }
   }
 
-  const handleAddTeamDraft = () => {
-    const newTeamId = createTeamId()
-    setTeamDrafts((prev) => [
-      ...prev,
-      {
-        id: newTeamId,
-        name: `Novo time ${prev.length + 1}`,
-        color: 'var(--color-primary)',
-        members: [
-          {
-            id: createParticipantId(),
-            name: 'Participante',
-            role: 'player',
-          },
-        ],
-      },
-    ])
-  }
-
-  const handleRemoveTeamDraft = (teamId: string) => {
-    if (window.confirm('Remover este time e os participantes associados?')) {
-      setTeamDrafts((prev) => prev.filter((team) => team.id !== teamId))
-      toast.success('Time removido')
-    }
-  }
-
-  const handleUpdateTeamDraft = (teamId: string, updates: Partial<Omit<TeamDraft, 'id' | 'members'>>) => {
-    setTeamDrafts((prev) =>
-      prev.map((team) => (team.id === teamId ? { ...team, ...updates } : team)),
-    )
-  }
-
-  const handleMoveTeamDraft = (teamId: string, direction: -1 | 1) => {
-    setTeamDrafts((prev) => {
-      const index = prev.findIndex((team) => team.id === teamId)
-      if (index === -1) return prev
-      const newIndex = index + direction
-      if (newIndex < 0 || newIndex >= prev.length) return prev
-      const next = [...prev]
-      const [moved] = next.splice(index, 1)
-      next.splice(newIndex, 0, moved)
-      return next
-    })
-  }
-
-  const handleAddParticipantDraft = (teamId: string) => {
-    setTeamDrafts((prev) =>
-      prev.map((team) =>
-        team.id === teamId
-          ? {
-              ...team,
-              members: [
-                ...team.members,
-                { id: createParticipantId(), name: 'Participante', role: 'player' },
-              ],
-            }
-          : team,
-      ),
-    )
-  }
-
-  const handleRemoveParticipantDraft = (teamId: string, participantId: string) => {
-    setTeamDrafts((prev) =>
-      prev.map((team) =>
-        team.id === teamId
-          ? {
-              ...team,
-              members: team.members.filter((member) => member.id !== participantId),
-            }
-          : team,
-      ),
-    )
-  }
-
-  const handleUpdateParticipantDraft = (
-    teamId: string,
-    participantId: string,
-    updates: Partial<ParticipantDraft>,
-  ) => {
-    setTeamDrafts((prev) =>
-      prev.map((team) =>
-        team.id === teamId
-          ? {
-              ...team,
-              members: team.members.map((member) =>
-                member.id === participantId ? { ...member, ...updates } : member,
-              ),
-            }
-          : team,
-      ),
-    )
-  }
-
-  const handleMoveParticipantDraft = (teamId: string, participantId: string, direction: -1 | 1) => {
-    setTeamDrafts((prev) =>
-      prev.map((team) => {
-        if (team.id !== teamId) return team
-        const index = team.members.findIndex((member) => member.id === participantId)
-        if (index === -1) return team
-        const newIndex = index + direction
-        if (newIndex < 0 || newIndex >= team.members.length) return team
-        const members = [...team.members]
-        const [moved] = members.splice(index, 1)
-        members.splice(newIndex, 0, moved)
-        return {
-          ...team,
-          members,
-        }
-      }),
-    )
-  }
-
-  const canSaveTeams = useMemo(() => {
-    if (!teamDrafts.length) return false
-    return teamDrafts.every((team) => team.name.trim() && team.members.length > 0 && team.members.every((member) => member.name.trim()))
-  }, [teamDrafts])
-
-  const handleSaveTeams = () => {
-    const newTeams: TriviaTeam[] = teamDrafts.map((team, index) => ({
-      id: team.id,
-      name: team.name.trim() || `Time ${index + 1}`,
-      color: team.color || 'var(--color-primary)',
-      order: index,
-      members: team.members.map((member) => member.id),
-      score: orderedTeams.find((t) => t.id === team.id)?.score || 0
-    }))
-
-    const newParticipants: TriviaParticipant[] = teamDrafts.flatMap((team) =>
-      team.members.map((member) => ({
-        id: member.id,
-        name: member.name.trim() || 'Participante',
-        role: member.role,
-        teamId: team.id,
-      })),
-    )
-
-    // Ordena os times por ordem antes de criar a sequência
-    const sortedTeams = [...newTeams].sort((a, b) => a.order - b.order)
-    
-    // Cria sequência alternada de turnos (um de cada time por rodada)
-    const newTurnSequence = createAlternatingTurnSequence(sortedTeams)
-
-    // Debug: log da sequência criada
-    console.group('[🔄 REGENERANDO SEQUÊNCIA]')
-    console.log('Times ordenados:', sortedTeams.map(t => ({ 
-      name: t.name, 
-      order: t.order,
-      members: t.members 
-    })))
-    console.log('Nova sequência:', newTurnSequence.map((id, index) => {
-      const p = newParticipants.find(p => p.id === id)
-      const t = sortedTeams.find(t => t.id === p?.teamId)
-      return `${index + 1}. ${p?.name} (${t?.name})`
-    }))
-    console.groupEnd()
-
-    updateTeamsAndParticipants(newTeams, newParticipants, newTurnSequence)
-    setTeamsModalOpen(false)
-    toast.success('Times atualizados e sequência regenerada')
-  }
 
   return (
     <div className="flex min-h-screen flex-col" style={layoutStyle}>
@@ -1161,7 +882,7 @@ export function ControlDashboard() {
               Revelar resposta
             </Button>
           )}
-          <ScoringControlsFlexible
+          <ScoringControls
             teams={orderedTeams}
             participants={participants}
             activeTeamId={activeTeam?.id ?? null}
@@ -1176,9 +897,16 @@ export function ControlDashboard() {
               let message = ''
               
               if (distributions.length === 0) {
-                // Anular pergunta
-                  message = `${selectedTile.column.film}: pergunta anulada (sem pontuação)`
+                // Anular pergunta - marca como answered mesmo sem pontos
+                updateTileState(selectedTile.tile.id, 'answered')
+                message = `${selectedTile.column.film}: pergunta anulada (sem pontuação)`
                 toast.success(message)
+                
+                // Avança para o próximo turno
+                advanceTurn()
+                
+                setSelectedIds(null)
+                setShowAnswer(false)
                 return
               }
               
@@ -1204,11 +932,6 @@ export function ControlDashboard() {
               
               // Avança para o próximo turno
               advanceTurn()
-              
-              // Salva a sessão após pontuar (modo offline)
-              if (gameMode === 'offline') {
-                saveSession(session)
-              }
               
               setSelectedIds(null)
               setShowAnswer(false)
@@ -1293,143 +1016,24 @@ export function ControlDashboard() {
         </div>
       </Modal>
 
-      <Modal
+      <TeamsManagementModal
         isOpen={teamsModalOpen}
-        title="Gestão de times"
-        description="Ajuste nomes, participantes e ordem de turno das equipes."
         onClose={() => setTeamsModalOpen(false)}
-      >
-        <div className="flex items-center justify-between pb-4">
-          <p className="text-sm text-[var(--color-muted)]">Organize os times e defina a rotação dos jogadores.</p>
-          <Button variant="outline" size="sm" onClick={handleAddTeamDraft}>
-            <Plus size={14} /> Adicionar time
-          </Button>
-        </div>
-        <div className="max-h-[60vh] space-y-4 overflow-y-auto pr-1">
-          {teamDrafts.map((team, index) => (
-            <div key={team.id} className="rounded-2xl border border-[var(--color-border)] bg-[var(--color-background)]">
-              <div className="flex flex-wrap items-center justify-between gap-3 px-4 py-3">
-                <div className="flex flex-wrap items-center gap-3">
-                  <span className="text-xs font-semibold uppercase tracking-[0.3em] text-[var(--color-muted)]">
-                    Time {index + 1}
-                  </span>
-                  <input
-                    value={team.name}
-                    onChange={(event) => handleUpdateTeamDraft(team.id, { name: event.target.value })}
-                    className="rounded-xl border border-[var(--color-border)] bg-[var(--color-background)] px-3 py-2 text-sm text-[var(--color-text)]"
-                  />
-                  <input
-                    type="color"
-                    value={team.color}
-                    onChange={(event) => handleUpdateTeamDraft(team.id, { color: event.target.value })}
-                    className="h-9 w-12 cursor-pointer rounded-md border border-[var(--color-border)] bg-[var(--color-background)]"
-                  />
-                </div>
-                <div className="flex items-center gap-2">
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    onClick={() => handleMoveTeamDraft(team.id, -1)}
-                    disabled={index === 0}
-                    aria-label="Mover time para cima"
-                  >
-                    <ArrowUp size={16} />
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    onClick={() => handleMoveTeamDraft(team.id, 1)}
-                    disabled={index === teamDrafts.length - 1}
-                    aria-label="Mover time para baixo"
-                  >
-                    <ArrowDown size={16} />
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    onClick={() => handleRemoveTeamDraft(team.id)}
-                    aria-label="Remover time"
-                  >
-                    <Trash2 size={16} />
-                  </Button>
-                </div>
-              </div>
-              <div className="space-y-3 px-4 pb-4">
-                {team.members.map((member, memberIndex) => (
-                  <div key={member.id} className="space-y-2 rounded-xl border border-[var(--color-border)] bg-[var(--color-background)] p-3">
-                    <div className="flex flex-wrap items-center justify-between gap-2">
-                      <input
-                        value={member.name}
-                        onChange={(event) =>
-                          handleUpdateParticipantDraft(team.id, member.id, { name: event.target.value })
-                        }
-                        className="flex-1 rounded-lg border border-[var(--color-border)] bg-[var(--color-background)] px-3 py-2 text-sm text-[var(--color-text)]"
-                      />
-                      <select
-                        value={member.role}
-                        onChange={(event) =>
-                          handleUpdateParticipantDraft(team.id, member.id, {
-                            role: event.target.value as TriviaParticipant['role'],
-                          })
-                        }
-                        className="rounded-lg border border-[var(--color-border)] bg-[var(--color-background)] px-2 py-2 text-sm text-[var(--color-text)]"
-                      >
-                        <option value="host">Anfitrião</option>
-                        <option value="assistant">Assistente</option>
-                        <option value="player">Jogador</option>
-                      </select>
-                      <div className="flex items-center gap-1">
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={() => handleMoveParticipantDraft(team.id, member.id, -1)}
-                          disabled={memberIndex === 0}
-                          aria-label="Mover participante para cima"
-                        >
-                          <ArrowUp size={16} />
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={() => handleMoveParticipantDraft(team.id, member.id, 1)}
-                          disabled={memberIndex === team.members.length - 1}
-                          aria-label="Mover participante para baixo"
-                        >
-                          <ArrowDown size={16} />
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={() => handleRemoveParticipantDraft(team.id, member.id)}
-                          aria-label="Remover participante"
-                        >
-                          <Trash2 size={16} />
-                        </Button>
-                      </div>
-                    </div>
-                  </div>
-                ))}
-                <Button variant="outline" size="sm" onClick={() => handleAddParticipantDraft(team.id)}>
-                  <UserPlus size={14} /> Adicionar participante
-                </Button>
-              </div>
-            </div>
-          ))}
-          {!teamDrafts.length ? (
-            <p className="rounded-2xl border border-dashed border-[var(--color-border)] bg-[var(--color-background)] px-4 py-10 text-center text-sm text-[var(--color-muted)]">
-              Nenhum time cadastrado. Adicione um novo time para começar.
-            </p>
-          ) : null}
-        </div>
-        <div className="mt-4 flex justify-end gap-3">
-          <Button variant="secondary" disabled={!canSaveTeams} onClick={handleSaveTeams}>
-            Salvar alterações
-          </Button>
-          <Button variant="outline" onClick={() => setTeamsModalOpen(false)}>
-            Fechar
-          </Button>
-        </div>
-      </Modal>
+        teamDrafts={teamManagement.teamDrafts}
+        canSave={teamManagement.canSave}
+        onAddTeam={teamManagement.addTeam}
+        onRemoveTeam={teamManagement.removeTeam}
+        onUpdateTeam={teamManagement.updateTeam}
+        onMoveTeam={teamManagement.moveTeam}
+        onAddParticipant={teamManagement.addParticipant}
+        onRemoveParticipant={teamManagement.removeParticipant}
+        onUpdateParticipant={teamManagement.updateParticipant}
+        onMoveParticipant={teamManagement.moveParticipant}
+        onSave={() => {
+          teamManagement.saveTeams()
+          setTeamsModalOpen(false)
+        }}
+      />
 
       <Modal
         isOpen={pinModalOpen}
@@ -1649,24 +1253,54 @@ export function ControlDashboard() {
         onAdvanceTurn={advanceTurn}
         onScore={(mode, targetTeamId, points) => {
           let message = ''
-          switch (mode) {
-            case 'full-current':
-              message = `Mímica: ${points} pontos para ${activeTeam?.name ?? 'time da vez'}`
-              break
-            case 'half-current':
-              message = `Mímica: ${points} pontos para ${activeTeam?.name ?? 'time da vez'}`
-              break
-            case 'steal':
-              message = `Mímica: ${points} pontos transferidos para ${orderedTeams.find((team) => team.id === targetTeamId)?.name ?? 'outro time'}`
-              break
-            case 'everyone':
-              message = `Mímica: ${points} pontos distribuídos para todos os times`
-              break
-            case 'void':
-              message = `Mímica: sem pontuação`
-              break
+          
+          try {
+            switch (mode) {
+              case 'full-current':
+                if (activeTeam && activeParticipant) {
+                  // Cria um tileId fictício para mímica (não associado a pergunta)
+                  const mimicaTileId = `mimica-${Date.now()}-${Math.random().toString(16).slice(2)}`
+                  awardPoints(mimicaTileId, activeTeam.id, activeParticipant.id, points ?? 0)
+                  message = `Mímica: ${points} pontos para ${activeTeam.name}`
+                }
+                break
+              case 'half-current':
+                if (activeTeam && activeParticipant) {
+                  const mimicaTileId = `mimica-${Date.now()}-${Math.random().toString(16).slice(2)}`
+                  awardPoints(mimicaTileId, activeTeam.id, activeParticipant.id, points ?? 0)
+                  message = `Mímica: ${points} pontos para ${activeTeam.name}`
+                }
+                break
+              case 'steal':
+                if (targetTeamId && activeParticipant) {
+                  const targetTeam = orderedTeams.find((team) => team.id === targetTeamId)
+                  if (targetTeam) {
+                    const mimicaTileId = `mimica-${Date.now()}-${Math.random().toString(16).slice(2)}`
+                    awardPoints(mimicaTileId, targetTeamId, activeParticipant.id, points ?? 0)
+                    message = `Mímica: ${points} pontos transferidos para ${targetTeam.name}`
+                  }
+                }
+                break
+              case 'everyone':
+                if (activeParticipant) {
+                  const pointsPerTeam = points
+                  orderedTeams.forEach((team) => {
+                    const mimicaTileId = `mimica-${Date.now()}-${Math.random().toString(16).slice(2)}-${team.id}`
+                    awardPoints(mimicaTileId, team.id, activeParticipant.id, pointsPerTeam ?? 0)
+                  })
+                  message = `Mímica: ${pointsPerTeam} pontos distribuídos para todos os times`
+                }
+                break
+              case 'void':
+                message = `Mímica: sem pontuação`
+                break
+            }
+            
+            toast.success(message)
+          } catch (error) {
+            console.error('Erro ao adicionar pontos da mímica:', error)
+            toast.error('Erro ao adicionar pontos da mímica')
           }
-          toast.success(message)
         }}
       />
 
@@ -1722,378 +1356,6 @@ export function ControlDashboard() {
         columns={session.board}
         onImport={handleQuestionImport}
       />
-    </div>
-  )
-}
-
-
-// Novos tipos para sistema flexível
-type FlexibleScoringMode = 'quick' | 'advanced' | 'custom'
-
-type PointDistribution = {
-  teamId: string
-  participantId?: string // Se não especificado, distribui para o time inteiro
-  points: number
-  percentage: number
-}
-
-
-
-type QuickScoringOption = {
-  id: string
-  title: string
-  subtitle: string
-  multiplier: number
-  target: 'current-team' | 'other-team' | 'all-teams' | 'none'
-}
-
-
-// Componente flexível de pontuação
-type ScoringControlsFlexibleProps = {
-  teams: TriviaTeam[]
-  participants: TriviaParticipant[]
-  activeTeamId: string | null
-  activeParticipantId: string | null
-  basePoints: number
-  onConfirm: (distributions: PointDistribution[]) => void
-  onClose: () => void
-}
-
-function ScoringControlsFlexible({ 
-  teams, 
-  participants, 
-  activeTeamId, 
-  activeParticipantId, 
-  basePoints, 
-  onConfirm, 
-  onClose 
-}: ScoringControlsFlexibleProps) {
-  const [mode, setMode] = useState<FlexibleScoringMode>('quick')
-  const [distributions, setDistributions] = useState<PointDistribution[]>([])
-  const [selectedMultiplier, setSelectedMultiplier] = useState<number>(1.0)
-  const [quickModeSelected, setQuickModeSelected] = useState<boolean>(false)
-  const [selectedQuickOption, setSelectedQuickOption] = useState<string | null>(null)
-
-
-  // Opções rápidas - apenas casos mais comuns
-  const quickOptions: QuickScoringOption[] = [
-    { 
-      id: 'full-current', 
-      title: 'Valor cheio', 
-      subtitle: 'Time da vez recebe 100%', 
-      multiplier: 1.0, 
-      target: 'current-team' 
-    },
-    { 
-      id: 'half-current', 
-      title: 'Meio valor', 
-      subtitle: 'Time da vez recebe 50%', 
-      multiplier: 0.5, 
-      target: 'current-team' 
-    },
-    { 
-      id: 'void', 
-      title: 'Anular', 
-      subtitle: 'Pergunta sem pontuação', 
-      multiplier: 0, 
-      target: 'none' 
-    },
-  ]
-
-  // Inicializar distribuições
-  useEffect(() => {
-    if (mode === 'quick') {
-      setDistributions([])
-      setQuickModeSelected(false)
-      setSelectedQuickOption(null)
-    } else if (mode === 'advanced') {
-      setDistributions([])
-      setQuickModeSelected(false)
-      setSelectedQuickOption(null)
-    }
-  }, [mode])
-
-  // Validação do botão de confirmar
-  const isValid = (mode === 'quick' && quickModeSelected) || (mode === 'advanced' && distributions.length > 0)
-
-  // Aplicar opção rápida
-  const applyQuickOption = (option: QuickScoringOption) => {
-    // Se já está selecionada, desmarca
-    if (selectedQuickOption === option.id) {
-      setSelectedQuickOption(null)
-      setQuickModeSelected(false)
-      setDistributions([])
-      return
-    }
-
-    // Marca como selecionada
-    setSelectedQuickOption(option.id)
-    setQuickModeSelected(true)
-    
-    const points = Math.round(basePoints * option.multiplier)
-    
-    switch (option.target) {
-      case 'current-team':
-        if (activeTeamId) {
-          setDistributions([{
-            teamId: activeTeamId,
-            participantId: activeParticipantId || undefined,
-            points,
-            percentage: Math.round((points / basePoints) * 100)
-          }])
-        }
-        break
-      case 'none':
-        setDistributions([])
-        break
-    }
-  }
-
-  // Atualizar distribuição de um time
-  const updateTeamDistribution = (teamId: string, points: number) => {
-    const percentage = Math.round((points / basePoints) * 100)
-    setDistributions(prev => {
-      const filtered = prev.filter(d => d.teamId !== teamId)
-      if (points > 0) {
-        return [...filtered, { teamId, points, percentage }]
-      }
-      return filtered
-    })
-  }
-
-  // Obter participantes de um time
-  const getTeamParticipants = (teamId: string) => {
-    return participants.filter(p => p.teamId === teamId)
-  }
-
-  return (
-    <div className="space-y-4">
-      {/* Toggle de modo */}
-      <div className="flex rounded-xl border border-[var(--color-border)] bg-[var(--color-background)] p-1">
-        <button
-          type="button"
-          onClick={() => setMode('quick')}
-          className={`flex-1 rounded-lg px-3 py-2 text-sm font-medium transition ${
-            mode === 'quick'
-              ? 'bg-[var(--color-primary)] text-white'
-              : 'text-[var(--color-muted)] hover:text-[var(--color-text)]'
-          }`}
-        >
-          Rápido
-        </button>
-        <button
-          type="button"
-          onClick={() => setMode('advanced')}
-          className={`flex-1 rounded-lg px-3 py-2 text-sm font-medium transition ${
-            mode === 'advanced'
-              ? 'bg-[var(--color-primary)] text-white'
-              : 'text-[var(--color-muted)] hover:text-[var(--color-text)]'
-          }`}
-        >
-          Avançado
-        </button>
-      </div>
-
-      {/* Modo Rápido */}
-      {mode === 'quick' && (
-    <div className="space-y-3">
-          <div className="text-sm font-semibold text-[var(--color-text)]">
-            Opções Rápidas
-          </div>
-          <div className="grid gap-2">
-            {quickOptions.map((option) => {
-              const isSelected = selectedQuickOption === option.id
-              
-              return (
-            <button
-              key={option.id}
-              type="button"
-                  onClick={() => applyQuickOption(option)}
-              className={`w-full rounded-xl border px-4 py-3 text-left transition ${
-                    isSelected
-                  ? 'border-[var(--color-primary)] bg-[var(--color-primary)]/10'
-                      : 'border-[var(--color-border)] bg-[var(--color-background)] hover:border-[var(--color-primary)]'
-              }`}
-            >
-                  <div className="flex items-center justify-between">
-                <div>
-                      <span className="text-sm font-semibold text-[var(--color-text)]">
-                        {isSelected ? '✓ ' : ''}{option.title}
-                      </span>
-                  <p className="text-xs text-[var(--color-muted)]">{option.subtitle}</p>
-                </div>
-                <span className="text-lg font-bold text-[var(--color-primary)]">
-                      {Math.round(basePoints * option.multiplier)} pts
-                </span>
-              </div>
-            </button>
-              )
-            })}
-          </div>
-
-        </div>
-      )}
-
-      {/* Modo Avançado - Simplificado */}
-      {mode === 'advanced' && (
-        <div className="space-y-4">
-          <div className="text-sm font-semibold text-[var(--color-text)]">
-            Distribuição Personalizada
-          </div>
-
-          {/* Multiplicador Simples */}
-          <div className="space-y-2">
-            <label className="text-xs font-semibold uppercase tracking-[0.3em] text-[var(--color-muted)]">
-              Multiplicador
-            </label>
-            <div className="grid grid-cols-3 gap-2">
-              {[
-                { value: 0.5, label: '0.5x', desc: 'Meio' },
-                { value: 1.0, label: '1x', desc: 'Cheio' },
-                { value: 1.5, label: '1.5x', desc: 'Bônus' }
-              ].map((mult) => (
-                <button
-                  key={mult.value}
-                  type="button"
-                  onClick={() => setSelectedMultiplier(mult.value)}
-                  className={`rounded-lg border px-3 py-2 text-sm transition ${
-                    selectedMultiplier === mult.value
-                      ? 'border-[var(--color-primary)] bg-[var(--color-primary)]/10 text-[var(--color-primary)]'
-                      : 'border-[var(--color-border)] bg-[var(--color-background)] text-[var(--color-text)]'
-                  }`}
-                >
-                  <div className="font-semibold">{mult.label}</div>
-                  <div className="text-xs text-[var(--color-muted)]">{mult.desc}</div>
-                </button>
-              ))}
-            </div>
-          </div>
-
-          {/* Distribuição Simples por Time */}
-          <div className="space-y-3">
-            <div className="text-sm font-semibold text-[var(--color-text)]">
-              Quem recebe os pontos?
-            </div>
-            
-            {teams.map((team) => {
-              const teamDistribution = distributions.find(d => d.teamId === team.id)
-              const teamPoints = teamDistribution?.points || 0
-              const calculatedPoints = Math.round(basePoints * selectedMultiplier)
-
-              return (
-                <div key={team.id} className="space-y-2">
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm font-medium text-[var(--color-text)]">
-                      {team.name}
-                    </span>
-                    <span className="text-sm font-bold text-[var(--color-primary)]">
-                      {teamPoints} pts
-                    </span>
-                  </div>
-                  
-                  <div className="flex gap-2">
-                    <button
-                      type="button"
-                      onClick={() => updateTeamDistribution(team.id, calculatedPoints)}
-                      className={`flex-1 rounded-lg border px-3 py-2 text-sm transition ${
-                        teamPoints > 0
-                          ? 'border-[var(--color-primary)] bg-[var(--color-primary)]/10 text-[var(--color-primary)]'
-                          : 'border-[var(--color-border)] bg-[var(--color-background)] text-[var(--color-text)]'
-                      }`}
-                    >
-                      {teamPoints > 0 ? '✓ Selecionado' : `Dar ${calculatedPoints} pts`}
-                    </button>
-                    
-                    {teamPoints > 0 && (
-                      <button
-                        type="button"
-                        onClick={() => updateTeamDistribution(team.id, 0)}
-                        className="rounded-lg border border-red-300 bg-red-50 px-3 py-2 text-sm text-red-600 transition hover:bg-red-100"
-                      >
-                        ✕
-                      </button>
-                    )}
-                  </div>
-
-                  {/* Destinatário específico (só aparece se time selecionado) */}
-                  {teamPoints > 0 && (
-                    <div className="space-y-1">
-                      <label className="text-xs font-semibold uppercase tracking-[0.3em] text-[var(--color-muted)]">
-                        Para quem no time?
-                      </label>
-                      <select
-                        value={teamDistribution?.participantId || ''}
-                        onChange={(e) => {
-                          const participantId = e.target.value || undefined
-                          setDistributions(prev => 
-                            prev.map(d => 
-                              d.teamId === team.id 
-                                ? { ...d, participantId }
-                                : d
-                            )
-                          )
-                        }}
-                        className="w-full rounded-lg border border-[var(--color-border)] bg-[var(--color-background)] px-3 py-2 text-sm text-[var(--color-text)]"
-                      >
-                        <option value="">Time inteiro</option>
-                        {getTeamParticipants(team.id).map((participant) => (
-                          <option key={participant.id} value={participant.id}>
-                            {participant.name}
-                          </option>
-                        ))}
-                      </select>
-                    </div>
-                  )}
-                </div>
-              )
-            })}
-          </div>
-
-          {/* Resumo Simples */}
-          {distributions.length > 0 && (
-            <div className="rounded-xl border border-[var(--color-border)] bg-[var(--color-background)] p-3">
-              <div className="text-sm font-semibold text-[var(--color-text)] mb-2">
-                Resumo
-              </div>
-              <div className="space-y-1">
-                {distributions.map((dist, index) => {
-                  const team = teams.find(t => t.id === dist.teamId)
-                  const participant = dist.participantId 
-                    ? participants.find(p => p.id === dist.participantId)
-                    : null
-                  
-                  return (
-                    <div key={index} className="flex justify-between text-sm">
-                      <span className="text-[var(--color-text)]">
-                        {team?.name}
-                        {participant && ` (${participant.name})`}
-                      </span>
-                      <span className="font-semibold text-[var(--color-primary)]">
-                        {dist.points} pts
-                      </span>
-                    </div>
-                  )
-                })}
-              </div>
-            </div>
-          )}
-        </div>
-      )}
-
-      {/* Botões de ação */}
-      <div className="flex gap-3">
-        <Button
-          variant={isValid ? 'secondary' : 'outline'}
-          disabled={!isValid}
-          onClick={() => onConfirm(distributions)}
-          className="flex-1"
-        >
-          Confirmar pontuação
-        </Button>
-        <Button variant="outline" onClick={onClose} className="flex-1">
-          Fechar
-        </Button>
-      </div>
     </div>
   )
 }

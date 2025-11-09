@@ -3,6 +3,8 @@ import { getFilmMetadata } from '../../../data/films'
 import { slugify } from '../../../utils/slugify'
 import { createLocalSession } from '../utils/createLocalSession'
 import { createEmptySession } from '../utils/createEmptySession'
+import { createAlternatingTurnSequence } from '../utils/createAlternatingTurnSequence'
+import { createBalancedTurnSequence } from '../utils/createBalancedTurnSequence'
 import { useGameMode } from '../../../hooks/useGameMode'
 import type {
   TriviaColumn,
@@ -118,11 +120,86 @@ export function TriviaSessionProvider({ children }: TriviaSessionProviderProps) 
         console.log('[advanceTurn] Sequência vazia, não avançando')
         return prev
       }
+      
       const currentIndex = prev.activeParticipantId
         ? prev.turnSequence.indexOf(prev.activeParticipantId)
         : -1
+      
+      // Detecta wrap-around: quando está no último elemento e vai voltar ao início
+      const isWrappingAround = currentIndex === prev.turnSequence.length - 1
       const nextIndex = currentIndex === -1 ? 0 : (currentIndex + 1) % prev.turnSequence.length
-      const nextParticipantId = prev.turnSequence[nextIndex]
+      
+      // Se está fazendo wrap-around, regenera a sequência para manter alternância
+      let newTurnSequence = prev.turnSequence
+      let nextParticipantId = prev.turnSequence[nextIndex]
+      
+      if (isWrappingAround && prev.teams.length > 1) {
+        // Ordena times por ordem antes de regenerar
+        const sortedTeams = [...prev.teams].sort((a, b) => a.order - b.order)
+        
+        // Obtém o time do último participante da sequência anterior
+        const lastParticipant = prev.participants.find(p => p.id === prev.turnSequence[prev.turnSequence.length - 1])
+        const lastTeamId = lastParticipant?.teamId
+        
+        // Calcula total de perguntas do board
+        const totalQuestions = prev.board.reduce(
+          (acc, column) => acc + column.tiles.length,
+          0
+        )
+        
+        // Regenera a sequência (balanceada se houver perguntas, senão alternada)
+        const regeneratedSequence = totalQuestions > 0
+          ? createBalancedTurnSequence(sortedTeams, totalQuestions)
+          : createAlternatingTurnSequence(sortedTeams)
+        
+        // Garante que o primeiro elemento da nova sequência seja de um time diferente
+        if (regeneratedSequence.length > 0 && lastTeamId) {
+          const firstParticipant = prev.participants.find(p => p.id === regeneratedSequence[0])
+          const firstTeamId = firstParticipant?.teamId
+          
+          // Se o primeiro é do mesmo time do último, rotaciona a sequência
+          if (firstTeamId === lastTeamId && regeneratedSequence.length > 1) {
+            // Encontra o primeiro participante de um time diferente
+            const differentTeamIndex = regeneratedSequence.findIndex((id) => {
+              const p = prev.participants.find(participant => participant.id === id)
+              return p?.teamId !== lastTeamId
+            })
+            
+            // Se encontrou um time diferente (deve sempre encontrar se há mais de um time)
+            if (differentTeamIndex > 0) {
+              // Rotaciona para começar com um time diferente
+              newTurnSequence = [
+                ...regeneratedSequence.slice(differentTeamIndex),
+                ...regeneratedSequence.slice(0, differentTeamIndex)
+              ]
+            } else if (differentTeamIndex === 0) {
+              // O primeiro já é diferente, não precisa rotacionar
+              newTurnSequence = regeneratedSequence
+            } else {
+              // Fallback: não encontrou time diferente (edge case raro)
+              newTurnSequence = regeneratedSequence
+            }
+          } else {
+            newTurnSequence = regeneratedSequence
+          }
+        } else {
+          newTurnSequence = regeneratedSequence
+        }
+        
+        // O próximo participante é o primeiro da nova sequência
+        nextParticipantId = newTurnSequence[0] ?? prev.turnSequence[nextIndex]
+        
+        console.group('[🔄 ADVANCE TURN - REGENERAÇÃO]')
+        console.log('Wrap-around detectado! Regenerando sequência...')
+        console.log('Último time da sequência anterior:', lastTeamId)
+        console.log('Nova sequência:', newTurnSequence.map((id, i) => {
+          const p = prev.participants.find(p => p.id === id)
+          const t = prev.teams.find(t => t.id === p?.teamId)
+          return `${i}: ${p?.name} (${t?.name})`
+        }))
+        console.groupEnd()
+      }
+      
       const participant = prev.participants.find((p) => p.id === nextParticipantId)
       const nextTeamId = participant?.teamId ?? prev.activeTeamId
       const team = prev.teams.find((t) => t.id === nextTeamId)
@@ -140,11 +217,12 @@ export function TriviaSessionProvider({ children }: TriviaSessionProviderProps) 
         participantId: nextParticipantId,
         team: team?.name,
         teamId: nextTeamId,
-        index: nextIndex
+        index: newTurnSequence.indexOf(nextParticipantId)
       })
       console.log('SEQUENCE INFO:', {
-        totalLength: prev.turnSequence.length,
-        fullSequence: prev.turnSequence.map((id, i) => {
+        totalLength: newTurnSequence.length,
+        wasRegenerated: isWrappingAround,
+        fullSequence: newTurnSequence.map((id, i) => {
           const p = prev.participants.find(p => p.id === id)
           const t = prev.teams.find(t => t.id === p?.teamId)
           return `${i}: ${p?.name} (${t?.name})`
@@ -154,6 +232,7 @@ export function TriviaSessionProvider({ children }: TriviaSessionProviderProps) 
       
       return {
         ...prev,
+        turnSequence: newTurnSequence,
         activeParticipantId: nextParticipantId ?? null,
         activeTeamId: nextTeamId ?? prev.activeTeamId,
       }
@@ -287,20 +366,41 @@ export function TriviaSessionProvider({ children }: TriviaSessionProviderProps) 
   const updateTeamsAndParticipants = (
     teams: TriviaTeam[],
     participants: TriviaParticipant[],
-    turnSequence: string[],
+    turnSequence?: string[],
   ) => {
     setSession((prev) => {
-      const sanitizedTurnSequence = turnSequence.filter((id) =>
-        participants.some((participant) => participant.id === id),
-      )
-      const activeParticipantId = sanitizedTurnSequence[0] ?? null
+      // Se turnSequence não foi fornecida, gera automaticamente
+      let finalTurnSequence: string[] = [];
+      
+      if (turnSequence) {
+        // Usa sequência fornecida
+        finalTurnSequence = turnSequence.filter((id) =>
+          participants.some((participant) => participant.id === id),
+        );
+      } else if (teams.length > 0) {
+        // Calcula total de perguntas do board
+        const totalQuestions = prev.board.reduce(
+          (acc, column) => acc + column.tiles.length,
+          0
+        );
+        
+        // Se há perguntas no board, usa sequência balanceada
+        if (totalQuestions > 0) {
+          finalTurnSequence = createBalancedTurnSequence(teams, totalQuestions);
+        } else {
+          // Se não há perguntas, usa sequência alternada padrão
+          finalTurnSequence = createAlternatingTurnSequence(teams);
+        }
+      }
+      
+      const activeParticipantId = finalTurnSequence[0] ?? null
       const activeParticipant = participants.find((participant) => participant.id === activeParticipantId)
       const activeTeamId = activeParticipant?.teamId ?? teams[0]?.id ?? prev.activeTeamId
       return {
         ...prev,
         teams,
         participants,
-        turnSequence: sanitizedTurnSequence,
+        turnSequence: finalTurnSequence,
         activeParticipantId,
         activeTeamId,
       }
