@@ -35,16 +35,19 @@ const mockParticipants: TriviaParticipant[] = [
   {
     id: 'participant-1',
     name: 'Participante 1',
+    role: 'player',
     teamId: 'team-1',
   },
   {
     id: 'participant-2',
     name: 'Participante 2',
+    role: 'player',
     teamId: 'team-1',
   },
   {
     id: 'participant-3',
     name: 'Participante 3',
+    role: 'player',
     teamId: 'team-2',
   },
 ]
@@ -57,7 +60,6 @@ const mockBoard: TriviaColumn[] = [
     tiles: [
       {
         id: 'tile-1',
-        filmId: 'film-1',
         film: 'Matrix',
         points: 10,
         state: 'available',
@@ -66,7 +68,6 @@ const mockBoard: TriviaColumn[] = [
       },
       {
         id: 'tile-2',
-        filmId: 'film-1',
         film: 'Matrix',
         points: 20,
         state: 'answered',
@@ -88,7 +89,6 @@ const mockBoard: TriviaColumn[] = [
     tiles: [
       {
         id: 'tile-3',
-        filmId: 'film-2',
         film: 'Titanic',
         points: 15,
         state: 'available',
@@ -291,7 +291,7 @@ describe('useSessionManagement', () => {
       })
 
       const restoredSession = mockRestoreSession.mock.calls[0][0]
-      const answeredTile = restoredSession.board[0].tiles.find((t) => t.id === 'tile-2')
+      const answeredTile = restoredSession.board[0].tiles.find((t: { id: string }) => t.id === 'tile-2')
       expect(answeredTile?.state).toBe('answered')
       expect(answeredTile?.answeredBy).toEqual({
         participantId: 'participant-1',

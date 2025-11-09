@@ -1,7 +1,6 @@
 import { toast } from 'sonner'
 import type { TriviaTeam, TriviaParticipant, TriviaSession } from '@/modules/trivia/types'
-import type { ResetGameOptions, OnboardingConfig } from '../types/control.types'
-import { generateTurnSequence } from '../utils/sessionUtils'
+import type { ResetGameOptions } from '../types/control.types'
 import { createAlternatingTurnSequence } from '@/modules/trivia/utils/createAlternatingTurnSequence'
 import { createBalancedTurnSequence } from '@/modules/trivia/utils/createBalancedTurnSequence'
 
@@ -20,7 +19,7 @@ export function useSessionManagement(
   removeQuestionTile: (columnId: string, tileId: string) => void,
   removeFilmColumn: (columnId: string) => void,
   setTheme: (theme: 'light' | 'dark' | 'brazil') => void,
-  saveCustomPin: (pin: string) => void,
+  _saveCustomPin: (pin: string) => void,
   loadSession: (sessionId: string) => TriviaSession | null,
   restoreSession: (session: TriviaSession) => void,
   setGameEndNotified: (value: boolean) => void

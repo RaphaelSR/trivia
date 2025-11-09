@@ -1,6 +1,5 @@
 import { renderHook, act } from '@testing-library/react'
 import { useQuestionManagement } from '../../../../modules/control/hooks/useQuestionManagement'
-import type { TriviaColumn, TriviaQuestionTile } from '../../../../modules/trivia/types'
 import type { ParsedImport } from '../../../../components/ui/QuestionImportModal'
 
 jest.mock('sonner', () => ({

@@ -1,6 +1,6 @@
 import { useState, useMemo, useEffect } from 'react'
 import { toast } from 'sonner'
-import type { TriviaTeam, TriviaParticipant } from '@/modules/trivia/types'
+import type { TriviaTeam, TriviaParticipant, TriviaColumn } from '@/modules/trivia/types'
 import type { TeamDraft } from '../types/control.types'
 import {
   addTeamDraft,
@@ -12,7 +12,6 @@ import {
   updateParticipantDraft,
   moveParticipantDraft,
   canSaveTeams,
-  createNewTeamDraft,
 } from '../utils/teamUtils'
 import {
   convertDraftsToTeams,
@@ -99,7 +98,7 @@ export function useTeamManagement(
     const newTeams = convertDraftsToTeams(teamDrafts, teams)
     const newParticipants = convertDraftsToParticipants(teamDrafts)
     const sortedTeams = [...newTeams].sort((a, b) => a.order - b.order)
-    const newTurnSequence = generateTurnSequence(sortedTeams, board as Array<{ tiles: Array<unknown> }>)
+    const newTurnSequence = generateTurnSequence(sortedTeams, board as TriviaColumn[])
 
     updateTeamsAndParticipants(newTeams, newParticipants, newTurnSequence)
     toast.success('Times atualizados e sequência regenerada')

@@ -159,13 +159,13 @@ export function importFilmsWithQuestions(
 export function convertImportToColumns(
   importData: FilmImportResult,
   createColumnId: () => string,
-  createTileId: (columnId: string, points: number) => string
+  _createTileId: (columnId: string, points: number) => string
 ): Array<{
   column: Omit<TriviaColumn, 'id' | 'tiles'>
   tiles: Array<Omit<TriviaQuestionTile, 'id'>>
 }> {
   return importData.films.map((film) => {
-    const columnId = createColumnId()
+    createColumnId()
 
     const tiles = film.questions.map((q) => ({
       film: film.name,

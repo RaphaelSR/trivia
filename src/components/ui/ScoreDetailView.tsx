@@ -1,5 +1,5 @@
 import { useState, useMemo } from 'react'
-import { Calendar, Film, Trophy, UsersRound, X } from 'lucide-react'
+import { Calendar, Film, UsersRound } from 'lucide-react'
 import { Button } from './Button'
 import { Modal } from './Modal'
 import type { TriviaParticipant, TriviaTeam, TriviaColumn, MimicaScore } from '@/modules/trivia/types'
@@ -27,11 +27,10 @@ export function ScoreDetailView({
   team,
   board,
   mimicaScores,
-  allParticipants,
+  allParticipants: _allParticipants,
   allTeams,
 }: ScoreDetailViewProps) {
   const [activeTab, setActiveTab] = useState<TabType>('summary')
-  const [filterSource, setFilterSource] = useState<'all' | 'trivia' | 'mimica'>('all')
   const [sortBy, setSortBy] = useState<'date' | 'points' | 'turn'>('date')
 
   const triviaScores = useMemo(() => {
@@ -67,56 +66,6 @@ export function ScoreDetailView({
   }, [participantMimicaScores])
 
   const totalPoints = totalTriviaPoints + totalMimicaPoints
-
-  const allScores = useMemo(() => {
-    const trivia = triviaScores.map((score) => ({
-      ...score,
-      type: 'trivia' as const,
-    }))
-    const mimica = participantMimicaScores.map((score) => ({
-      id: score.id,
-      film: 'Mímica',
-      question: `Mímica - ${score.mode === 'full-current' ? 'Valor cheio' : score.mode === 'half-current' ? 'Meio valor' : score.mode === 'steal' ? 'Roubo' : score.mode === 'everyone' ? 'Todos' : 'Anulada'}`,
-      answer: '',
-      points: score.pointsAwarded,
-      timestamp: score.timestamp,
-      turnNumber: score.turnNumber,
-      roundNumber: score.roundNumber,
-      source: 'mimica' as const,
-      mode: score.mode,
-      targetTeamId: score.targetTeamId,
-      type: 'mimica' as const,
-    }))
-
-    let combined = [...trivia, ...mimica]
-
-    if (filterSource !== 'all') {
-      combined = combined.filter((score) => score.source === filterSource)
-    }
-
-    switch (sortBy) {
-      case 'points':
-        combined.sort((a, b) => b.points - a.points)
-        break
-      case 'turn':
-        combined.sort((a, b) => {
-          if (a.roundNumber !== undefined && b.roundNumber !== undefined) {
-            if (a.roundNumber !== b.roundNumber) {
-              return a.roundNumber - b.roundNumber
-            }
-            return (a.turnNumber || 0) - (b.turnNumber || 0)
-          }
-          return 0
-        })
-        break
-      case 'date':
-      default:
-        combined.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime())
-        break
-    }
-
-    return combined
-  }, [triviaScores, participantMimicaScores, filterSource, sortBy])
 
   const formatDate = (timestamp: string) => {
     const date = new Date(timestamp)
