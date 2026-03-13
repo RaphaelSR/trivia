@@ -7,9 +7,13 @@ export interface ControlConfirmActionConfig {
 
 export interface ControlDashboardState {
   selectedIds: { tileId: string; columnId: string } | null
+  activePanel: 'board' | 'scoreboard' | 'library' | 'films' | 'sessions' | 'theme' | 'teams'
+  sidebarCollapsed: boolean
+  mobileSidebarOpen: boolean
   showAnswer: boolean
   scoreboardOpen: boolean
   libraryOpen: boolean
+  filmsOpen: boolean
   libraryUnlocked: boolean
   pinModalOpen: boolean
   pinInput: string
@@ -29,6 +33,13 @@ export interface ControlDashboardState {
   questionImportOpen: boolean
   scoreDetailOpen: boolean
   selectedParticipantId: string | null
+  selectedFilmId: string | null
+  libraryViewMode: 'editor' | 'overview'
+  librarySearchQuery: string
+  libraryPointsFilter: number | null
+  librarySortMode: 'az' | 'questions' | 'points'
+  filmCatalogViewMode: 'grid' | 'list'
+  filmCatalogSortMode: 'recent' | 'az' | 'year'
   confirmActionOpen: boolean
   confirmActionConfig: ControlConfirmActionConfig | null
 }
@@ -40,9 +51,13 @@ export type ControlDashboardAction = {
 
 export const initialControlDashboardState: ControlDashboardState = {
   selectedIds: null,
+  activePanel: 'board',
+  sidebarCollapsed: false,
+  mobileSidebarOpen: false,
   showAnswer: false,
   scoreboardOpen: false,
   libraryOpen: false,
+  filmsOpen: false,
   libraryUnlocked: false,
   pinModalOpen: false,
   pinInput: '',
@@ -62,6 +77,13 @@ export const initialControlDashboardState: ControlDashboardState = {
   questionImportOpen: false,
   scoreDetailOpen: false,
   selectedParticipantId: null,
+  selectedFilmId: null,
+  libraryViewMode: 'editor',
+  librarySearchQuery: '',
+  libraryPointsFilter: null,
+  librarySortMode: 'az',
+  filmCatalogViewMode: 'grid',
+  filmCatalogSortMode: 'recent',
   confirmActionOpen: false,
   confirmActionConfig: null,
 }

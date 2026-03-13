@@ -2,7 +2,7 @@ import {
   BookOpen,
   ClipboardList,
   Dice5,
-  Eye,
+  Film,
   Info,
   Palette,
   RefreshCw,
@@ -11,21 +11,19 @@ import {
   UsersRound,
   Theater,
 } from 'lucide-react'
-import type { CSSProperties } from 'react'
 import { useEffect, useMemo } from 'react'
 import { toast } from 'sonner'
 import { Button } from '@/components/ui/Button'
 import { FilmRoulette } from '@/components/ui/FilmRoulette'
+import { FilmManager } from '@/components/ui/FilmManager'
 import { InfoModal } from '@/components/ui/InfoModal'
 import { MimicaModal } from '@/components/ui/MimicaModal'
 import { Modal } from '@/components/ui/Modal'
-import { Navbar } from '@/components/ui/Navbar'
-import { TeamBadge } from '@/components/ui/TeamBadge'
-import { Timer } from '@/components/ui/Timer'
 import { TriviaBoard } from '@/components/ui/TriviaBoard'
 import type { TriviaColumn, TriviaParticipant, TriviaQuestionTile, TriviaTeam } from '@/modules/trivia/types'
 import { useTriviaSession } from '@/modules/trivia/hooks/useTriviaSession'
 import { useThemeMode } from '@/app/providers/useThemeMode'
+import { useCustomFilms } from '@/hooks/useCustomFilms'
 import { useGameMode } from '@/hooks/useGameMode'
 import { usePinManagement } from '@/hooks/usePinManagement'
 import { useOfflineSession } from '@/hooks/useOfflineSession'
@@ -36,10 +34,19 @@ import { GameEndModal } from '@/components/ui/GameEndModal'
 import { QuestionLibraryModal } from '@/components/ui/QuestionLibraryModal'
 import { ScoreDetailView } from '@/components/ui/ScoreDetailView'
 import { ConfirmActionModal } from '@/components/ui/ConfirmActionModal'
+import { Timer } from '@/components/ui/Timer'
 import { STORAGE_KEYS } from '@/shared/constants/storage'
+import { FloatingActionBar } from '@/shared/components/FloatingActionBar'
 import { storageService } from '@/shared/services/storage.service'
 import { countAnsweredTiles, countTotalTiles } from '@/modules/game/domain/board.utils'
 import { buildTurnSequence } from '@/modules/game/domain/turn-order'
+import { GameStatusStrip } from '../ui/GameStatusStrip'
+import { ControlShell } from '../ui/ControlShell'
+import { ControlSidebar } from '../ui/ControlSidebar'
+import { ControlTopbar } from '../ui/ControlTopbar'
+import { EmptyStatePanel } from '../ui/EmptyStatePanel'
+import { SidebarNavGroup } from '../ui/SidebarNavGroup'
+import { SidebarNavItem } from '../ui/SidebarNavItem'
 import { useControlDashboardState } from '../hooks/useControlDashboardState'
 import { useTeamManagement } from '../hooks/useTeamManagement'
 import { useSessionManagement } from '../hooks/useSessionManagement'
@@ -51,12 +58,10 @@ import { createTeamId, createParticipantId } from '../utils/teamUtils'
 export function ControlDashboard() {
   const {
     session,
-    theme,
     orderedTeams,
     participants,
     activeTeam,
     activeParticipant,
-    nextParticipant,
     updateTileState,
     updateTileContent,
     updateColumnTitle,
@@ -71,20 +76,29 @@ export function ControlDashboard() {
     restoreSession,
   } = useTriviaSession()
   const { theme: themeMode, setTheme } = useThemeMode()
-  const { gameMode, getModeDisplayName, getModeDescription } = useGameMode()
+  const { gameMode, getModeDisplayName } = useGameMode()
   const { verifyPin, saveCustomPin } = usePinManagement()
-  const { saveSession, loadSession } = useOfflineSession()
+  const { saveSession, loadSession, getSessionStatus } = useOfflineSession()
+  const { films: customFilms, addFilm: addCustomFilm, updateFilm: updateCustomFilm, removeFilm: removeCustomFilm } = useCustomFilms()
 
   const dashboardState = useControlDashboardState()
   const {
     selectedIds,
     setSelectedIds,
+    activePanel,
+    setActivePanel,
+    sidebarCollapsed,
+    setSidebarCollapsed,
+    mobileSidebarOpen,
+    setMobileSidebarOpen,
     showAnswer,
     setShowAnswer,
     scoreboardOpen,
     setScoreboardOpen,
     libraryOpen,
     setLibraryOpen,
+    filmsOpen,
+    setFilmsOpen,
     libraryUnlocked,
     setLibraryUnlocked,
     pinModalOpen,
@@ -121,6 +135,18 @@ export function ControlDashboard() {
     setScoreDetailOpen,
     selectedParticipantId,
     setSelectedParticipantId,
+    selectedFilmId,
+    setSelectedFilmId,
+    librarySearchQuery,
+    setLibrarySearchQuery,
+    libraryPointsFilter,
+    setLibraryPointsFilter,
+    librarySortMode,
+    setLibrarySortMode,
+    filmCatalogViewMode,
+    setFilmCatalogViewMode,
+    filmCatalogSortMode,
+    setFilmCatalogSortMode,
     confirmActionOpen,
     setConfirmActionOpen,
     confirmActionConfig,
@@ -153,15 +179,6 @@ export function ControlDashboard() {
     setGameEndNotified
   )
 
-  const layoutStyle = useMemo(() => {
-    return {
-      '--color-primary': theme.palette.primary,
-      '--color-secondary': theme.palette.accent,
-      '--color-surface': theme.palette.surface,
-      '--color-background': theme.palette.background,
-    } as CSSProperties
-  }, [theme.palette.accent, theme.palette.primary, theme.palette.surface, theme.palette.background])
-
   const selectedTile = useMemo(() => {
     if (!selectedIds) return null
     const column = session.board.find((col) => col.id === selectedIds.columnId)
@@ -193,15 +210,6 @@ export function ControlDashboard() {
     }))
   }, [orderedTeams])
 
-  const activeParticipantTeamName = useMemo(() => {
-    if (!activeParticipant) return null
-    return orderedTeams.find((team) => team.id === activeParticipant.teamId)?.name ?? null
-  }, [activeParticipant, orderedTeams])
-
-  const nextParticipantTeamName = useMemo(() => {
-    if (!nextParticipant) return null
-    return orderedTeams.find((team) => team.id === nextParticipant.teamId)?.name ?? null
-  }, [nextParticipant, orderedTeams])
 
   // Calcula o turno atual (rodada completa)
   // Uma rodada completa = todos os times jogaram uma vez (um participante de cada time)
@@ -217,6 +225,19 @@ export function ControlDashboard() {
     // Calcula quantas rodadas completas já passaram + 1 (rodada atual)
     return Math.floor(currentIndex / teamsPerRound) + 1;
   }, [session.activeParticipantId, session.turnSequence, orderedTeams.length])
+
+  const answeredCards = useMemo(() => countAnsweredTiles(session.board), [session.board])
+  const totalCards = useMemo(() => countTotalTiles(session.board), [session.board])
+  const sessionStatus = getSessionStatus()
+  const backendLabel = gameMode === 'online' ? 'online-cache' : gameMode === 'offline' ? 'local' : 'demo'
+  const activeTurnIndex = session.activeParticipantId ? session.turnSequence.indexOf(session.activeParticipantId) : -1
+  const currentTurnLabel = activeTurnIndex >= 0
+    ? `${activeTurnIndex + 1} de ${session.turnSequence.length}`
+    : 'Aguardando sequência'
+  const sessionFilms = useMemo(
+    () => session.board.map((column) => ({ id: column.id, name: column.film })),
+    [session.board],
+  )
 
 
   // Fecha onboarding se mudar de modo
@@ -319,9 +340,11 @@ export function ControlDashboard() {
 
   const handleShowLibrary = () => {
     if (!libraryUnlocked) {
+      setActivePanel('library')
       setPinModalOpen(true)
       return
     }
+    setActivePanel('library')
     setLibraryOpen(true)
   }
 
@@ -331,6 +354,7 @@ export function ControlDashboard() {
       setPinModalOpen(false)
       setPinInput('')
       setPinError('')
+      setActivePanel('library')
       setLibraryOpen(true)
       toast.success('Acesso liberado')
       return
@@ -339,12 +363,38 @@ export function ControlDashboard() {
   }
 
   const handleStartOnboarding = () => {
+    setActivePanel('sessions')
     setOfflineOnboardingOpen(true)
     setShowOnboardingSuggestion(false)
   }
 
   const handleDismissOnboardingSuggestion = () => {
     setShowOnboardingSuggestion(false)
+  }
+
+  const handleOpenScoreboard = () => {
+    setActivePanel('scoreboard')
+    setScoreboardOpen(true)
+  }
+
+  const handleOpenTeams = () => {
+    setActivePanel('teams')
+    setTeamsModalOpen(true)
+  }
+
+  const handleOpenSessions = () => {
+    setActivePanel('sessions')
+    setSessionManagerOpen(true)
+  }
+
+  const handleOpenTheme = () => {
+    setActivePanel('theme')
+    setThemeModalOpen(true)
+  }
+
+  const handleOpenFilms = () => {
+    setActivePanel('films')
+    setFilmsOpen(true)
   }
 
   const handleLoadSession = (sessionId: string) => {
@@ -412,10 +462,8 @@ export function ControlDashboard() {
       saveCustomPin(config.pin)
       
       // Cria colunas para os filmes customizados
-      const filmColumns: string[] = []
       config.customFilms.forEach(film => {
-        const columnId = addFilmColumn(film.name)
-        filmColumns.push(columnId)
+        addFilmColumn(film.name)
       })
       
       // Cria times e participantes
@@ -476,6 +524,7 @@ export function ControlDashboard() {
       // Fecha o modal de onboarding e sugestão
       setOfflineOnboardingOpen(false)
       setShowOnboardingSuggestion(false)
+      setActivePanel('board')
       
       toast.success('Configuração inicial concluída! Sessão pronta para jogar!')
       
@@ -496,96 +545,6 @@ export function ControlDashboard() {
     })
     setConfirmActionOpen(true)
   }
-
-
-  const quickActions = [
-    {
-      id: 'random',
-      icon: <Dice5 size={18} />,
-      label: 'Sortear Pergunta',
-      description: 'Seleciona uma pergunta aleatória disponível',
-      onClick: handleRandomQuestion,
-    },
-    {
-      id: 'answer',
-      icon: <Eye size={18} />,
-      label: 'Mostrar Resposta',
-      description: 'Exibe a resposta da pergunta selecionada',
-      onClick: () => {
-        if (!selectedTile) {
-          toast.info('Selecione uma carta para exibir a resposta')
-          return
-        }
-        setShowAnswer(true)
-        toast.success('Resposta exibida para a sala')
-      },
-      disabled: !selectedTile,
-    },
-    {
-      id: 'mimica',
-      icon: <Theater size={18} />,
-      label: 'Modo Mímica',
-      description: 'Abre o modo de mímica para pontuação especial',
-      onClick: () => setMimicaModalOpen(true),
-    },
-    {
-      id: 'scoreboard',
-      icon: <ClipboardList size={18} />,
-      label: 'Ranking',
-      description: 'Visualiza o ranking atual dos times',
-      onClick: () => setScoreboardOpen(true),
-    },
-    {
-      id: 'teams',
-      icon: <UsersRound size={18} />,
-      label: 'Gerenciar Times',
-      description: 'Edita times, participantes e ordem de turno',
-      onClick: () => setTeamsModalOpen(true),
-    },
-    {
-      id: 'library',
-      icon: <BookOpen size={18} />,
-      label: 'Biblioteca',
-      description: 'Edita perguntas e respostas (requer PIN)',
-      onClick: handleShowLibrary,
-    },
-    {
-      id: 'theme',
-      icon: <Palette size={18} />,
-      label: 'Alterar Tema',
-      description: 'Muda o tema visual da aplicação',
-      onClick: () => setThemeModalOpen(true),
-    },
-    {
-      id: 'revert',
-      icon: <RefreshCw size={18} />,
-      label: 'Reverter Ação',
-      description: 'Desfaz a última ação (em breve)',
-      onClick: () => toast.warning('Reversão manual será liberada em breve'),
-    },
-    {
-      id: 'info',
-      icon: <Info size={18} />,
-      label: 'Informações',
-      description: 'Ajuda e informações sobre o sistema',
-      onClick: () => setInfoModalOpen(true),
-    },
-    {
-      id: 'roulette',
-      icon: <RotateCcw size={18} />,
-      label: 'Sorteio de Filmes',
-      description: 'Sorteia filmes aleatórios para o tabuleiro',
-      onClick: () => setFilmRouletteOpen(true),
-    },
-    {
-      id: 'regenerate-turns',
-      icon: <RefreshCw size={18} />,
-      label: 'Regenerar Turnos',
-      description: 'Recria a sequência de turnos alternando entre times',
-      onClick: handleRegenerateTurnSequence,
-      disabled: orderedTeams.length === 0,
-    },
-  ]
 
   const handleAddFilm = () => {
     setConfirmActionConfig({
@@ -623,276 +582,364 @@ export function ControlDashboard() {
     }
   }
 
+  const handleCloseMobileSidebar = () => setMobileSidebarOpen(false)
+
+  const handleOpenParticipantDetails = () => {
+    if (activeParticipant?.id) {
+      setActivePanel('teams')
+      setSelectedParticipantId(activeParticipant.id)
+      setScoreDetailOpen(true)
+      return
+    }
+
+    toast.info('Nenhum participante ativo no momento. Abrindo o placar completo.')
+    handleOpenScoreboard()
+  }
+
+  const handleOpenInfo = () => {
+    setActivePanel('sessions')
+    setInfoModalOpen(true)
+  }
+
+  const sidebarContent = (
+    <>
+      <SidebarNavGroup title="Jogo">
+        <SidebarNavItem
+          icon={<ClipboardList size={18} />}
+          title="Tabuleiro"
+          description="Volta para a visão principal da rodada e mantém o host focado no board."
+          badge={`${answeredCards}/${totalCards || 0}`}
+          active={activePanel === 'board'}
+          onClick={() => {
+            setActivePanel('board')
+            handleCloseMobileSidebar()
+          }}
+        />
+        <SidebarNavItem
+          icon={<RefreshCw size={18} />}
+          title="Próximo turno"
+          description="Avança a vez para o próximo participante da sequência."
+          badge={currentTurnLabel}
+          variant="highlight"
+          disabled={orderedTeams.length === 0}
+          onClick={() => {
+            advanceTurn()
+            setActivePanel('board')
+            handleCloseMobileSidebar()
+            toast.success('Turno avançado')
+          }}
+        />
+        <SidebarNavItem
+          icon={<Theater size={18} />}
+          title="Mímica"
+          description="Abre o modo especial de pontuação para rodada de mímica."
+          onClick={() => {
+            setActivePanel('board')
+            setMimicaModalOpen(true)
+            handleCloseMobileSidebar()
+          }}
+        />
+        <SidebarNavItem
+          icon={<ClipboardList size={18} />}
+          title="Placar"
+          description="Mostra o ranking consolidado e os detalhes por participante."
+          badge={`${scoreboard[0]?.points ?? 0} pts`}
+          active={activePanel === 'scoreboard'}
+          onClick={() => {
+            handleOpenScoreboard()
+            handleCloseMobileSidebar()
+          }}
+        />
+        <SidebarNavItem
+          icon={<RefreshCw size={14} />}
+          title="Regenerar turnos"
+          description="Recria a sequência de turnos alternando os times."
+          disabled={orderedTeams.length === 0}
+          onClick={() => {
+            handleRegenerateTurnSequence()
+            handleCloseMobileSidebar()
+          }}
+        />
+      </SidebarNavGroup>
+
+      <SidebarNavGroup title="Sessão">
+        <SidebarNavItem
+          icon={<RefreshCw size={18} />}
+          title="Sessões"
+          description="Carrega, salva e cria novas sessões do jogo."
+          badge={sessionStatus.hasActiveSession ? 'ativa' : 'nova'}
+          active={activePanel === 'sessions'}
+          onClick={() => {
+            handleOpenSessions()
+            handleCloseMobileSidebar()
+          }}
+        />
+        <SidebarNavItem
+          icon={<Palette size={18} />}
+          title="Tema"
+          description="Ajusta a paleta visual usada durante a apresentação."
+          active={activePanel === 'theme'}
+          onClick={() => {
+            handleOpenTheme()
+            handleCloseMobileSidebar()
+          }}
+        />
+        <SidebarNavItem
+          icon={<RotateCcw size={18} />}
+          title="Reset"
+          description="Abre as opções destrutivas para reiniciar a sessão com segurança."
+          variant="danger"
+          onClick={() => {
+            setActivePanel('sessions')
+            setResetGameModalOpen(true)
+            handleCloseMobileSidebar()
+          }}
+        />
+        <SidebarNavItem
+          icon={<Info size={18} />}
+          title="Onboarding"
+          description="Executa o assistente guiado para preparar o modo offline."
+          onClick={() => {
+            handleStartOnboarding()
+            handleCloseMobileSidebar()
+          }}
+        />
+      </SidebarNavGroup>
+
+      <SidebarNavGroup title="Conteúdo">
+        <SidebarNavItem
+          icon={<BookOpen size={18} />}
+          title="Biblioteca"
+          description="Edita filmes, perguntas e respostas em modo mestre-detalhe."
+          badge={`${session.board.length} filmes`}
+          active={activePanel === 'library'}
+          onClick={() => {
+            handleShowLibrary()
+            handleCloseMobileSidebar()
+          }}
+        />
+        <SidebarNavItem
+          icon={<Film size={18} />}
+          title="Filmes"
+          description="Organiza o catálogo com filtros, visualização em grid e sessão atual."
+          badge={`${customFilms.length}`}
+          active={activePanel === 'films'}
+          onClick={() => {
+            handleOpenFilms()
+            handleCloseMobileSidebar()
+          }}
+        />
+        <SidebarNavItem
+          icon={<BookOpen size={18} />}
+          title="Importar / Exportar"
+          description="Usa a biblioteca para trocar JSONs de filmes e perguntas."
+          onClick={() => {
+            handleShowLibrary()
+            handleCloseMobileSidebar()
+          }}
+        />
+        <SidebarNavItem
+          icon={<RotateCcw size={18} />}
+          title="Roleta"
+          description="Sorteia filmes aleatórios para preencher o board."
+          onClick={() => {
+            setActivePanel('films')
+            setFilmRouletteOpen(true)
+            handleCloseMobileSidebar()
+          }}
+        />
+      </SidebarNavGroup>
+
+      <SidebarNavGroup title="Times">
+        <SidebarNavItem
+          icon={<UsersRound size={18} />}
+          title="Gerenciar times"
+          description="Edita times, participantes, ordem e composição da rodada."
+          badge={`${orderedTeams.length} times`}
+          active={activePanel === 'teams'}
+          onClick={() => {
+            handleOpenTeams()
+            handleCloseMobileSidebar()
+          }}
+        />
+        <SidebarNavItem
+          icon={<UserPlus size={18} />}
+          title="Detalhes por participante"
+          description="Abre o detalhe do jogador atual ou leva ao ranking se ninguém estiver ativo."
+          onClick={() => {
+            handleOpenParticipantDetails()
+            handleCloseMobileSidebar()
+          }}
+        />
+      </SidebarNavGroup>
+    </>
+  )
 
   return (
-    <div className="flex min-h-screen flex-col" style={layoutStyle}>
-      <Navbar
-        title={`${session.title} - ${getModeDisplayName(gameMode)}`}
-        mode="controle"
-        onOpenSessionManager={() => setSessionManagerOpen(true)}
-        onExit={() => toast.info('Encerrando sessão atual')}
-      />
-      <main className="flex-1 space-y-6 px-8 py-6">
-        <section className="card-surface rounded-3xl p-6">
-          <div className="flex flex-col gap-6">
-            <div className="flex flex-wrap items-center justify-between gap-6">
-              <div className="space-y-1">
-                <p className="text-xs font-semibold uppercase tracking-[0.4em] text-[var(--color-muted)]">
-                  Turno atual
-                </p>
-                <p className="text-lg font-semibold text-[var(--color-text)]">
-                  {gameMode === 'offline' && orderedTeams.length === 0 
-                    ? 'Configure times para começar'
-                    : activeParticipant?.name ?? 'Aguardando início'
-                  }
-                  {activeParticipantTeamName ? ` · ${activeParticipantTeamName}` : ''}
-                </p>
-              </div>
-              <div className="space-y-1">
-                <p className="text-xs font-semibold uppercase tracking-[0.4em] text-[var(--color-muted)]">
-                  Modo de jogo
-                </p>
-                <div className="flex items-center gap-2">
-                  <div className={`h-2 w-2 rounded-full ${
-                    gameMode === 'demo' ? 'bg-blue-500' :
-                    gameMode === 'offline' ? 'bg-orange-500' :
-                    'bg-green-500'
-                  }`} />
-                  <p className="text-sm font-medium text-[var(--color-text)]">
-                    {getModeDisplayName(gameMode)}
-                  </p>
-                </div>
-                <p className="text-xs text-[var(--color-muted)]">
-                  {getModeDescription(gameMode)}
-                </p>
-              </div>
-              <div className="flex flex-wrap items-center justify-end gap-4">
-                <div className="rounded-2xl border border-[var(--color-border)] bg-[var(--color-background)] px-4 py-3 shadow-sm">
-                  <Timer initialSeconds={45} variant="compact" editable />
-                </div>
-                {quickActions.map((action) => (
-                  <div key={action.id} className="relative group">
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      aria-label={action.label}
-                      title={action.label}
-                      onClick={action.onClick}
-                      disabled={action.disabled}
-                      className="w-full h-full"
-                    >
-                      {action.icon}
-                    </Button>
-                    <div className="tooltip">
-                      <div className="font-semibold">{action.label}</div>
-                      <div className="text-xs opacity-90 mt-1">{action.description}</div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-            <div className="flex flex-wrap items-center gap-3">
-              <div className="flex flex-wrap items-center gap-2">
-                {orderedTeams.map((team) => (
-                  <TeamBadge key={team.id} team={team} isActive={team.id === activeTeam?.id} />
-                ))}
-              </div>
-              <div className="ml-auto flex flex-col gap-2">
-                {/* Contador de Rodadas Completas */}
-                {orderedTeams.length > 0 && (
-                  <div className="inline-flex items-center justify-center gap-2 rounded-full border border-[var(--color-primary)]/30 bg-[var(--color-primary)]/10 px-4 py-1.5 text-xs font-bold uppercase tracking-[0.3em] text-[var(--color-primary)] shadow-sm">
-                    <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-                    </svg>
-                    Rodada {currentRound}
-                  </div>
-                )}
-                
-                {/* Contador de Turnos */}
-                {orderedTeams.length > 0 && (
-                  <div className="inline-flex items-center justify-center gap-2 rounded-full border border-[var(--color-secondary)]/30 bg-[var(--color-secondary)]/10 px-4 py-1.5 text-xs font-semibold uppercase tracking-[0.3em] text-[var(--color-secondary)]">
-                    <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                    </svg>
-                    Turno {session.turnSequence.indexOf(session.activeParticipantId || '') + 1} de {session.turnSequence.length}
-                  </div>
-                )}
-                
-                {/* Time e Participante Atual */}
-                {activeParticipant && activeTeam && (
-                  <div className="inline-flex items-center gap-2 rounded-full border-2 border-[var(--color-primary)] bg-[var(--color-primary)]/10 px-4 py-2 text-xs font-bold uppercase tracking-[0.3em] text-[var(--color-primary)] shadow-md">
-                    <UsersRound size={14} className="font-bold" /> 
-                    Vez de: {activeParticipant.name} · {activeTeam.name}
-                  </div>
-                )}
-                {/* Próximo Time e Participante */}
-                {nextParticipant && nextParticipantTeamName && (
-                  <span className="inline-flex items-center gap-2 rounded-full border border-[var(--color-border)] bg-[var(--color-background)] px-4 py-2 text-xs font-semibold uppercase tracking-[0.3em] text-[var(--color-muted)] shadow-sm">
-                    <UsersRound size={14} /> Próximo: {nextParticipant.name} · {nextParticipantTeamName}
-                  </span>
-                )}
-              </div>
-            </div>
+    <ControlShell
+      sidebarCollapsed={sidebarCollapsed}
+      topbar={
+        <ControlTopbar
+          title={sessionStatus.sessionName ?? session.title}
+          mode={gameMode}
+          modeLabel={getModeDisplayName(gameMode)}
+          backendLabel={backendLabel}
+          onOpenSessions={handleOpenSessions}
+          onExit={() => {
+            setActivePanel('board')
+            toast.info('Contexto principal reativado')
+          }}
+          onToggleSidebar={() => setMobileSidebarOpen(true)}
+        />
+      }
+      statusStrip={
+        <GameStatusStrip
+          activeParticipant={activeParticipant}
+          activeTeam={activeTeam}
+          currentRound={currentRound}
+          currentTurnLabel={currentTurnLabel}
+          scoreboard={scoreboard}
+        />
+      }
+      sidebar={
+        <ControlSidebar
+          collapsed={sidebarCollapsed}
+          mobileOpen={mobileSidebarOpen}
+          onToggleCollapsed={() => setSidebarCollapsed(!sidebarCollapsed)}
+          onCloseMobile={handleCloseMobileSidebar}
+          title={sessionStatus.sessionName ?? session.title}
+        >
+          {sidebarContent}
+          <div className="rounded-[24px] border border-white/8 bg-black/10 p-4">
+            <p className="text-[10px] font-semibold uppercase tracking-[0.35em] text-[var(--color-muted)]">Sessão ativa</p>
+            <p className="mt-3 text-sm font-semibold text-[var(--color-text)]">
+              {sessionStatus.hasActiveSession ? sessionStatus.sessionName : 'Sem sessão salva no momento'}
+            </p>
+            <p className="mt-2 text-xs leading-5 text-[var(--color-muted)]">
+              {sessionStatus.hasActiveSession
+                ? `${sessionStatus.duration} min desde a criação · backend ${backendLabel}`
+                : 'As alterações ficam no fluxo atual até você salvar ou carregar uma sessão.'}
+            </p>
           </div>
+        </ControlSidebar>
+      }
+    >
+      <div className="flex h-full flex-col gap-3">
+        {gameMode === 'offline' && orderedTeams.length === 0 ? (
+          <EmptyStatePanel
+            icon={<UsersRound size={24} />}
+            title="Configure a sessão offline para começar"
+            description="Defina times, participantes, filmes e perguntas antes da primeira rodada. Você pode usar o assistente guiado ou montar tudo manualmente."
+            action={
+              <div className="flex flex-wrap justify-center gap-3">
+                {showOnboardingSuggestion ? (
+                  <Button onClick={handleStartOnboarding} className="gap-2">
+                    <Info size={16} />
+                    Usar assistente
+                  </Button>
+                ) : null}
+                <Button variant="outline" onClick={handleOpenTeams} className="gap-2">
+                  <UserPlus size={16} />
+                  Gerenciar times
+                </Button>
+                {showOnboardingSuggestion ? (
+                  <Button variant="ghost" onClick={handleDismissOnboardingSuggestion}>
+                    Fechar sugestão
+                  </Button>
+                ) : null}
+              </div>
+            }
+          />
+        ) : null}
+
+        <section className="min-h-0 flex-1 overflow-auto rounded-2xl border border-white/8 bg-black/10 p-3">
+          <TriviaBoard columns={session.board} onSelectTile={handleSelectTile} selectedTileId={selectedIds?.tileId ?? null} />
         </section>
 
-        {/* Seção de instruções para modo offline */}
-        {gameMode === 'offline' && orderedTeams.length === 0 && (
-          <section className="card-surface rounded-3xl p-6 border-2 border-dashed border-[var(--color-primary)]/30">
-            <div className="text-center space-y-6">
-              <div className="mx-auto w-16 h-16 rounded-full bg-[var(--color-primary)]/10 flex items-center justify-center">
-                <UsersRound className="h-8 w-8 text-[var(--color-primary)]" />
-              </div>
-              
-              <div className="space-y-2">
-                <h3 className="text-xl font-semibold text-[var(--color-text)]">
-                  Bem-vindo ao Modo Offline!
-                </h3>
-                <p className="text-[var(--color-muted)] max-w-md mx-auto">
-                  Para começar sua sessão de trivia, você precisa configurar os times e participantes.
-                  Clique no botão "Gerenciar Times" para criar sua primeira equipe.
-                </p>
-              </div>
-              
-              {/* Opções de Configuração em Layout Horizontal */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 max-w-2xl mx-auto">
-                {/* Configuração Rápida */}
-                {showOnboardingSuggestion && (
-                  <div className="p-4 rounded-2xl bg-[var(--color-secondary)]/5 border border-[var(--color-secondary)]/20">
-                    <div className="space-y-3">
-                      <div className="flex items-center gap-2">
-                        <span className="text-2xl">🚀</span>
-                        <h4 className="font-semibold text-[var(--color-text)]">
-                          Configuração Rápida
-                        </h4>
-                      </div>
-                      <p className="text-sm text-[var(--color-muted)]">
-                        Assistente para configurar tema, PIN, filmes e times em poucos passos
-                      </p>
-                      <Button
-                        onClick={handleStartOnboarding}
-                        className="w-full text-sm"
-                      >
-                        Usar Assistente
-                      </Button>
-                    </div>
-                  </div>
-                )}
-                
-                {/* Configuração Manual */}
-                <div className="p-4 rounded-2xl bg-[var(--color-primary)]/5 border border-[var(--color-primary)]/20">
-                  <div className="space-y-3">
-                    <div className="flex items-center gap-2">
-                      <span className="text-2xl">⚙️</span>
-                      <h4 className="font-semibold text-[var(--color-text)]">
-                        Configuração Manual
-                      </h4>
-                    </div>
-                    <p className="text-sm text-[var(--color-muted)]">
-                      Configure cada parte separadamente: times, filmes e perguntas
-                    </p>
-                    <div className="space-y-2">
-                      <Button
-                        onClick={() => setTeamsModalOpen(true)}
-                        variant="outline"
-                        className="w-full text-sm"
-                      >
-                        <UserPlus className="h-4 w-4 mr-2" />
-                        Gerenciar Times
-                      </Button>
-                      {showOnboardingSuggestion && (
-                        <Button
-                          onClick={handleDismissOnboardingSuggestion}
-                          variant="ghost"
-                          className="w-full text-sm"
-                        >
-                          Dismissar Sugestão
-                        </Button>
-                      )}
-                    </div>
-                  </div>
-                </div>
-              </div>
-              
-            </div>
-          </section>
-        )}
-
-        <section className="card-surface rounded-3xl p-6">
-          <div className="mb-8 flex items-center justify-between">
-            <div>
-              <p className="text-xs font-semibold uppercase tracking-[0.4em] text-[var(--color-muted)]">
-                Tabuleiro
-              </p>
-              <h2 className="text-2xl font-semibold text-[var(--color-text)]">Selecione a próxima pergunta</h2>
-            </div>
-            <span className="text-sm font-medium text-[var(--color-muted)]">
-              {session.board.length} temas · {countTotalTiles(session.board)} cartas
-            </span>
-          </div>
-          <TriviaBoard columns={session.board} onSelectTile={handleSelectTile} />
-        </section>
-
-        <section className="flex items-center justify-end pt-2">
-          <Button variant="outline" className="gap-2" onClick={() => setTeamsModalOpen(true)}>
-            <UsersRound size={16} />
-            Gerenciar times
+        <FloatingActionBar>
+          <Button variant="secondary" size="icon" aria-label="Sortear pergunta" onClick={handleRandomQuestion}>
+            <Dice5 size={16} />
           </Button>
-        </section>
-      </main>
+          <Button
+            variant="outline"
+            size="icon"
+            aria-label="Abrir biblioteca"
+            onClick={() => {
+              handleShowLibrary()
+              setMobileSidebarOpen(false)
+            }}
+          >
+            <BookOpen size={16} />
+          </Button>
+          <Button
+            variant="outline"
+            size="icon"
+            aria-label="Abrir mímica"
+            onClick={() => {
+              setActivePanel('board')
+              setMimicaModalOpen(true)
+            }}
+          >
+            <Theater size={16} />
+          </Button>
+          <Button variant="outline" size="icon" aria-label="Abrir placar" onClick={handleOpenScoreboard}>
+            <ClipboardList size={16} />
+          </Button>
+          <Button variant="ghost" size="icon" aria-label="Ajuda" onClick={handleOpenInfo}>
+            <Info size={16} />
+          </Button>
+        </FloatingActionBar>
+      </div>
 
       <Modal
         isOpen={Boolean(selectedTile)}
-        title={selectedTile ? `${selectedTile.column.film} · ${selectedTile.tile.points} pontos` : ''}
-        description="Confirme a pergunta, conduza o timer e distribua a pontuação."
+        title={selectedTile ? `${selectedTile.column.film} · ${selectedTile.tile.points} pts` : ''}
         onClose={handleCloseQuestionModal}
+        size="lg"
       >
-        <div className="space-y-4 text-[var(--color-text)]">
-          {/* Informação de quem está respondendo */}
-          {activeParticipant && activeTeam && (
-            <div className="flex items-center justify-between p-3 rounded-xl bg-[var(--color-primary)]/10 border border-[var(--color-primary)]/20">
-              <div className="flex items-center gap-2">
-                <div
-                  className="h-3 w-3 rounded-full"
-                  style={{ backgroundColor: activeTeam.color }}
-                />
-                <span className="text-sm font-semibold text-[var(--color-text)]">
-                  {activeParticipant.name}
-                </span>
-                <span className="text-sm text-[var(--color-muted)]">
-                  · {activeTeam.name}
-                </span>
-              </div>
-              <span className="text-xs font-semibold uppercase tracking-wider text-[var(--color-primary)]">
-                Respondendo
-              </span>
+        <div className="flex flex-col gap-3 md:flex-row md:gap-4">
+          {/* Coluna esquerda: contexto + pergunta + resposta */}
+          <div className="flex flex-1 flex-col gap-3 text-[var(--color-text)]">
+            {/* Quem está respondendo + Timer */}
+            <div className="flex items-center justify-between gap-3">
+              {activeParticipant && activeTeam ? (
+                <div className="flex items-center gap-2">
+                  <div className="h-2.5 w-2.5 shrink-0 rounded-full" style={{ backgroundColor: activeTeam.color }} />
+                  <span className="text-sm font-semibold">{activeParticipant.name}</span>
+                  <span className="text-xs text-[var(--color-muted)]">· {activeTeam.name}</span>
+                </div>
+              ) : (
+                <span className="text-xs text-[var(--color-muted)]">Sem turno ativo</span>
+              )}
+              <Timer
+                initialSeconds={selectedTile?.tile.points ? Math.min(90, selectedTile.tile.points * 4) : 45}
+                variant="compact"
+                editable
+              />
             </div>
-          )}
 
-          <Timer
-            initialSeconds={selectedTile?.tile.points ? Math.min(90, selectedTile.tile.points * 4) : 45}
-            variant="compact"
-            editable
-          />
-          <div className="rounded-2xl bg-[var(--color-surface)] p-4">
-            <h3 className="text-sm font-semibold uppercase tracking-[0.3em] text-[var(--color-muted)]">
-              Pergunta
-            </h3>
-            <p className="mt-2 text-base">{selectedTile?.tile.question}</p>
-          </div>
-          {showAnswer ? (
-            <div className="rounded-2xl border border-[var(--color-border)] bg-[var(--color-background)] p-4">
-              <h3 className="text-sm font-semibold uppercase tracking-[0.3em] text-[var(--color-muted)]">
-                Resposta
-              </h3>
-              <p className="mt-2 text-base">{selectedTile?.tile.answer || 'Resposta não cadastrada.'}</p>
+            {/* Pergunta */}
+            <div className="rounded-xl bg-[var(--color-surface)] p-3">
+              <p className="mb-1 text-[10px] font-semibold uppercase tracking-[0.3em] text-[var(--color-muted)]">Pergunta</p>
+              <p className="text-sm leading-relaxed">{selectedTile?.tile.question}</p>
             </div>
-          ) : (
-            <Button variant="outline" onClick={() => setShowAnswer(true)}>
-              Revelar resposta
-            </Button>
-          )}
-          <ScoringControls
+
+            {/* Resposta */}
+            {showAnswer ? (
+              <div className="rounded-xl border border-[var(--color-border)] bg-[var(--color-background)] p-3">
+                <p className="mb-1 text-[10px] font-semibold uppercase tracking-[0.3em] text-[var(--color-muted)]">Resposta</p>
+                <p className="text-sm leading-relaxed">{selectedTile?.tile.answer || 'Resposta não cadastrada.'}</p>
+              </div>
+            ) : (
+              <Button variant="outline" size="sm" onClick={() => setShowAnswer(true)}>
+                Revelar resposta
+              </Button>
+            )}
+          </div>
+
+          {/* Coluna direita: scoring */}
+          <div className="md:w-56 md:shrink-0">
+            <ScoringControls
             teams={orderedTeams}
             participants={participants}
             activeTeamId={activeTeam?.id ?? null}
@@ -959,6 +1006,7 @@ export function ControlDashboard() {
             }}
             onClose={handleCloseQuestionModal}
           />
+          </div>
         </div>
       </Modal>
 
@@ -966,7 +1014,10 @@ export function ControlDashboard() {
         isOpen={scoreboardOpen}
         title="Ranking da noite"
         description="Resumo parcial das equipes nesta sessão. Clique nos times para ver pontuação individual."
-        onClose={() => setScoreboardOpen(false)}
+        onClose={() => {
+          setScoreboardOpen(false)
+          setActivePanel('board')
+        }}
       >
         <div className="space-y-3">
           {scoreboard.map(({ team, position, points }) => {
@@ -999,10 +1050,12 @@ export function ControlDashboard() {
             return (
               <div key={team.id} className="rounded-2xl border border-[var(--color-border)] bg-[var(--color-background)] overflow-hidden">
                 <button
-                  onClick={() => setScoreboardAccordions((prev: Record<string, boolean>) => ({
-                    ...prev,
-                    [`scoreboard-${team.id}`]: !prev[`scoreboard-${team.id}`]
-                  }))}
+                  onClick={() =>
+                    setScoreboardAccordions({
+                      ...scoreboardAccordions,
+                      [`scoreboard-${team.id}`]: !scoreboardAccordions[`scoreboard-${team.id}`],
+                    })
+                  }
                   className="w-full flex items-center justify-between px-4 py-3 hover:bg-[var(--color-surface)] transition-colors"
                 >
                   <div className="flex items-center gap-3">
@@ -1073,7 +1126,10 @@ export function ControlDashboard() {
 
       <TeamsManagementModal
         isOpen={teamsModalOpen}
-        onClose={() => setTeamsModalOpen(false)}
+        onClose={() => {
+          setTeamsModalOpen(false)
+          setActivePanel('board')
+        }}
         teamDrafts={teamManagement.teamDrafts}
         canSave={teamManagement.canSave}
         onAddTeam={teamManagement.addTeam}
@@ -1087,6 +1143,7 @@ export function ControlDashboard() {
         onSave={() => {
           teamManagement.saveTeams()
           setTeamsModalOpen(false)
+          setActivePanel('board')
         }}
       />
 
@@ -1098,6 +1155,7 @@ export function ControlDashboard() {
           setPinModalOpen(false)
           setPinInput('')
           setPinError('')
+          setActivePanel('board')
         }}
       >
         <div className="space-y-4">
@@ -1122,6 +1180,7 @@ export function ControlDashboard() {
                 setPinModalOpen(false)
                 setPinInput('')
                 setPinError('')
+                setActivePanel('board')
               }}
             >
               Cancelar
@@ -1132,8 +1191,19 @@ export function ControlDashboard() {
 
       <QuestionLibraryModal
         isOpen={libraryOpen}
-        onClose={() => setLibraryOpen(false)}
+        onClose={() => {
+          setLibraryOpen(false)
+          setActivePanel('board')
+        }}
         board={session.board}
+        selectedFilmId={selectedFilmId}
+        onSelectedFilmIdChange={setSelectedFilmId}
+        searchQuery={librarySearchQuery}
+        onSearchQueryChange={setLibrarySearchQuery}
+        filterPoints={libraryPointsFilter}
+        onFilterPointsChange={setLibraryPointsFilter}
+        sortMode={librarySortMode}
+        onSortModeChange={setLibrarySortMode}
         onUpdateColumnTitle={updateColumnTitle}
         onAddQuestion={handleAddQuestion}
         onRemoveQuestion={handleRemoveQuestion}
@@ -1158,10 +1228,40 @@ export function ControlDashboard() {
       />
 
       <Modal
+        isOpen={filmsOpen}
+        title="Catálogo de filmes"
+        description="Organize os filmes da sessão e o catálogo personalizado em um só lugar."
+        onClose={() => {
+          setFilmsOpen(false)
+          setActivePanel('board')
+        }}
+      >
+        <FilmManager
+          films={customFilms}
+          participants={participants}
+          sessionFilms={sessionFilms}
+          viewMode={filmCatalogViewMode}
+          onViewModeChange={setFilmCatalogViewMode}
+          sortMode={filmCatalogSortMode}
+          onSortModeChange={setFilmCatalogSortMode}
+          onAddFilm={addCustomFilm}
+          onUpdateFilm={updateCustomFilm}
+          onRemoveFilm={removeCustomFilm}
+          onClose={() => {
+            setFilmsOpen(false)
+            setActivePanel('board')
+          }}
+        />
+      </Modal>
+
+      <Modal
         isOpen={themeModalOpen}
         title="Ajustar tema"
         description="Escolha o estilo de cores aplicado a todas as telas."
-        onClose={() => setThemeModalOpen(false)}
+        onClose={() => {
+          setThemeModalOpen(false)
+          setActivePanel('board')
+        }}
       >
         <div className="grid gap-3 md:grid-cols-3">
           {(
@@ -1199,7 +1299,10 @@ export function ControlDashboard() {
 
       <MimicaModal
         isOpen={mimicaModalOpen}
-        onClose={() => setMimicaModalOpen(false)}
+        onClose={() => {
+          setMimicaModalOpen(false)
+          setActivePanel('board')
+        }}
         teams={orderedTeams}
         participants={participants}
         activeParticipant={activeParticipant}
@@ -1269,7 +1372,10 @@ export function ControlDashboard() {
 
       <InfoModal
         isOpen={infoModalOpen}
-        onClose={() => setInfoModalOpen(false)}
+        onClose={() => {
+          setInfoModalOpen(false)
+          setActivePanel('board')
+        }}
         onOpenOnboarding={() => {
           const hasExistingData = 
             session.board.length > 0 || 
@@ -1302,6 +1408,7 @@ export function ControlDashboard() {
                   points: true,
                   themes: false,
                 })
+                setActivePanel('sessions')
                 setOfflineOnboardingOpen(true)
                 setInfoModalOpen(false)
               },
@@ -1309,6 +1416,7 @@ export function ControlDashboard() {
             })
             setConfirmActionOpen(true)
           } else {
+            setActivePanel('sessions')
             setOfflineOnboardingOpen(true)
             setInfoModalOpen(false)
           }
@@ -1317,10 +1425,13 @@ export function ControlDashboard() {
 
       <FilmRoulette
         isOpen={filmRouletteOpen}
-        onClose={() => setFilmRouletteOpen(false)}
+        onClose={() => {
+          setFilmRouletteOpen(false)
+          setActivePanel('board')
+        }}
         teams={orderedTeams}
         participants={participants}
-        sessionFilms={session.board.map(column => ({ id: column.id, name: column.film }))}
+        sessionFilms={sessionFilms}
       />
 
       <OfflineOnboardingModal
@@ -1329,18 +1440,23 @@ export function ControlDashboard() {
           // Marca como visto mesmo se fechar sem completar
           storageService.set(STORAGE_KEYS.onboardingSeen, 'true')
           setOfflineOnboardingOpen(false)
+          setActivePanel('board')
         }}
         onComplete={handleOfflineOnboardingComplete}
         onSkip={() => {
           // Marca como visto ao pular
           storageService.set(STORAGE_KEYS.onboardingSeen, 'true')
           setOfflineOnboardingOpen(false)
+          setActivePanel('board')
         }}
       />
 
       <SessionManager
         isOpen={sessionManagerOpen}
-        onClose={() => setSessionManagerOpen(false)}
+        onClose={() => {
+          setSessionManagerOpen(false)
+          setActivePanel('board')
+        }}
         onLoadSession={handleLoadSession}
         onNewSession={() => {
           // Mostra modal de confirmação antes de limpar tudo
@@ -1370,17 +1486,26 @@ export function ControlDashboard() {
 
       <ResetGameModal
         isOpen={resetGameModalOpen}
-        onClose={() => setResetGameModalOpen(false)}
+        onClose={() => {
+          setResetGameModalOpen(false)
+          setActivePanel('board')
+        }}
         onConfirmReset={handleResetGame}
       />
 
       <GameEndModal
         isOpen={gameEndModalOpen}
-        onClose={() => setGameEndModalOpen(false)}
+        onClose={() => {
+          setGameEndModalOpen(false)
+          setActivePanel('board')
+        }}
         teams={orderedTeams}
         participants={participants}
         board={session.board}
-        onShowMimica={() => setMimicaModalOpen(true)}
+        onShowMimica={() => {
+          setActivePanel('board')
+          setMimicaModalOpen(true)
+        }}
       />
 
       {selectedParticipantId && (
@@ -1389,6 +1514,7 @@ export function ControlDashboard() {
           onClose={() => {
             setScoreDetailOpen(false)
             setSelectedParticipantId(null)
+            setActivePanel('board')
           }}
           participant={participants.find((p) => p.id === selectedParticipantId)!}
           team={orderedTeams.find((t) => t.id === participants.find((p) => p.id === selectedParticipantId)?.teamId) || orderedTeams[0]}
@@ -1412,6 +1538,6 @@ export function ControlDashboard() {
           variant={confirmActionConfig.variant}
         />
       )}
-    </div>
+    </ControlShell>
   )
 }
