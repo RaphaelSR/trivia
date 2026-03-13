@@ -1,16 +1,16 @@
-import { useState } from 'react'
+import { useState, type MouseEvent, type ReactNode } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { Button } from './Button'
 import { Play, Wifi, WifiOff, Monitor } from 'lucide-react'
 import { OnlinePasswordModal } from './OnlinePasswordModal'
-
-export type GameMode = 'demo' | 'offline' | 'online'
+import { GAME_MODE_LABELS } from '../../shared/constants/game'
+import type { GameMode } from '../../shared/types/game'
 
 export interface ModeOption {
   id: GameMode
   title: string
   description: string
-  icon: React.ReactNode
+  icon: ReactNode
   route: string
   variant: 'primary' | 'secondary' | 'outline'
   features: string[]
@@ -19,7 +19,7 @@ export interface ModeOption {
 const modeOptions: ModeOption[] = [
   {
     id: 'demo',
-    title: 'Modo Demo',
+    title: GAME_MODE_LABELS.demo,
     description: 'Experimente o jogo com dados de teste pré-configurados',
     icon: <Monitor className="h-8 w-8" />,
     route: '/control?mode=demo',
@@ -28,7 +28,7 @@ const modeOptions: ModeOption[] = [
   },
   {
     id: 'offline',
-    title: 'Play Offline',
+    title: GAME_MODE_LABELS.offline,
     description: 'Jogue localmente criando times e jogadores do zero',
     icon: <WifiOff className="h-8 w-8" />,
     route: '/control?mode=offline',
@@ -37,12 +37,12 @@ const modeOptions: ModeOption[] = [
   },
   {
     id: 'online',
-    title: 'Play Online',
-    description: 'Jogue com autenticação e persistência na nuvem',
+    title: GAME_MODE_LABELS.online,
+    description: 'Use o fluxo online com repositório dedicado, pronto para evoluir para sincronização remota',
     icon: <Wifi className="h-8 w-8" />,
     route: '/control?mode=online',
     variant: 'primary',
-    features: ['Autenticação Google', 'Persistência Firebase', 'Histórico de jogos']
+    features: ['Sessões online isoladas', 'PIN dedicado', 'Preparado para backend']
   }
 ]
 
@@ -50,7 +50,7 @@ export function ModeSelector() {
   const [passwordModalOpen, setPasswordModalOpen] = useState(false)
   const navigate = useNavigate()
 
-  const handleModeClick = (mode: ModeOption, e: React.MouseEvent) => {
+  const handleModeClick = (mode: ModeOption, e: MouseEvent) => {
     if (mode.id === 'online') {
       e.preventDefault()
       setPasswordModalOpen(true)

@@ -7,6 +7,9 @@ import { Steps } from './Steps'
 import { Tooltip } from './Tooltip'
 import { MultiSelectField } from './MultiSelectField'
 import { useCustomFilms } from '../../hooks/useCustomFilms'
+import { MAX_ROULETTE_HISTORY } from '../../shared/constants/game'
+import { STORAGE_KEYS } from '../../shared/constants/storage'
+import { storageService } from '../../shared/services/storage.service'
 import { getStreamingPlatformInfo, getFilmGenreInfo, type CustomFilm, type StreamingPlatform, type FilmGenre } from '../../data/customFilms'
 import type { TriviaParticipant, TriviaTeam } from '../../modules/trivia/types'
 import { drawUniqueFilms, type RouletteResult as DrawRouletteResult } from '../../modules/trivia/utils/drawUniqueFilms'
@@ -104,15 +107,8 @@ export function FilmRoulette({ isOpen, onClose, teams, participants, sessionFilm
       setCurrentStep('films')
       setRouletteRotation(0)
       
-      // Carregar histórico do localStorage
-      const savedHistory = localStorage.getItem('trivia-roulette-history')
-      if (savedHistory) {
-        try {
-          setHistory(JSON.parse(savedHistory))
-        } catch (error) {
-          console.warn('Erro ao carregar histórico de sorteios:', error)
-        }
-      }
+      // Carrega histórico persistido do sorteio
+      setHistory(storageService.getJson<RouletteHistory[]>(STORAGE_KEYS.rouletteHistory, []))
     }
   }, [isOpen, participants, teams, customFilms])
 
@@ -127,14 +123,9 @@ export function FilmRoulette({ isOpen, onClose, teams, participants, sessionFilm
       uniqueFilms
     }
     
-    const newHistory = [historyEntry, ...history].slice(0, 10)
+    const newHistory = [historyEntry, ...history].slice(0, MAX_ROULETTE_HISTORY)
     setHistory(newHistory)
-    
-    try {
-      localStorage.setItem('trivia-roulette-history', JSON.stringify(newHistory))
-    } catch (error) {
-      console.warn('Erro ao salvar histórico de sorteios:', error)
-    }
+    storageService.setJson(STORAGE_KEYS.rouletteHistory, newHistory)
   }
 
   const getSelectedCount = () => {

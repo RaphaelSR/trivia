@@ -35,10 +35,6 @@ export function useQuestionManagement(
         });
         totalImported++;
       });
-
-      console.log(
-        `[✅ IMPORT] ${totalImported} perguntas importadas para ${imports.length} filmes`
-      );
       toast.success(`${totalImported} perguntas importadas com sucesso!`);
     } catch (error) {
       console.error("Erro ao importar perguntas:", error);

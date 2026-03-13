@@ -10,14 +10,14 @@ export function createEmptySession(): TriviaSession {
     title: "Nova Sessão Offline",
     scheduledAt: new Date().toISOString(),
     theme: {
-      id: "default-light",
-      name: "Tema Claro",
+      id: "default-dark",
+      name: "Tema Escuro",
       palette: {
         background: "var(--color-background)",
-        primary: "#4f46e5",
-        secondary: "#22d3ee",
-        accent: "#f97316",
-        surface: "#f9fafb"
+        primary: "#818cf8",
+        secondary: "#38bdf8",
+        accent: "#22c55e",
+        surface: "#0f172a"
       }
     },
     teams: [],

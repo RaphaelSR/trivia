@@ -1,5 +1,5 @@
 import { createContext } from 'react'
-import type { ThemeMode } from './themeTokens'
+import type { ThemeMode } from '../../shared/types/game'
 
 type ThemeContextValue = {
   theme: ThemeMode

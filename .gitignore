@@ -23,9 +23,6 @@ dist-ssr
 *.sln
 *.sw?
 
-# Documentation directory
-docs/
-
 # Templates directory (now in docs/)
 templates/
 

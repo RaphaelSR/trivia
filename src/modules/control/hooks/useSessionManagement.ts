@@ -1,8 +1,11 @@
 import { toast } from 'sonner'
-import type { TriviaTeam, TriviaParticipant, TriviaSession } from '@/modules/trivia/types'
+import type { TriviaTeam, TriviaParticipant, TriviaSession, TriviaColumn } from '@/modules/trivia/types'
+import { countTotalTiles } from '@/modules/game/domain/board.utils'
 import type { ResetGameOptions } from '../types/control.types'
-import { createAlternatingTurnSequence } from '@/modules/trivia/utils/createAlternatingTurnSequence'
-import { createBalancedTurnSequence } from '@/modules/trivia/utils/createBalancedTurnSequence'
+import { buildTurnSequence } from '@/modules/game/domain/turn-order'
+import { storageService } from '@/shared/services/storage.service'
+import { STORAGE_KEYS } from '@/shared/constants/storage'
+import type { ThemeMode } from '@/shared/types/game'
 
 /**
  * Hook para gerenciar sessão (load, reset, onboarding)
@@ -10,7 +13,7 @@ import { createBalancedTurnSequence } from '@/modules/trivia/utils/createBalance
 export function useSessionManagement(
   teams: TriviaTeam[],
   participants: TriviaParticipant[],
-  board: Array<{ tiles: Array<unknown> }>,
+  board: TriviaColumn[],
   updateTeamsAndParticipants: (
     teams: TriviaTeam[],
     participants: TriviaParticipant[],
@@ -18,7 +21,7 @@ export function useSessionManagement(
   ) => void,
   removeQuestionTile: (columnId: string, tileId: string) => void,
   removeFilmColumn: (columnId: string) => void,
-  setTheme: (theme: 'light' | 'dark' | 'brazil') => void,
+  setTheme: (theme: ThemeMode) => void,
   _saveCustomPin: (pin: string) => void,
   loadSession: (sessionId: string) => TriviaSession | null,
   restoreSession: (session: TriviaSession) => void,
@@ -33,7 +36,7 @@ export function useSessionManagement(
         restoreSession(loadedSession)
 
         const filmsCount = loadedSession.board?.length || 0
-        const questionsCount = loadedSession.board?.reduce((acc, column) => acc + column.tiles.length, 0) || 0
+        const questionsCount = loadedSession.board ? countTotalTiles(loadedSession.board) : 0
         const teamsCount = loadedSession.teams?.length || 0
         const totalScore = loadedSession.teams?.reduce((acc, team) => acc + (team.score || 0), 0) || 0
 
@@ -67,27 +70,27 @@ export function useSessionManagement(
         updateTeamsAndParticipants(resetTeams, participants, undefined)
       }
 
-              if (options.questions) {
-                board.forEach((column) => {
-                  const tilesToRemove = [...(column.tiles as Array<{ id: string }>)]
-                  tilesToRemove.forEach((tile) => {
-                    removeQuestionTile((column as unknown as { id: string }).id, tile.id)
-                  })
-                })
-                setGameEndNotified(false)
-              }
+      if (options.questions) {
+        board.forEach((column) => {
+          const tilesToRemove = [...column.tiles]
+          tilesToRemove.forEach((tile) => {
+            removeQuestionTile(column.id, tile.id)
+          })
+        })
+        setGameEndNotified(false)
+      }
 
-              if (options.films) {
-                const columnsToRemove = [...board]
-                columnsToRemove.forEach((column) => {
-                  removeFilmColumn((column as unknown as { id: string }).id)
-                })
-        localStorage.removeItem('trivia-custom-films')
+      if (options.films) {
+        const columnsToRemove = [...board]
+        columnsToRemove.forEach((column) => {
+          removeFilmColumn(column.id)
+        })
+        storageService.remove(STORAGE_KEYS.customFilms)
         setGameEndNotified(false)
       }
 
       if (options.themes) {
-        setTheme('light')
+        setTheme('dark')
       }
 
       if (options.teams || options.participants) {
@@ -116,10 +119,8 @@ export function useSessionManagement(
     }
 
     const sortedTeams = [...teams].sort((a, b) => a.order - b.order)
-    const totalQuestions = board.reduce((acc, column) => acc + column.tiles.length, 0)
-    const newTurnSequence = totalQuestions > 0
-      ? createBalancedTurnSequence(sortedTeams, totalQuestions)
-      : createAlternatingTurnSequence(sortedTeams)
+    const totalQuestions = countTotalTiles(board)
+    const newTurnSequence = buildTurnSequence(sortedTeams, totalQuestions)
 
     updateTeamsAndParticipants(teams, participants, newTurnSequence)
     toast.success('Sequência de turnos regenerada')
@@ -131,4 +132,3 @@ export function useSessionManagement(
     regenerateTurnSequence,
   }
 }
-

@@ -3,6 +3,7 @@ import { Plus, Trash2, Download, Upload, X, AlertCircle, CheckCircle2 } from 'lu
 import { Button } from './Button'
 import { Modal } from './Modal'
 import type { TriviaColumn, TriviaQuestionTile } from '@/modules/trivia/types'
+import { countTotalTiles } from '@/modules/game/domain/board.utils'
 import {
   exportFilmsWithQuestions,
   downloadJsonFile,
@@ -90,7 +91,7 @@ export function QuestionLibraryModal({
   }, [board, searchQuery, filterPoints])
 
   const totalQuestions = useMemo(() => {
-    return board.reduce((acc, column) => acc + column.tiles.length, 0)
+    return countTotalTiles(board)
   }, [board])
 
   if (!isOpen) return null
@@ -663,4 +664,3 @@ export function QuestionLibraryModal({
     </div>
   )
 }
-

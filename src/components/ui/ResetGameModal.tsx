@@ -1,21 +1,22 @@
-import { useState } from "react";
-import { Button } from "./Button";
-import { Modal } from "./Modal";
-import { RefreshCw, AlertTriangle } from "lucide-react";
+import { useState } from 'react'
+import { Button } from './Button'
+import { Modal } from './Modal'
+import { RefreshCw, AlertTriangle } from 'lucide-react'
+import { usePinManagement } from '../../hooks/usePinManagement'
 
 interface ResetOptions {
-  teams: boolean;
-  participants: boolean;
-  questions: boolean;
-  themes: boolean;
-  points: boolean;
-  films: boolean;
+  teams: boolean
+  participants: boolean
+  questions: boolean
+  themes: boolean
+  points: boolean
+  films: boolean
 }
 
 interface ResetGameModalProps {
-  isOpen: boolean;
-  onClose: () => void;
-  onConfirmReset: (options: ResetOptions) => void;
+  isOpen: boolean
+  onClose: () => void
+  onConfirmReset: (options: ResetOptions) => void
 }
 
 export function ResetGameModal({
@@ -23,51 +24,50 @@ export function ResetGameModal({
   onClose,
   onConfirmReset,
 }: ResetGameModalProps) {
-  const [pin, setPin] = useState("");
-  const [pinError, setPinError] = useState("");
-  const [isPinVerified, setIsPinVerified] = useState(false);
+  const [pin, setPin] = useState('')
+  const [pinError, setPinError] = useState('')
+  const [isPinVerified, setIsPinVerified] = useState(false)
   const [resetOptions, setResetOptions] = useState<ResetOptions>({
     teams: false,
     participants: false,
-    questions: true, // Perguntas marcadas por padrão
+    questions: true,
     themes: false,
-    points: true, // Pontos marcados por padrão
+    points: true,
     films: false,
-  });
+  })
+  const { verifyPin } = usePinManagement()
 
   const handlePinSubmit = () => {
-    // Verifica se o PIN está correto
-    const storedPin = localStorage.getItem("trivia-pin-offline");
-    if (pin === storedPin) {
-      setIsPinVerified(true);
-      setPinError("");
-    } else {
-      setPinError("PIN incorreto. Tente novamente.");
+    if (verifyPin(pin)) {
+      setIsPinVerified(true)
+      setPinError('')
+      return
     }
-  };
+
+    setPinError('PIN incorreto. Tente novamente.')
+  }
 
   const handleToggleOption = (option: keyof ResetOptions) => {
     setResetOptions((prev) => ({
       ...prev,
       [option]: !prev[option],
-    }));
-  };
+    }))
+  }
 
   const handleConfirm = () => {
-    // Verifica se pelo menos uma opção está marcada
-    if (!Object.values(resetOptions).some((value) => value)) {
-      setPinError("Selecione pelo menos uma opção para resetar.");
-      return;
+    if (!Object.values(resetOptions).some(Boolean)) {
+      setPinError('Selecione pelo menos uma opção para resetar.')
+      return
     }
 
-    onConfirmReset(resetOptions);
-    handleClose();
-  };
+    onConfirmReset(resetOptions)
+    handleClose()
+  }
 
   const handleClose = () => {
-    setPin("");
-    setPinError("");
-    setIsPinVerified(false);
+    setPin('')
+    setPinError('')
+    setIsPinVerified(false)
     setResetOptions({
       teams: false,
       participants: false,
@@ -75,9 +75,9 @@ export function ResetGameModal({
       themes: false,
       points: true,
       films: false,
-    });
-    onClose();
-  };
+    })
+    onClose()
+  }
 
   const resetAllOptions = () => {
     setResetOptions({
@@ -87,8 +87,8 @@ export function ResetGameModal({
       themes: true,
       points: true,
       films: true,
-    });
-  };
+    })
+  }
 
   return (
     <Modal
@@ -99,13 +99,12 @@ export function ResetGameModal({
     >
       <div className="space-y-6">
         {!isPinVerified ? (
-          // Etapa 1: Verificação de PIN
           <div className="space-y-4">
-            <div className="p-4 rounded-2xl bg-[var(--color-danger)]/5 border border-[var(--color-danger)]/20">
+            <div className="rounded-2xl border border-[var(--color-danger)]/20 bg-[var(--color-danger)]/5 p-4">
               <div className="flex items-start gap-3">
-                <AlertTriangle className="h-5 w-5 text-[var(--color-danger)] mt-0.5" />
+                <AlertTriangle className="mt-0.5 h-5 w-5 text-[var(--color-danger)]" />
                 <div>
-                  <h4 className="font-semibold text-[var(--color-text)] text-sm mb-1">
+                  <h4 className="mb-1 text-sm font-semibold text-[var(--color-text)]">
                     Ação Irreversível
                   </h4>
                   <p className="text-xs text-[var(--color-muted)]">
@@ -116,7 +115,7 @@ export function ResetGameModal({
             </div>
 
             <div>
-              <label className="block text-sm font-semibold text-[var(--color-text)] mb-2">
+              <label className="mb-2 block text-sm font-semibold text-[var(--color-text)]">
                 PIN de Segurança
               </label>
               <input
@@ -124,19 +123,17 @@ export function ResetGameModal({
                 placeholder="Digite o PIN"
                 value={pin}
                 onChange={(e) => {
-                  setPin(e.target.value);
-                  setPinError("");
+                  setPin(e.target.value)
+                  setPinError('')
                 }}
-                onKeyPress={(e) => {
-                  if (e.key === "Enter") {
-                    handlePinSubmit();
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    handlePinSubmit()
                   }
                 }}
                 className="w-full rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] px-4 py-2 text-[var(--color-text)] focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)]"
               />
-              {pinError && (
-                <p className="text-sm text-[var(--color-danger)] mt-2">{pinError}</p>
-              )}
+              {pinError && <p className="mt-2 text-sm text-[var(--color-danger)]">{pinError}</p>}
             </div>
 
             <Button onClick={handlePinSubmit} className="w-full" variant="primary">
@@ -144,135 +141,42 @@ export function ResetGameModal({
             </Button>
           </div>
         ) : (
-          // Etapa 2: Seleção de opções de reset
           <div className="space-y-4">
             <div className="flex items-center justify-between">
-              <h3 className="text-lg font-semibold text-[var(--color-text)]">
-                O que deseja resetar?
-              </h3>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={resetAllOptions}
-                className="text-xs"
-              >
+              <h3 className="text-lg font-semibold text-[var(--color-text)]">O que deseja resetar?</h3>
+              <Button variant="ghost" size="sm" onClick={resetAllOptions} className="text-xs">
                 Selecionar Tudo
               </Button>
             </div>
 
             <div className="space-y-3">
-              {/* Pontos */}
-              <label className="flex items-center justify-between p-4 rounded-xl border border-[var(--color-border)] bg-[var(--color-background)] cursor-pointer hover:bg-[var(--color-surface)] transition-colors">
-                <div>
-                  <h4 className="font-semibold text-[var(--color-text)] text-sm">
-                    Pontuação
-                  </h4>
-                  <p className="text-xs text-[var(--color-muted)]">
-                    Zerar pontos de todos os times e participantes
-                  </p>
-                </div>
-                <input
-                  type="checkbox"
-                  checked={resetOptions.points}
-                  onChange={() => handleToggleOption("points")}
-                  className="h-5 w-5 rounded border-[var(--color-border)] text-[var(--color-primary)] focus:ring-[var(--color-primary)]"
-                />
-              </label>
-
-              {/* Perguntas */}
-              <label className="flex items-center justify-between p-4 rounded-xl border border-[var(--color-border)] bg-[var(--color-background)] cursor-pointer hover:bg-[var(--color-surface)] transition-colors">
-                <div>
-                  <h4 className="font-semibold text-[var(--color-text)] text-sm">
-                    Perguntas
-                  </h4>
-                  <p className="text-xs text-[var(--color-muted)]">
-                    Remove TODAS as perguntas (mantém os filmes vazios)
-                  </p>
-                </div>
-                <input
-                  type="checkbox"
-                  checked={resetOptions.questions}
-                  onChange={() => handleToggleOption("questions")}
-                  className="h-5 w-5 rounded border-[var(--color-border)] text-[var(--color-primary)] focus:ring-[var(--color-primary)]"
-                />
-              </label>
-
-              {/* Filmes */}
-              <label className="flex items-center justify-between p-4 rounded-xl border border-[var(--color-border)] bg-[var(--color-background)] cursor-pointer hover:bg-[var(--color-surface)] transition-colors">
-                <div>
-                  <h4 className="font-semibold text-[var(--color-text)] text-sm">
-                    Filmes/Colunas
-                  </h4>
-                  <p className="text-xs text-[var(--color-muted)]">
-                    Remove todos os filmes E suas perguntas do tabuleiro
-                  </p>
-                </div>
-                <input
-                  type="checkbox"
-                  checked={resetOptions.films}
-                  onChange={() => handleToggleOption("films")}
-                  className="h-5 w-5 rounded border-[var(--color-border)] text-[var(--color-primary)] focus:ring-[var(--color-primary)]"
-                />
-              </label>
-
-              {/* Times */}
-              <label className="flex items-center justify-between p-4 rounded-xl border border-[var(--color-border)] bg-[var(--color-background)] cursor-pointer hover:bg-[var(--color-surface)] transition-colors">
-                <div>
-                  <h4 className="font-semibold text-[var(--color-text)] text-sm">
-                    Times
-                  </h4>
-                  <p className="text-xs text-[var(--color-muted)]">
-                    Remover todos os times (cria sessão em branco)
-                  </p>
-                </div>
-                <input
-                  type="checkbox"
-                  checked={resetOptions.teams}
-                  onChange={() => handleToggleOption("teams")}
-                  className="h-5 w-5 rounded border-[var(--color-border)] text-[var(--color-primary)] focus:ring-[var(--color-primary)]"
-                />
-              </label>
-
-              {/* Participantes */}
-              <label className="flex items-center justify-between p-4 rounded-xl border border-[var(--color-border)] bg-[var(--color-background)] cursor-pointer hover:bg-[var(--color-surface)] transition-colors">
-                <div>
-                  <h4 className="font-semibold text-[var(--color-text)] text-sm">
-                    Participantes
-                  </h4>
-                  <p className="text-xs text-[var(--color-muted)]">
-                    Remover todos os participantes dos times
-                  </p>
-                </div>
-                <input
-                  type="checkbox"
-                  checked={resetOptions.participants}
-                  onChange={() => handleToggleOption("participants")}
-                  className="h-5 w-5 rounded border-[var(--color-border)] text-[var(--color-primary)] focus:ring-[var(--color-primary)]"
-                />
-              </label>
-
-              {/* Temas */}
-              <label className="flex items-center justify-between p-4 rounded-xl border border-[var(--color-border)] bg-[var(--color-background)] cursor-pointer hover:bg-[var(--color-surface)] transition-colors">
-                <div>
-                  <h4 className="font-semibold text-[var(--color-text)] text-sm">
-                    Tema Visual
-                  </h4>
-                  <p className="text-xs text-[var(--color-muted)]">
-                    Voltar para o tema padrão (claro)
-                  </p>
-                </div>
-                <input
-                  type="checkbox"
-                  checked={resetOptions.themes}
-                  onChange={() => handleToggleOption("themes")}
-                  className="h-5 w-5 rounded border-[var(--color-border)] text-[var(--color-primary)] focus:ring-[var(--color-primary)]"
-                />
-              </label>
+              {[
+                ['points', 'Pontuação', 'Zerar pontos de todos os times e participantes'],
+                ['questions', 'Perguntas', 'Remove todas as perguntas mantendo apenas a estrutura do jogo'],
+                ['films', 'Filmes/Colunas', 'Remove todos os filmes e suas perguntas do tabuleiro'],
+                ['teams', 'Times', 'Remove todos os times e deixa a sessão em branco'],
+                ['participants', 'Participantes', 'Remove todos os participantes dos times'],
+                ['themes', 'Tema Visual', 'Voltar para o tema padrão escuro'],
+              ].map(([key, title, description]) => (
+                <label
+                  key={key}
+                  className="flex cursor-pointer items-center justify-between rounded-xl border border-[var(--color-border)] bg-[var(--color-background)] p-4 transition-colors hover:bg-[var(--color-surface)]"
+                >
+                  <div>
+                    <h4 className="text-sm font-semibold text-[var(--color-text)]">{title}</h4>
+                    <p className="text-xs text-[var(--color-muted)]">{description}</p>
+                  </div>
+                  <input
+                    type="checkbox"
+                    checked={resetOptions[key as keyof ResetOptions]}
+                    onChange={() => handleToggleOption(key as keyof ResetOptions)}
+                    className="h-5 w-5 rounded border-[var(--color-border)] text-[var(--color-primary)] focus:ring-[var(--color-primary)]"
+                  />
+                </label>
+              ))}
             </div>
 
-            {pinError && (
-              <p className="text-sm text-[var(--color-danger)] mt-2">{pinError}</p>
-            )}
+            {pinError && <p className="mt-2 text-sm text-[var(--color-danger)]">{pinError}</p>}
 
             <div className="flex gap-3 pt-4">
               <Button variant="outline" onClick={handleClose} className="flex-1">
@@ -281,7 +185,7 @@ export function ResetGameModal({
               <Button
                 variant="primary"
                 onClick={handleConfirm}
-                className="flex-1 flex items-center justify-center gap-2 bg-[var(--color-danger)] hover:bg-[var(--color-danger)]/90"
+                className="flex flex-1 items-center justify-center gap-2 bg-[var(--color-danger)] hover:bg-[var(--color-danger)]/90"
               >
                 <RefreshCw className="h-4 w-4" />
                 Confirmar Reset
@@ -291,6 +195,5 @@ export function ResetGameModal({
         )}
       </div>
     </Modal>
-  );
+  )
 }
-

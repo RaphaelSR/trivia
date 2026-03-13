@@ -36,15 +36,16 @@ import { GameEndModal } from '@/components/ui/GameEndModal'
 import { QuestionLibraryModal } from '@/components/ui/QuestionLibraryModal'
 import { ScoreDetailView } from '@/components/ui/ScoreDetailView'
 import { ConfirmActionModal } from '@/components/ui/ConfirmActionModal'
+import { STORAGE_KEYS } from '@/shared/constants/storage'
+import { storageService } from '@/shared/services/storage.service'
+import { countAnsweredTiles, countTotalTiles } from '@/modules/game/domain/board.utils'
+import { buildTurnSequence } from '@/modules/game/domain/turn-order'
 import { useControlDashboardState } from '../hooks/useControlDashboardState'
 import { useTeamManagement } from '../hooks/useTeamManagement'
 import { useSessionManagement } from '../hooks/useSessionManagement'
 import { TeamsManagementModal } from '../components/TeamsManagementModal'
 import { ScoringControls } from '../components/ScoringControls'
 import { createTeamId, createParticipantId } from '../utils/teamUtils'
-import { createBalancedTurnSequence } from '@/modules/trivia/utils/createBalancedTurnSequence'
-import { createAlternatingTurnSequence } from '@/modules/trivia/utils/createAlternatingTurnSequence'
-
 // PIN será gerenciado pelo hook usePinManagement
 
 export function ControlDashboard() {
@@ -177,11 +178,8 @@ export function ControlDashboard() {
 
   // Detecta quando o jogo termina (todas as perguntas respondidas)
   const isGameFinished = useMemo(() => {
-    const totalTiles = session.board.reduce((acc, column) => acc + column.tiles.length, 0)
-    const answeredTiles = session.board.reduce(
-      (acc, column) => acc + column.tiles.filter((tile) => tile.state === 'answered').length,
-      0
-    )
+    const totalTiles = countTotalTiles(session.board)
+    const answeredTiles = countAnsweredTiles(session.board)
     return totalTiles > 0 && totalTiles === answeredTiles
   }, [session.board])
 
@@ -232,7 +230,7 @@ export function ControlDashboard() {
   // Detecta primeira vez e mostra onboarding automaticamente
   useEffect(() => {
     if (gameMode === 'offline') {
-      const hasSeenOnboarding = localStorage.getItem('trivia-onboarding-seen')
+      const hasSeenOnboarding = storageService.get(STORAGE_KEYS.onboardingSeen)
       if (!hasSeenOnboarding && !offlineOnboardingOpen) {
         // Primeira vez: abre onboarding automaticamente
         setOfflineOnboardingOpen(true)
@@ -242,7 +240,7 @@ export function ControlDashboard() {
 
   // Mostra sugestão de onboarding de forma não forçada (apenas se já viu onboarding antes)
   useEffect(() => {
-    const hasSeenOnboarding = localStorage.getItem('trivia-onboarding-seen')
+    const hasSeenOnboarding = storageService.get(STORAGE_KEYS.onboardingSeen)
     if (gameMode === 'offline' && orderedTeams.length === 0 && !showOnboardingSuggestion && hasSeenOnboarding) {
       // Aguarda 2 segundos antes de mostrar a sugestão (apenas se já viu antes)
       const timer = setTimeout(() => {
@@ -359,8 +357,8 @@ export function ControlDashboard() {
 
     if (hasCurrentData) {
       const filmsCount = session.board.length
-      const questionsCount = session.board.reduce((acc, column) => acc + column.tiles.length, 0)
-      const answeredCount = session.board.reduce((acc, column) => acc + column.tiles.filter(tile => tile.state === 'answered').length, 0)
+      const questionsCount = countTotalTiles(session.board)
+      const answeredCount = countAnsweredTiles(session.board)
       const teamsCount = orderedTeams.length
       const totalScore = orderedTeams.reduce((acc, team) => acc + (team.score || 0), 0)
 
@@ -408,7 +406,6 @@ export function ControlDashboard() {
   }) => {
     try {
       // Aplica o tema selecionado
-      console.log('Aplicando tema após onboarding:', config.theme); // Debug
       setTheme(config.theme as "light" | "dark" | "cinema" | "retro" | "matrix" | "brazil")
       
       // Salva o PIN personalizado
@@ -452,38 +449,8 @@ export function ControlDashboard() {
       })
       
       // Calcula total de perguntas do board para usar sequência balanceada
-      const totalQuestions = session.board.reduce(
-        (acc, column) => acc + column.tiles.length,
-        0
-      )
-      
-      // Cria sequência balanceada se houver perguntas, senão usa alternada
-      const turnSequence = totalQuestions > 0
-        ? createBalancedTurnSequence(newTeams, totalQuestions)
-        : createAlternatingTurnSequence(newTeams)
-      
-      // Debug: log da sequência criada
-      console.group('[🎯 ONBOARDING] Criando sessão')
-      console.log('Times criados:', newTeams.map(t => ({ 
-        id: t.id,
-        name: t.name,
-        color: t.color,
-        membersIds: t.members,
-        membersNames: t.members.map(m => newParticipants.find(p => p.id === m)?.name) 
-      })))
-      console.log('Participantes criados:', newParticipants.map(p => ({
-        id: p.id,
-        name: p.name,
-        teamId: p.teamId,
-        teamName: newTeams.find(t => t.id === p.teamId)?.name
-      })))
-      console.log('Total de perguntas:', totalQuestions)
-      console.log('Sequência de turnos (FINAL):', turnSequence.map((id, index) => {
-        const p = newParticipants.find(p => p.id === id)
-        const t = newTeams.find(t => t.id === p?.teamId)
-        return `${index + 1}. ${p?.name} (${t?.name})`
-      }))
-      console.groupEnd()
+      const totalQuestions = countTotalTiles(session.board)
+      const turnSequence = buildTurnSequence(newTeams, totalQuestions)
       
       // Atualiza a sessão com os novos dados
       updateTeamsAndParticipants(newTeams, newParticipants, turnSequence)
@@ -504,7 +471,7 @@ export function ControlDashboard() {
       }, 100)
       
       // Marca onboarding como visto
-      localStorage.setItem('trivia-onboarding-seen', 'true')
+      storageService.set(STORAGE_KEYS.onboardingSeen, 'true')
       
       // Fecha o modal de onboarding e sugestão
       setOfflineOnboardingOpen(false)
@@ -860,7 +827,7 @@ export function ControlDashboard() {
               <h2 className="text-2xl font-semibold text-[var(--color-text)]">Selecione a próxima pergunta</h2>
             </div>
             <span className="text-sm font-medium text-[var(--color-muted)]">
-              {session.board.length} temas · {session.board.reduce((acc, column) => acc + column.tiles.length, 0)} cartas
+              {session.board.length} temas · {countTotalTiles(session.board)} cartas
             </span>
           </div>
           <TriviaBoard columns={session.board} onSelectTile={handleSelectTile} />
@@ -1313,7 +1280,7 @@ export function ControlDashboard() {
 
           if (hasExistingData) {
             const filmsCount = session.board.length
-            const questionsCount = session.board.reduce((acc, column) => acc + column.tiles.length, 0)
+            const questionsCount = countTotalTiles(session.board)
             const teamsCount = orderedTeams.length
             const totalScore = orderedTeams.reduce((acc, team) => acc + (team.score || 0), 0)
 
@@ -1360,13 +1327,13 @@ export function ControlDashboard() {
         isOpen={offlineOnboardingOpen}
         onClose={() => {
           // Marca como visto mesmo se fechar sem completar
-          localStorage.setItem('trivia-onboarding-seen', 'true')
+          storageService.set(STORAGE_KEYS.onboardingSeen, 'true')
           setOfflineOnboardingOpen(false)
         }}
         onComplete={handleOfflineOnboardingComplete}
         onSkip={() => {
           // Marca como visto ao pular
-          localStorage.setItem('trivia-onboarding-seen', 'true')
+          storageService.set(STORAGE_KEYS.onboardingSeen, 'true')
           setOfflineOnboardingOpen(false)
         }}
       />
@@ -1448,4 +1415,3 @@ export function ControlDashboard() {
     </div>
   )
 }
-

@@ -32,8 +32,8 @@ interface OfflineConfig {
 }
 
 const themeOptions = [
-  { id: "light", name: "Tema Claro", description: "Cores claras e vibrantes" },
   { id: "dark", name: "Tema Escuro", description: "Cores escuras e elegantes" },
+  { id: "light", name: "Tema Claro", description: "Cores claras e vibrantes" },
   { id: "cinema", name: "Tema Cinema", description: "Atmosfera cinematográfica" },
   { id: "retro", name: "Tema Retro 80s", description: "Cores neon e nostalgia dos anos 80" },
   { id: "matrix", name: "Tema Matrix", description: "Verde digital e efeito terminal" },
@@ -63,7 +63,7 @@ export function OfflineOnboardingModal({
   const { setTheme } = useThemeMode();
   const [currentStep, setCurrentStep] = useState(1);
   const [config, setConfig] = useState<OfflineConfig>({
-    theme: "light",
+    theme: "dark",
     pin: "",
     sessionTitle: "Nova Sessão Offline",
     sessionDate: new Date().toISOString().split('T')[0],
@@ -83,8 +83,7 @@ export function OfflineOnboardingModal({
 
   const handleThemeSelect = (themeId: string) => {
     setConfig((prev) => ({ ...prev, theme: themeId }));
-    console.log('Aplicando tema no onboarding:', themeId); // Debug
-    setTheme(themeId as "light" | "dark" | "cinema" | "retro" | "matrix");
+    setTheme(themeId as "light" | "dark" | "cinema" | "retro" | "matrix" | "brazil");
   };
 
   const handlePinChange = (pin: string) => {
@@ -193,7 +192,7 @@ export function OfflineOnboardingModal({
     // Reset do estado quando fechar
     setCurrentStep(1);
     setConfig({
-      theme: "light",
+      theme: "dark",
       pin: "",
       sessionTitle: "Nova Sessão Offline",
       sessionDate: new Date().toISOString().split('T')[0],

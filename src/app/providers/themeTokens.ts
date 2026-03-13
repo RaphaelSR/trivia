@@ -1,10 +1,4 @@
-export type ThemeMode =
-  | "light"
-  | "dark"
-  | "cinema"
-  | "retro"
-  | "matrix"
-  | "brazil";
+import type { ThemeMode } from '../../shared/types/game'
 
 export const themeTokens: Record<ThemeMode, Record<string, string>> = {
   light: {
@@ -20,7 +14,11 @@ export const themeTokens: Record<ThemeMode, Record<string, string>> = {
     "--color-shadow": "#0f172a",
     "--color-disabled": "#f3f4f6",
     "--color-disabled-text": "#6b7280",
-    "--color-overlay": "rgba(0, 0, 0, 0.5)"
+    "--color-overlay": "rgba(0, 0, 0, 0.5)",
+    "--glass-bg": "rgba(255, 255, 255, 0.72)",
+    "--glass-border": "rgba(79, 70, 229, 0.16)",
+    "--glass-shadow": "rgba(15, 23, 42, 0.12)",
+    "--gradient-primary": "linear-gradient(135deg, #4f46e5 0%, #22d3ee 100%)"
   },
   dark: {
     "--color-primary": "#818cf8",
@@ -35,7 +33,11 @@ export const themeTokens: Record<ThemeMode, Record<string, string>> = {
     "--color-shadow": "#000000",
     "--color-disabled": "#334155",
     "--color-disabled-text": "#94a3b8",
-    "--color-overlay": "rgba(0, 0, 0, 0.7)"
+    "--color-overlay": "rgba(0, 0, 0, 0.7)",
+    "--glass-bg": "rgba(15, 23, 42, 0.7)",
+    "--glass-border": "rgba(129, 140, 248, 0.2)",
+    "--glass-shadow": "rgba(15, 23, 42, 0.5)",
+    "--gradient-primary": "linear-gradient(135deg, #0f172a 0%, #312e81 52%, #38bdf8 100%)"
   },
   cinema: {
     "--color-primary": "#fb923c",
@@ -50,7 +52,11 @@ export const themeTokens: Record<ThemeMode, Record<string, string>> = {
     "--color-shadow": "#000000",
     "--color-disabled": "#44403c",
     "--color-disabled-text": "#a3a3a3",
-    "--color-overlay": "rgba(0, 0, 0, 0.7)"
+    "--color-overlay": "rgba(0, 0, 0, 0.7)",
+    "--glass-bg": "rgba(28, 25, 23, 0.76)",
+    "--glass-border": "rgba(251, 146, 60, 0.24)",
+    "--glass-shadow": "rgba(0, 0, 0, 0.55)",
+    "--gradient-primary": "linear-gradient(135deg, #0c0a09 0%, #9a3412 48%, #fde047 100%)"
   },
   retro: {
     "--color-primary": "#ff0080",
@@ -65,7 +71,11 @@ export const themeTokens: Record<ThemeMode, Record<string, string>> = {
     "--color-shadow": "#ff0080",
     "--color-disabled": "#4a1a69",
     "--color-disabled-text": "#ff80ff",
-    "--color-overlay": "rgba(0, 0, 0, 0.8)"
+    "--color-overlay": "rgba(0, 0, 0, 0.8)",
+    "--glass-bg": "rgba(26, 0, 51, 0.78)",
+    "--glass-border": "rgba(255, 0, 128, 0.24)",
+    "--glass-shadow": "rgba(255, 0, 128, 0.3)",
+    "--gradient-primary": "linear-gradient(135deg, #1a0033 0%, #ff0080 48%, #00ffff 100%)"
   },
   matrix: {
     "--color-primary": "#00ff00",
@@ -80,7 +90,11 @@ export const themeTokens: Record<ThemeMode, Record<string, string>> = {
     "--color-shadow": "#00ff00",
     "--color-disabled": "#003300",
     "--color-disabled-text": "#00cc00",
-    "--color-overlay": "rgba(0, 0, 0, 0.9)"
+    "--color-overlay": "rgba(0, 0, 0, 0.9)",
+    "--glass-bg": "rgba(0, 0, 0, 0.8)",
+    "--glass-border": "rgba(0, 255, 0, 0.2)",
+    "--glass-shadow": "rgba(0, 255, 0, 0.18)",
+    "--gradient-primary": "linear-gradient(135deg, #000000 0%, #003300 52%, #00ff41 100%)"
   },
   brazil: {
     "--color-primary": "#009739",
@@ -95,22 +109,26 @@ export const themeTokens: Record<ThemeMode, Record<string, string>> = {
     "--color-shadow": "#2e7d32",
     "--color-disabled": "#c8e6c9",
     "--color-disabled-text": "#7cb342",
-    "--color-overlay": "rgba(0, 0, 0, 0.5)"
+    "--color-overlay": "rgba(0, 0, 0, 0.5)",
+    "--glass-bg": "rgba(241, 248, 233, 0.75)",
+    "--glass-border": "rgba(0, 151, 57, 0.2)",
+    "--glass-shadow": "rgba(46, 125, 50, 0.16)",
+    "--gradient-primary": "linear-gradient(135deg, #009739 0%, #1b5e20 52%, #FFDF00 100%)"
   }
-};
+}
 
 export function applyTheme(mode: ThemeMode) {
-  const root = document.documentElement;
-  const tokens = themeTokens[mode];
+  const root = document.documentElement
+  const tokens = themeTokens[mode]
   Object.entries(tokens).forEach(([key, value]) => {
-    root.style.setProperty(key, value);
-  });
-  root.dataset.theme = mode;
+    root.style.setProperty(key, value)
+  })
+  root.dataset.theme = mode
 
   // Aplicar color-scheme para melhor suporte aos temas
   if (mode === "light" || mode === "brazil") {
-    root.style.colorScheme = "light";
+    root.style.colorScheme = "light"
   } else {
-    root.style.colorScheme = "dark";
+    root.style.colorScheme = "dark"
   }
 }
