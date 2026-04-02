@@ -1,5 +1,4 @@
 export default {
-  preset: 'ts-jest',
   testEnvironment: 'jsdom',
   roots: ['<rootDir>/src'],
   testMatch: ['**/__tests__/**/*.test.ts', '**/__tests__/**/*.test.tsx'],
@@ -13,6 +12,7 @@ export default {
       tsconfig: {
         jsx: 'react-jsx',
         esModuleInterop: true,
+        resolveJsonModule: true,
         baseUrl: '.',
         paths: {
           '@/*': ['./src/*'],
@@ -30,4 +30,3 @@ export default {
   coverageDirectory: 'coverage',
   coverageReporters: ['text', 'lcov', 'html'],
 }
-

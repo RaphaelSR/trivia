@@ -66,7 +66,7 @@ describe('QuestionLibraryModal', () => {
         />
       )
 
-      expect(screen.getByText('Biblioteca de Perguntas')).toBeInTheDocument()
+      expect(screen.getByText('Perguntas e filmes')).toBeInTheDocument()
       expect(screen.getByText('Matrix')).toBeInTheDocument()
     })
 
@@ -85,7 +85,7 @@ describe('QuestionLibraryModal', () => {
         />
       )
 
-      expect(screen.queryByText('Biblioteca de Perguntas')).not.toBeInTheDocument()
+      expect(screen.queryByText('Perguntas e filmes')).not.toBeInTheDocument()
     })
 
     it('deve mostrar contagem total de perguntas', () => {
@@ -155,7 +155,7 @@ describe('QuestionLibraryModal', () => {
         />
       )
 
-      const pointsSelect = screen.getByLabelText(/Filtrar por pontos:/)
+      const pointsSelect = screen.getAllByRole('combobox')[1]
       fireEvent.change(pointsSelect, { target: { value: '10' } })
 
       expect(screen.getByText('Matrix')).toBeInTheDocument()
@@ -201,13 +201,8 @@ describe('QuestionLibraryModal', () => {
         />
       )
 
-      const filmHeader = screen.getByText('Matrix')
-      fireEvent.click(filmHeader)
-
-      await waitFor(() => {
-        const removeButton = screen.getByText('Remover Filme')
-        fireEvent.click(removeButton)
-      })
+      const removeButton = screen.getByRole('button', { name: /Remover filme/i })
+      fireEvent.click(removeButton)
 
       expect(window.confirm).toHaveBeenCalled()
       expect(mockOnRemoveFilm).toHaveBeenCalledWith('col-1', 'Matrix')
@@ -230,14 +225,9 @@ describe('QuestionLibraryModal', () => {
         />
       )
 
-      const filmHeader = screen.getByText('Matrix')
-      fireEvent.click(filmHeader)
-
-      await waitFor(() => {
-        const nameInput = screen.getByDisplayValue('Matrix')
-        fireEvent.change(nameInput, { target: { value: 'Matrix Reloaded' } })
-        fireEvent.blur(nameInput)
-      })
+      const nameInput = screen.getByDisplayValue('Matrix')
+      fireEvent.change(nameInput, { target: { value: 'Matrix Reloaded' } })
+      fireEvent.blur(nameInput)
 
       expect(mockOnUpdateColumnTitle).toHaveBeenCalledWith('col-1', 'Matrix Reloaded')
     })
@@ -257,13 +247,8 @@ describe('QuestionLibraryModal', () => {
         />
       )
 
-      const filmHeader = screen.getByText('Matrix')
-      fireEvent.click(filmHeader)
-
-      await waitFor(() => {
-        const addButton = screen.getByText('Adicionar Pergunta')
-        fireEvent.click(addButton)
-      })
+      const addButton = screen.getByText('Adicionar pergunta')
+      fireEvent.click(addButton)
 
       expect(mockOnAddQuestion).toHaveBeenCalledWith('col-1')
     })
@@ -283,13 +268,8 @@ describe('QuestionLibraryModal', () => {
         />
       )
 
-      const filmHeader = screen.getByText('Matrix')
-      fireEvent.click(filmHeader)
-
-      await waitFor(() => {
-        const questionTextarea = screen.getByDisplayValue('Pergunta 1?')
-        fireEvent.change(questionTextarea, { target: { value: 'Nova pergunta?' } })
-      })
+      const questionTextarea = screen.getByDisplayValue('Pergunta 1?')
+      fireEvent.change(questionTextarea, { target: { value: 'Nova pergunta?' } })
 
       expect(mockOnUpdateTileContent).toHaveBeenCalledWith('tile-1', {
         question: 'Nova pergunta?',
@@ -336,4 +316,3 @@ describe('QuestionLibraryModal', () => {
     })
   })
 })
-
