@@ -18,7 +18,13 @@ export const themeTokens: Record<ThemeMode, Record<string, string>> = {
     "--glass-bg": "rgba(255, 255, 255, 0.72)",
     "--glass-border": "rgba(79, 70, 229, 0.16)",
     "--glass-shadow": "rgba(15, 23, 42, 0.12)",
-    "--gradient-primary": "linear-gradient(135deg, #4f46e5 0%, #22d3ee 100%)"
+    "--gradient-primary": "linear-gradient(135deg, #4f46e5 0%, #22d3ee 100%)",
+    "--sidebar-bg": "rgba(248, 250, 252, 0.96)",
+    "--sidebar-border": "rgba(79, 70, 229, 0.16)",
+    "--sidebar-text": "#111827",
+    "--sidebar-muted": "#4b5563",
+    "--sidebar-active-text": "#111827",
+    "--sidebar-badge-text": "#374151"
   },
   dark: {
     "--color-primary": "#818cf8",
@@ -37,7 +43,13 @@ export const themeTokens: Record<ThemeMode, Record<string, string>> = {
     "--glass-bg": "rgba(15, 23, 42, 0.7)",
     "--glass-border": "rgba(129, 140, 248, 0.2)",
     "--glass-shadow": "rgba(15, 23, 42, 0.5)",
-    "--gradient-primary": "linear-gradient(135deg, #0f172a 0%, #312e81 52%, #38bdf8 100%)"
+    "--gradient-primary": "linear-gradient(135deg, #0f172a 0%, #312e81 52%, #38bdf8 100%)",
+    "--sidebar-bg": "rgba(15, 23, 42, 0.94)",
+    "--sidebar-border": "rgba(129, 140, 248, 0.18)",
+    "--sidebar-text": "#f8fafc",
+    "--sidebar-muted": "#e2e8f0",
+    "--sidebar-active-text": "#ffffff",
+    "--sidebar-badge-text": "#e2e8f0"
   },
   cinema: {
     "--color-primary": "#fb923c",
@@ -56,7 +68,13 @@ export const themeTokens: Record<ThemeMode, Record<string, string>> = {
     "--glass-bg": "rgba(28, 25, 23, 0.76)",
     "--glass-border": "rgba(251, 146, 60, 0.24)",
     "--glass-shadow": "rgba(0, 0, 0, 0.55)",
-    "--gradient-primary": "linear-gradient(135deg, #0c0a09 0%, #9a3412 48%, #fde047 100%)"
+    "--gradient-primary": "linear-gradient(135deg, #0c0a09 0%, #9a3412 48%, #fde047 100%)",
+    "--sidebar-bg": "rgba(28, 25, 23, 0.96)",
+    "--sidebar-border": "rgba(251, 146, 60, 0.24)",
+    "--sidebar-text": "#fff7ed",
+    "--sidebar-muted": "#ffedd5",
+    "--sidebar-active-text": "#ffffff",
+    "--sidebar-badge-text": "#ffedd5"
   },
   retro: {
     "--color-primary": "#ff0080",
@@ -75,7 +93,13 @@ export const themeTokens: Record<ThemeMode, Record<string, string>> = {
     "--glass-bg": "rgba(26, 0, 51, 0.78)",
     "--glass-border": "rgba(255, 0, 128, 0.24)",
     "--glass-shadow": "rgba(255, 0, 128, 0.3)",
-    "--gradient-primary": "linear-gradient(135deg, #1a0033 0%, #ff0080 48%, #00ffff 100%)"
+    "--gradient-primary": "linear-gradient(135deg, #1a0033 0%, #ff0080 48%, #00ffff 100%)",
+    "--sidebar-bg": "rgba(26, 0, 51, 0.96)",
+    "--sidebar-border": "rgba(255, 0, 128, 0.24)",
+    "--sidebar-text": "#fdf4ff",
+    "--sidebar-muted": "#f5d0fe",
+    "--sidebar-active-text": "#ffffff",
+    "--sidebar-badge-text": "#fdf4ff"
   },
   matrix: {
     "--color-primary": "#00ff00",
@@ -94,7 +118,13 @@ export const themeTokens: Record<ThemeMode, Record<string, string>> = {
     "--glass-bg": "rgba(0, 0, 0, 0.8)",
     "--glass-border": "rgba(0, 255, 0, 0.2)",
     "--glass-shadow": "rgba(0, 255, 0, 0.18)",
-    "--gradient-primary": "linear-gradient(135deg, #000000 0%, #003300 52%, #00ff41 100%)"
+    "--gradient-primary": "linear-gradient(135deg, #000000 0%, #003300 52%, #00ff41 100%)",
+    "--sidebar-bg": "rgba(0, 0, 0, 0.96)",
+    "--sidebar-border": "rgba(0, 255, 0, 0.18)",
+    "--sidebar-text": "#f0fdf4",
+    "--sidebar-muted": "#bbf7d0",
+    "--sidebar-active-text": "#f0fdf4",
+    "--sidebar-badge-text": "#dcfce7"
   },
   brazil: {
     "--color-primary": "#009739",
@@ -113,7 +143,13 @@ export const themeTokens: Record<ThemeMode, Record<string, string>> = {
     "--glass-bg": "rgba(241, 248, 233, 0.75)",
     "--glass-border": "rgba(0, 151, 57, 0.2)",
     "--glass-shadow": "rgba(46, 125, 50, 0.16)",
-    "--gradient-primary": "linear-gradient(135deg, #009739 0%, #1b5e20 52%, #FFDF00 100%)"
+    "--gradient-primary": "linear-gradient(135deg, #009739 0%, #1b5e20 52%, #FFDF00 100%)",
+    "--sidebar-bg": "rgba(255, 255, 255, 0.94)",
+    "--sidebar-border": "rgba(0, 151, 57, 0.2)",
+    "--sidebar-text": "#14532d",
+    "--sidebar-muted": "#166534",
+    "--sidebar-active-text": "#052e16",
+    "--sidebar-badge-text": "#14532d"
   }
 }
 

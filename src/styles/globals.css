@@ -26,6 +26,12 @@
     --glass-border: rgba(129, 140, 248, 0.18);
     --glass-shadow: rgba(15, 23, 42, 0.52);
     --gradient-primary: linear-gradient(135deg, #020617 0%, #312e81 52%, #38bdf8 100%);
+    --sidebar-bg: rgba(15, 23, 42, 0.94);
+    --sidebar-border: rgba(129, 140, 248, 0.18);
+    --sidebar-text: #f8fafc;
+    --sidebar-muted: #cbd5e1;
+    --sidebar-active-text: #ffffff;
+    --sidebar-badge-text: #e2e8f0;
     --film-primary: var(--color-primary);
     --film-accent: var(--color-secondary);
     --film-bg: rgba(30, 41, 59, 0.8);
@@ -107,24 +113,27 @@
   }
 
   .sidebar-surface {
-    border: 1px solid rgba(255, 255, 255, 0.08);
+    border: 1px solid var(--sidebar-border);
     background:
-      linear-gradient(180deg, rgba(2, 6, 23, 0.95), rgba(15, 23, 42, 0.92)),
+      linear-gradient(180deg, var(--sidebar-bg), color-mix(in srgb, var(--sidebar-bg) 86%, black 14%)),
       linear-gradient(180deg, rgba(255, 255, 255, 0.02), transparent);
     box-shadow:
       0 30px 60px -28px rgba(2, 6, 23, 0.95),
-      inset 0 1px 0 rgba(255, 255, 255, 0.04);
+      inset 0 1px 0 rgba(255, 255, 255, 0.06),
+      inset 0 0 0 1px color-mix(in srgb, var(--sidebar-border) 22%, transparent);
     backdrop-filter: blur(18px);
   }
 
   .nav-item-active {
-    border-color: color-mix(in srgb, var(--color-primary) 35%, transparent);
+    border-color: color-mix(in srgb, var(--color-primary) 52%, transparent);
     background:
-      linear-gradient(135deg, color-mix(in srgb, var(--color-primary) 14%, transparent), color-mix(in srgb, var(--color-secondary) 10%, transparent)),
-      rgba(255, 255, 255, 0.04);
+      linear-gradient(135deg, color-mix(in srgb, var(--color-primary) 22%, transparent), color-mix(in srgb, var(--color-secondary) 14%, transparent)),
+      rgba(255, 255, 255, 0.05);
     box-shadow:
-      0 20px 40px -28px color-mix(in srgb, var(--color-primary) 45%, transparent),
-      inset 0 1px 0 rgba(255, 255, 255, 0.08);
+      0 20px 40px -28px color-mix(in srgb, var(--color-primary) 58%, transparent),
+      0 0 0 1px color-mix(in srgb, var(--color-primary) 24%, transparent),
+      inset 0 1px 0 rgba(255, 255, 255, 0.1);
+    color: var(--sidebar-active-text);
   }
 
   .editor-pane {

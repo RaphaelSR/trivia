@@ -7,7 +7,7 @@ export interface ControlConfirmActionConfig {
 
 export interface ControlDashboardState {
   selectedIds: { tileId: string; columnId: string } | null
-  activePanel: 'board' | 'scoreboard' | 'library' | 'films' | 'sessions' | 'theme' | 'teams'
+  activePanel: 'board' | 'scoreboard' | 'library' | 'films' | 'sessions' | 'theme' | 'teams' | 'faq'
   sidebarCollapsed: boolean
   mobileSidebarOpen: boolean
   showAnswer: boolean

@@ -7,7 +7,7 @@ import type { TriviaSession } from "../types";
 export function createEmptySession(): TriviaSession {
   return {
     id: "empty-session",
-    title: "Nova Sessão Offline",
+    title: "Nova Sessão Local",
     scheduledAt: new Date().toISOString(),
     theme: {
       id: "default-dark",

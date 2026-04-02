@@ -1,8 +1,7 @@
 import { useState } from 'react'
+import { AlertTriangle, RefreshCw } from 'lucide-react'
 import { Button } from './Button'
 import { Modal } from './Modal'
-import { RefreshCw, AlertTriangle } from 'lucide-react'
-import { usePinManagement } from '../../hooks/usePinManagement'
 
 interface ResetOptions {
   teams: boolean
@@ -19,64 +18,52 @@ interface ResetGameModalProps {
   onConfirmReset: (options: ResetOptions) => void
 }
 
+const initialResetOptions: ResetOptions = {
+  teams: false,
+  participants: false,
+  questions: true,
+  themes: false,
+  points: true,
+  films: false,
+}
+
 export function ResetGameModal({
   isOpen,
   onClose,
   onConfirmReset,
 }: ResetGameModalProps) {
-  const [pin, setPin] = useState('')
-  const [pinError, setPinError] = useState('')
-  const [isPinVerified, setIsPinVerified] = useState(false)
-  const [resetOptions, setResetOptions] = useState<ResetOptions>({
-    teams: false,
-    participants: false,
-    questions: true,
-    themes: false,
-    points: true,
-    films: false,
-  })
-  const { verifyPin } = usePinManagement()
-
-  const handlePinSubmit = () => {
-    if (verifyPin(pin)) {
-      setIsPinVerified(true)
-      setPinError('')
-      return
-    }
-
-    setPinError('PIN incorreto. Tente novamente.')
-  }
+  const [resetOptions, setResetOptions] = useState<ResetOptions>(initialResetOptions)
+  const [confirmDestructiveAction, setConfirmDestructiveAction] = useState(false)
+  const [error, setError] = useState('')
 
   const handleToggleOption = (option: keyof ResetOptions) => {
+    setError('')
     setResetOptions((prev) => ({
       ...prev,
       [option]: !prev[option],
     }))
   }
 
+  const handleClose = () => {
+    setResetOptions(initialResetOptions)
+    setConfirmDestructiveAction(false)
+    setError('')
+    onClose()
+  }
+
   const handleConfirm = () => {
     if (!Object.values(resetOptions).some(Boolean)) {
-      setPinError('Selecione pelo menos uma opção para resetar.')
+      setError('Selecione pelo menos uma opcao para resetar.')
+      return
+    }
+
+    if (!confirmDestructiveAction) {
+      setError('Confirme que entende o impacto do reset para continuar.')
       return
     }
 
     onConfirmReset(resetOptions)
     handleClose()
-  }
-
-  const handleClose = () => {
-    setPin('')
-    setPinError('')
-    setIsPinVerified(false)
-    setResetOptions({
-      teams: false,
-      participants: false,
-      questions: true,
-      themes: false,
-      points: true,
-      films: false,
-    })
-    onClose()
   }
 
   const resetAllOptions = () => {
@@ -94,105 +81,88 @@ export function ResetGameModal({
     <Modal
       isOpen={isOpen}
       onClose={handleClose}
-      title="Resetar Jogo"
-      description="Escolha quais elementos deseja resetar. Esta ação não pode ser desfeita."
+      title="Resetar jogo"
+      description="Escolha quais partes da sessao deseja limpar. O reset nao depende mais de PIN obrigatorio."
     >
-      <div className="space-y-6">
-        {!isPinVerified ? (
-          <div className="space-y-4">
-            <div className="rounded-2xl border border-[var(--color-danger)]/20 bg-[var(--color-danger)]/5 p-4">
-              <div className="flex items-start gap-3">
-                <AlertTriangle className="mt-0.5 h-5 w-5 text-[var(--color-danger)]" />
-                <div>
-                  <h4 className="mb-1 text-sm font-semibold text-[var(--color-text)]">
-                    Ação Irreversível
-                  </h4>
-                  <p className="text-xs text-[var(--color-muted)]">
-                    Para proteger seus dados, insira o PIN de segurança para continuar.
-                  </p>
-                </div>
-              </div>
-            </div>
-
+      <div className="space-y-5">
+        <div className="rounded-2xl border border-[var(--color-danger)]/20 bg-[var(--color-danger)]/5 p-4">
+          <div className="flex items-start gap-3">
+            <AlertTriangle className="mt-0.5 h-5 w-5 text-[var(--color-danger)]" />
             <div>
-              <label className="mb-2 block text-sm font-semibold text-[var(--color-text)]">
-                PIN de Segurança
-              </label>
+              <h4 className="mb-1 text-sm font-semibold text-[var(--color-text)]">
+                Acao destrutiva
+              </h4>
+              <p className="text-xs leading-6 text-[var(--color-muted)]">
+                Use reset apenas quando quiser limpar parte da sessao atual. Se voce configurou PIN, ele continua servindo para proteger a biblioteca, mas nao eh mais obrigatorio para reset.
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <div className="flex items-center justify-between">
+          <h3 className="text-lg font-semibold text-[var(--color-text)]">O que deseja resetar?</h3>
+          <Button variant="ghost" size="sm" onClick={resetAllOptions} className="text-xs">
+            Selecionar tudo
+          </Button>
+        </div>
+
+        <div className="space-y-3">
+          {[
+            ['points', 'Pontuacao', 'Zera pontos de todos os times e participantes.'],
+            ['questions', 'Perguntas', 'Remove as perguntas mantendo a estrutura do painel.'],
+            ['films', 'Filmes e colunas', 'Remove todos os filmes e suas cartas do board.'],
+            ['teams', 'Times', 'Remove os grupos cadastrados na sessao atual.'],
+            ['participants', 'Participantes', 'Limpa os membros vinculados aos times.'],
+            ['themes', 'Tema visual', 'Volta para o tema padrao da aplicacao.'],
+          ].map(([key, title, description]) => (
+            <label
+              key={key}
+              className="flex cursor-pointer items-center justify-between rounded-xl border border-[var(--color-border)] bg-[var(--color-background)] p-4 transition-colors hover:bg-[var(--color-surface)]"
+            >
+              <div>
+                <h4 className="text-sm font-semibold text-[var(--color-text)]">{title}</h4>
+                <p className="text-xs text-[var(--color-muted)]">{description}</p>
+              </div>
               <input
-                type="password"
-                placeholder="Digite o PIN"
-                value={pin}
-                onChange={(e) => {
-                  setPin(e.target.value)
-                  setPinError('')
-                }}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter') {
-                    handlePinSubmit()
-                  }
-                }}
-                className="w-full rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] px-4 py-2 text-[var(--color-text)] focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)]"
+                type="checkbox"
+                checked={resetOptions[key as keyof ResetOptions]}
+                onChange={() => handleToggleOption(key as keyof ResetOptions)}
+                className="h-5 w-5 rounded border-[var(--color-border)] text-[var(--color-primary)] focus:ring-[var(--color-primary)]"
               />
-              {pinError && <p className="mt-2 text-sm text-[var(--color-danger)]">{pinError}</p>}
-            </div>
+            </label>
+          ))}
+        </div>
 
-            <Button onClick={handlePinSubmit} className="w-full" variant="primary">
-              Verificar PIN
-            </Button>
-          </div>
-        ) : (
-          <div className="space-y-4">
-            <div className="flex items-center justify-between">
-              <h3 className="text-lg font-semibold text-[var(--color-text)]">O que deseja resetar?</h3>
-              <Button variant="ghost" size="sm" onClick={resetAllOptions} className="text-xs">
-                Selecionar Tudo
-              </Button>
-            </div>
+        <label className="flex items-start gap-3 rounded-2xl border border-white/8 bg-white/[0.03] px-4 py-4">
+          <input
+            type="checkbox"
+            checked={confirmDestructiveAction}
+            onChange={(event) => {
+              setConfirmDestructiveAction(event.target.checked)
+              setError('')
+            }}
+            className="mt-1 h-4 w-4 rounded border-[var(--color-border)] text-[var(--color-primary)] focus:ring-[var(--color-primary)]"
+          />
+          <span className="text-sm leading-6 text-[var(--color-text)]">
+            Entendo que o reset remove dados da sessao atual e que essa acao nao pode ser desfeita automaticamente.
+          </span>
+        </label>
 
-            <div className="space-y-3">
-              {[
-                ['points', 'Pontuação', 'Zerar pontos de todos os times e participantes'],
-                ['questions', 'Perguntas', 'Remove todas as perguntas mantendo apenas a estrutura do jogo'],
-                ['films', 'Filmes/Colunas', 'Remove todos os filmes e suas perguntas do tabuleiro'],
-                ['teams', 'Times', 'Remove todos os times e deixa a sessão em branco'],
-                ['participants', 'Participantes', 'Remove todos os participantes dos times'],
-                ['themes', 'Tema Visual', 'Voltar para o tema padrão escuro'],
-              ].map(([key, title, description]) => (
-                <label
-                  key={key}
-                  className="flex cursor-pointer items-center justify-between rounded-xl border border-[var(--color-border)] bg-[var(--color-background)] p-4 transition-colors hover:bg-[var(--color-surface)]"
-                >
-                  <div>
-                    <h4 className="text-sm font-semibold text-[var(--color-text)]">{title}</h4>
-                    <p className="text-xs text-[var(--color-muted)]">{description}</p>
-                  </div>
-                  <input
-                    type="checkbox"
-                    checked={resetOptions[key as keyof ResetOptions]}
-                    onChange={() => handleToggleOption(key as keyof ResetOptions)}
-                    className="h-5 w-5 rounded border-[var(--color-border)] text-[var(--color-primary)] focus:ring-[var(--color-primary)]"
-                  />
-                </label>
-              ))}
-            </div>
+        {error ? <p className="text-sm text-[var(--color-danger)]">{error}</p> : null}
 
-            {pinError && <p className="mt-2 text-sm text-[var(--color-danger)]">{pinError}</p>}
-
-            <div className="flex gap-3 pt-4">
-              <Button variant="outline" onClick={handleClose} className="flex-1">
-                Cancelar
-              </Button>
-              <Button
-                variant="primary"
-                onClick={handleConfirm}
-                className="flex flex-1 items-center justify-center gap-2 bg-[var(--color-danger)] hover:bg-[var(--color-danger)]/90"
-              >
-                <RefreshCw className="h-4 w-4" />
-                Confirmar Reset
-              </Button>
-            </div>
-          </div>
-        )}
+        <div className="flex gap-3 pt-2">
+          <Button variant="outline" onClick={handleClose} className="flex-1">
+            Cancelar
+          </Button>
+          <Button
+            variant="primary"
+            onClick={handleConfirm}
+            className="flex flex-1 items-center justify-center gap-2 bg-[var(--color-danger)] hover:bg-[var(--color-danger)]/90"
+          >
+            <RefreshCw className="h-4 w-4" />
+            Confirmar reset
+          </Button>
+        </div>
       </div>
     </Modal>
   )

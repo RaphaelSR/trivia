@@ -16,7 +16,6 @@ import { toast } from 'sonner'
 import { Button } from '@/components/ui/Button'
 import { FilmRoulette } from '@/components/ui/FilmRoulette'
 import { FilmManager } from '@/components/ui/FilmManager'
-import { InfoModal } from '@/components/ui/InfoModal'
 import { MimicaModal } from '@/components/ui/MimicaModal'
 import { Modal } from '@/components/ui/Modal'
 import { TriviaBoard } from '@/components/ui/TriviaBoard'
@@ -40,6 +39,7 @@ import { FloatingActionBar } from '@/shared/components/FloatingActionBar'
 import { storageService } from '@/shared/services/storage.service'
 import { countAnsweredTiles, countTotalTiles } from '@/modules/game/domain/board.utils'
 import { buildTurnSequence } from '@/modules/game/domain/turn-order'
+import { FaqPanel } from '../ui/FaqPanel'
 import { GameStatusStrip } from '../ui/GameStatusStrip'
 import { ControlShell } from '../ui/ControlShell'
 import { ControlSidebar } from '../ui/ControlSidebar'
@@ -77,7 +77,7 @@ export function ControlDashboard() {
   } = useTriviaSession()
   const { theme: themeMode, setTheme } = useThemeMode()
   const { gameMode, getModeDisplayName } = useGameMode()
-  const { verifyPin, saveCustomPin } = usePinManagement()
+  const { verifyPin, saveCustomPin, clearCustomPin, hasCustomPin } = usePinManagement()
   const { saveSession, loadSession, getSessionStatus } = useOfflineSession()
   const { films: customFilms, addFilm: addCustomFilm, updateFilm: updateCustomFilm, removeFilm: removeCustomFilm } = useCustomFilms()
 
@@ -115,8 +115,6 @@ export function ControlDashboard() {
     setTeamsModalOpen,
     mimicaModalOpen,
     setMimicaModalOpen,
-    infoModalOpen,
-    setInfoModalOpen,
     filmRouletteOpen,
     setFilmRouletteOpen,
     offlineOnboardingOpen,
@@ -339,6 +337,13 @@ export function ControlDashboard() {
   }
 
   const handleShowLibrary = () => {
+    if (!hasCustomPin()) {
+      setLibraryUnlocked(true)
+      setActivePanel('library')
+      setLibraryOpen(true)
+      return
+    }
+
     if (!libraryUnlocked) {
       setActivePanel('library')
       setPinModalOpen(true)
@@ -458,8 +463,13 @@ export function ControlDashboard() {
       // Aplica o tema selecionado
       setTheme(config.theme as "light" | "dark" | "cinema" | "retro" | "matrix" | "brazil")
       
-      // Salva o PIN personalizado
-      saveCustomPin(config.pin)
+      // Salva PIN apenas se o host quiser usar protecao
+      if (config.pin.trim()) {
+        saveCustomPin(config.pin)
+      } else {
+        clearCustomPin()
+      }
+      setLibraryUnlocked(false)
       
       // Cria colunas para os filmes customizados
       config.customFilms.forEach(film => {
@@ -597,8 +607,8 @@ export function ControlDashboard() {
   }
 
   const handleOpenInfo = () => {
-    setActivePanel('sessions')
-    setInfoModalOpen(true)
+    setActivePanel('faq')
+    handleCloseMobileSidebar()
   }
 
   const sidebarContent = (
@@ -698,11 +708,18 @@ export function ControlDashboard() {
         <SidebarNavItem
           icon={<Info size={18} />}
           title="Onboarding"
-          description="Executa o assistente guiado para preparar o modo offline."
+          description="Executa o assistente guiado para preparar a sessao local neste navegador."
           onClick={() => {
             handleStartOnboarding()
             handleCloseMobileSidebar()
           }}
+        />
+        <SidebarNavItem
+          icon={<BookOpen size={18} />}
+          title="FAQ / Ajuda"
+          description="Explica fluxo da rodada, pontuacao, biblioteca, sessoes locais e regras atuais."
+          active={activePanel === 'faq'}
+          onClick={handleOpenInfo}
         />
       </SidebarNavGroup>
 
@@ -818,18 +835,22 @@ export function ControlDashboard() {
             <p className="mt-2 text-xs leading-5 text-[var(--color-muted)]">
               {sessionStatus.hasActiveSession
                 ? `${sessionStatus.duration} min desde a criação · backend ${backendLabel}`
-                : 'As alterações ficam no fluxo atual até você salvar ou carregar uma sessão.'}
+                : 'As alteracoes ficam nesta sessao local ate voce salvar ou carregar outra sessao do navegador.'}
             </p>
           </div>
         </ControlSidebar>
       }
     >
       <div className="flex h-full flex-col gap-3">
-        {gameMode === 'offline' && orderedTeams.length === 0 ? (
+        {activePanel === 'faq' ? (
+          <FaqPanel onOpenOnboarding={handleStartOnboarding} />
+        ) : null}
+
+        {activePanel !== 'faq' && gameMode === 'offline' && orderedTeams.length === 0 ? (
           <EmptyStatePanel
             icon={<UsersRound size={24} />}
-            title="Configure a sessão offline para começar"
-            description="Defina times, participantes, filmes e perguntas antes da primeira rodada. Você pode usar o assistente guiado ou montar tudo manualmente."
+            title="Configure a sessao local para comecar"
+            description="Defina times, participantes, filmes e perguntas antes da primeira rodada. Voce pode usar o assistente guiado ou montar tudo manualmente."
             action={
               <div className="flex flex-wrap justify-center gap-3">
                 {showOnboardingSuggestion ? (
@@ -852,9 +873,11 @@ export function ControlDashboard() {
           />
         ) : null}
 
-        <section className="min-h-0 flex-1 overflow-auto rounded-2xl border border-white/8 bg-black/10 p-3">
-          <TriviaBoard columns={session.board} onSelectTile={handleSelectTile} selectedTileId={selectedIds?.tileId ?? null} />
-        </section>
+        {activePanel !== 'faq' ? (
+          <section className="min-h-0 flex-1 overflow-auto rounded-2xl border border-white/8 bg-black/10 p-3">
+            <TriviaBoard columns={session.board} onSelectTile={handleSelectTile} selectedTileId={selectedIds?.tileId ?? null} />
+          </section>
+        ) : null}
 
         <FloatingActionBar>
           <Button variant="secondary" size="icon" aria-label="Sortear pergunta" onClick={handleRandomQuestion}>
@@ -1150,7 +1173,7 @@ export function ControlDashboard() {
       <Modal
         isOpen={pinModalOpen}
         title="Desbloquear biblioteca"
-        description="Informe o PIN do anfitrião para editar perguntas e temas."
+        description="Digite o PIN apenas se o host tiver configurado protecao para a biblioteca."
         onClose={() => {
           setPinModalOpen(false)
           setPinInput('')
@@ -1366,59 +1389,6 @@ export function ControlDashboard() {
           } catch (error) {
             console.error('Erro ao adicionar pontos da mímica:', error)
             toast.error('Erro ao adicionar pontos da mímica')
-          }
-        }}
-      />
-
-      <InfoModal
-        isOpen={infoModalOpen}
-        onClose={() => {
-          setInfoModalOpen(false)
-          setActivePanel('board')
-        }}
-        onOpenOnboarding={() => {
-          const hasExistingData = 
-            session.board.length > 0 || 
-            orderedTeams.length > 0 || 
-            participants.length > 0 ||
-            session.board.some(column => column.tiles.some(tile => tile.state === 'answered')) ||
-            orderedTeams.some(team => (team.score || 0) > 0)
-
-          if (hasExistingData) {
-            const filmsCount = session.board.length
-            const questionsCount = countTotalTiles(session.board)
-            const teamsCount = orderedTeams.length
-            const totalScore = orderedTeams.reduce((acc, team) => acc + (team.score || 0), 0)
-
-            const itemsToLose = []
-            if (filmsCount > 0) itemsToLose.push(`${filmsCount} filme${filmsCount !== 1 ? 's' : ''}`)
-            if (questionsCount > 0) itemsToLose.push(`${questionsCount} pergunta${questionsCount !== 1 ? 's' : ''}`)
-            if (teamsCount > 0) itemsToLose.push(`${teamsCount} time${teamsCount !== 1 ? 's' : ''}`)
-            if (totalScore > 0) itemsToLose.push(`${totalScore} pontos`)
-
-            setConfirmActionConfig({
-              title: 'Configurar Nova Sessão?',
-              description: `Você já tem uma sessão ativa com dados: ${itemsToLose.join(', ')}. O onboarding irá criar uma nova sessão, substituindo os dados atuais. Deseja continuar?`,
-              onConfirm: () => {
-                sessionManagement.resetGame({
-                  teams: true,
-                  participants: true,
-                  questions: true,
-                  films: true,
-                  points: true,
-                  themes: false,
-                })
-                setActivePanel('sessions')
-                setOfflineOnboardingOpen(true)
-                setInfoModalOpen(false)
-              },
-              variant: 'warning',
-            })
-            setConfirmActionOpen(true)
-          } else {
-            setActivePanel('sessions')
-            setOfflineOnboardingOpen(true)
-            setInfoModalOpen(false)
           }
         }}
       />

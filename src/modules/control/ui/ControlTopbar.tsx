@@ -19,7 +19,7 @@ const modeIcons = {
 
 const modeBgClasses = {
   demo: 'bg-[var(--color-secondary)]/15 text-[var(--color-secondary)] border-[var(--color-secondary)]/30',
-  offline: 'bg-[var(--color-muted)]/15 text-[var(--color-muted)] border-[var(--color-muted)]/30',
+  offline: 'bg-[var(--color-primary)]/12 text-[var(--color-primary)] border-[var(--color-primary)]/24',
   online: 'bg-[var(--color-primary)]/15 text-[var(--color-primary)] border-[var(--color-primary)]/30',
 }
 

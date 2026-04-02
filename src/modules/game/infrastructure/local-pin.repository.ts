@@ -1,4 +1,3 @@
-import { DEFAULT_PIN } from '../../../shared/constants/game'
 import { STORAGE_KEYS } from '../../../shared/constants/storage'
 import { storageService } from '../../../shared/services/storage.service'
 import type { GameMode } from '../../../shared/types/game'
@@ -6,16 +5,18 @@ import type { PinRepository } from './pin.repository'
 
 export class LocalPinRepository implements PinRepository {
   loadPin(mode: GameMode): string {
-    if (mode === 'demo') {
-      return DEFAULT_PIN
-    }
-
-    return storageService.get(STORAGE_KEYS.pinByMode(mode)) ?? DEFAULT_PIN
+    return storageService.get(STORAGE_KEYS.pinByMode(mode)) ?? ''
   }
 
   savePin(mode: GameMode, pin: string): string {
-    storageService.set(STORAGE_KEYS.pinByMode(mode), pin)
-    return pin
+    const normalizedPin = pin.trim()
+    if (!normalizedPin) {
+      this.clearPin(mode)
+      return ''
+    }
+
+    storageService.set(STORAGE_KEYS.pinByMode(mode), normalizedPin)
+    return normalizedPin
   }
 
   clearPin(mode: GameMode): void {
@@ -23,10 +24,11 @@ export class LocalPinRepository implements PinRepository {
   }
 
   verifyPin(mode: GameMode, inputPin: string): boolean {
-    return inputPin === this.loadPin(mode)
+    const currentPin = this.loadPin(mode)
+    return currentPin.length > 0 && inputPin === currentPin
   }
 
   hasCustomPin(mode: GameMode): boolean {
-    return mode !== 'demo' && storageService.has(STORAGE_KEYS.pinByMode(mode))
+    return this.loadPin(mode).length > 0
   }
 }

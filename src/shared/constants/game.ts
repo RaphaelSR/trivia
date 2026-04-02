@@ -4,8 +4,6 @@ export const GAME_MODES: GameMode[] = ['demo', 'offline', 'online']
 
 export const DEFAULT_GAME_MODE: GameMode = 'demo'
 
-export const DEFAULT_PIN = 'password123'
-
 export const MAX_SESSION_HISTORY = 20
 export const MAX_ROULETTE_HISTORY = 10
 
@@ -21,12 +19,12 @@ export const MIMICA_SCORING_MODES: MimicaScoringMode[] = [
 
 export const GAME_MODE_LABELS: Record<GameMode, string> = {
   demo: 'Modo Demo',
-  offline: 'Play Offline',
-  online: 'Play Online',
+  offline: 'Sessão Local',
+  online: 'Online (interno)',
 }
 
 export const GAME_MODE_DESCRIPTIONS: Record<GameMode, string> = {
-  demo: 'Dados de teste pre-configurados',
-  offline: 'Criacao local com persistencia no dispositivo',
-  online: 'Sessao com repositorio preparado para sincronizacao remota',
+  demo: 'Apresentacao rapida com dados de exemplo',
+  offline: 'Salva por sessao e navegador neste dispositivo',
+  online: 'Camada interna reservada para evolucao futura',
 }
