@@ -38,6 +38,7 @@ const themeOptions = [
   { id: "retro", name: "Tema Retro 80s", description: "Cores neon e nostalgia dos anos 80" },
   { id: "matrix", name: "Tema Matrix", description: "Verde digital e efeito terminal" },
   { id: "brazil", name: "Tema Brasil 🇧🇷", description: "Cores verde e amarelo da bandeira brasileira" },
+  { id: "easter", name: "Páscoa 🐣", description: "Tons pastel com ovos e coelhos flutuantes" },
 ];
 
 const teamColors = [
@@ -83,7 +84,7 @@ export function OfflineOnboardingModal({
 
   const handleThemeSelect = (themeId: string) => {
     setConfig((prev) => ({ ...prev, theme: themeId }));
-    setTheme(themeId as "light" | "dark" | "cinema" | "retro" | "matrix" | "brazil");
+    setTheme(themeId as "light" | "dark" | "cinema" | "retro" | "matrix" | "brazil" | "easter");
   };
 
   const handlePinChange = (pin: string) => {

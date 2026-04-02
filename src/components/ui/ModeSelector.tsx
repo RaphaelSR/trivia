@@ -19,11 +19,11 @@ const modeOptions: ModeOption[] = [
   {
     id: 'demo',
     title: GAME_MODE_LABELS.demo,
-    description: 'Entre em segundos com um board de exemplo pronto para apresentar e testar o fluxo completo.',
+    description: 'Simule uma partida completa com 3 times e perguntas prontas. Ideal para entender como o jogo funciona.',
     icon: <Monitor className="h-8 w-8" />,
     route: '/control?mode=demo',
     variant: 'outline',
-    features: ['Board pronto', 'Sem persistência local', 'Ideal para apresentar']
+    features: ['3 times prontos', 'Perguntas incluídas', 'Apenas para testar']
   },
   {
     id: 'offline',

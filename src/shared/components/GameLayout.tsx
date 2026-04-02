@@ -14,7 +14,7 @@ export function GameLayout({ children, className }: GameLayoutProps) {
         className,
       )}
     >
-      <div className="mx-auto flex w-full max-w-7xl flex-col gap-6">{children}</div>
+      <div className="mx-auto flex w-full max-w-7xl flex-col items-center gap-6">{children}</div>
     </main>
   )
 }

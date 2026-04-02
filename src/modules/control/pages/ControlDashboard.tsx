@@ -47,6 +47,7 @@ import { ControlTopbar } from '../ui/ControlTopbar'
 import { EmptyStatePanel } from '../ui/EmptyStatePanel'
 import { SidebarNavGroup } from '../ui/SidebarNavGroup'
 import { SidebarNavItem } from '../ui/SidebarNavItem'
+import { EasterBackground } from '@/shared/components/EasterBackground'
 import { useControlDashboardState } from '../hooks/useControlDashboardState'
 import { useTeamManagement } from '../hooks/useTeamManagement'
 import { useSessionManagement } from '../hooks/useSessionManagement'
@@ -793,6 +794,8 @@ export function ControlDashboard() {
   )
 
   return (
+    <>
+    {themeMode === 'easter' && <EasterBackground />}
     <ControlShell
       sidebarCollapsed={sidebarCollapsed}
       topbar={
@@ -1295,6 +1298,7 @@ export function ControlDashboard() {
               { id: 'retro', label: 'Retro 80s' },
               { id: 'matrix', label: 'Matrix' },
               { id: 'brazil', label: 'Brasil 🇧🇷' },
+              { id: 'easter', label: 'Páscoa 🐣' },
             ] as const
           ).map((option) => (
             <button
@@ -1313,6 +1317,7 @@ export function ControlDashboard() {
                  option.id === 'retro' ? 'Neon e cores vibrantes dos anos 80' :
                  option.id === 'matrix' ? 'Verde digital e efeito terminal' :
                  option.id === 'brazil' ? 'Verde e amarelo da bandeira brasileira' :
+                 option.id === 'easter' ? 'Tons pastel com ovos e coelhos' :
                  `Paleta ${option.label.toLowerCase()}`}
               </span>
             </button>
@@ -1509,5 +1514,6 @@ export function ControlDashboard() {
         />
       )}
     </ControlShell>
+    </>
   )
 }

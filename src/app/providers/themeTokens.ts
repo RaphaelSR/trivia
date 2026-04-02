@@ -150,6 +150,31 @@ export const themeTokens: Record<ThemeMode, Record<string, string>> = {
     "--sidebar-muted": "#166534",
     "--sidebar-active-text": "#052e16",
     "--sidebar-badge-text": "#14532d"
+  },
+  easter: {
+    "--color-primary": "#7c3aed",
+    "--color-secondary": "#f472b6",
+    "--color-surface": "#faf5ff",
+    "--color-background": "#ffffff",
+    "--color-border": "#e9d5ff",
+    "--color-text": "#1e1b4b",
+    "--color-muted": "#7c7399",
+    "--color-tooltip-bg": "#1e1b4b",
+    "--color-tooltip-text": "#ffffff",
+    "--color-shadow": "#4c1d95",
+    "--color-disabled": "#f3e8ff",
+    "--color-disabled-text": "#a78bfa",
+    "--color-overlay": "rgba(0, 0, 0, 0.4)",
+    "--glass-bg": "rgba(255, 255, 255, 0.72)",
+    "--glass-border": "rgba(124, 58, 237, 0.14)",
+    "--glass-shadow": "rgba(76, 29, 149, 0.1)",
+    "--gradient-primary": "linear-gradient(135deg, #7c3aed 0%, #f472b6 100%)",
+    "--sidebar-bg": "rgba(250, 245, 255, 0.96)",
+    "--sidebar-border": "rgba(124, 58, 237, 0.14)",
+    "--sidebar-text": "#1e1b4b",
+    "--sidebar-muted": "#6b5b95",
+    "--sidebar-active-text": "#1e1b4b",
+    "--sidebar-badge-text": "#4c1d95"
   }
 }
 
@@ -162,7 +187,7 @@ export function applyTheme(mode: ThemeMode) {
   root.dataset.theme = mode
 
   // Aplicar color-scheme para melhor suporte aos temas
-  if (mode === "light" || mode === "brazil") {
+  if (mode === "light" || mode === "brazil" || mode === "easter") {
     root.style.colorScheme = "light"
   } else {
     root.style.colorScheme = "dark"
