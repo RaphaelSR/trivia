@@ -1,4 +1,4 @@
-@import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap");
+@import url("https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&family=IBM+Plex+Sans:wght@400;500;600&display=swap");
 
 @tailwind base;
 @tailwind components;
@@ -6,32 +6,61 @@
 
 @layer base {
   :root {
-    color-scheme: light;
-    --color-primary: #4f46e5;
-    --color-secondary: #22d3ee;
-    --color-surface: #f9fafb;
-    --color-background: #ffffff;
-    --color-border: #e5e7eb;
-    --color-text: #111827;
-    --color-muted: #6b7280;
+    color-scheme: dark;
+    --color-primary: #818cf8;
+    --color-secondary: #38bdf8;
+    --color-surface: #08111f;
+    --color-background: #0f172a;
+    --color-border: #334155;
+    --color-text: #f8fafc;
+    --color-muted: #94a3b8;
     --color-danger: #ef4444;
     --color-success: #10b981;
-    --color-tooltip-bg: #1f2937;
-    --color-tooltip-text: #ffffff;
-    --color-shadow: #0f172a;
-    --color-disabled: #f3f4f6;
-    --color-disabled-text: #6b7280;
-    --color-overlay: rgba(0, 0, 0, 0.5);
+    --color-tooltip-bg: #f8fafc;
+    --color-tooltip-text: #0f172a;
+    --color-shadow: #020617;
+    --color-disabled: #1e293b;
+    --color-disabled-text: #64748b;
+    --color-overlay: rgba(2, 6, 23, 0.72);
+    --glass-bg: rgba(15, 23, 42, 0.72);
+    --glass-border: rgba(129, 140, 248, 0.18);
+    --glass-shadow: rgba(15, 23, 42, 0.52);
+    --gradient-primary: linear-gradient(135deg, #020617 0%, #312e81 52%, #38bdf8 100%);
+    --sidebar-bg: rgba(15, 23, 42, 0.94);
+    --sidebar-border: rgba(129, 140, 248, 0.18);
+    --sidebar-text: #f8fafc;
+    --sidebar-muted: #cbd5e1;
+    --sidebar-active-text: #ffffff;
+    --sidebar-badge-text: #e2e8f0;
     --film-primary: var(--color-primary);
     --film-accent: var(--color-secondary);
-    --film-bg: #eef2ff;
+    --film-bg: rgba(30, 41, 59, 0.8);
     --film-text: var(--color-text);
   }
 
+  html {
+    scroll-behavior: smooth;
+  }
+
   body {
-    @apply m-0 min-h-screen font-sans antialiased;
-    background-color: var(--color-surface);
+    @apply m-0 min-h-screen antialiased;
+    font-family: "IBM Plex Sans", sans-serif;
+    background:
+      radial-gradient(circle at top, rgba(56, 189, 248, 0.14), transparent 24%),
+      radial-gradient(circle at bottom right, rgba(129, 140, 248, 0.14), transparent 24%),
+      var(--color-surface);
     color: var(--color-text);
+  }
+
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6,
+  button,
+  .display-font {
+    font-family: "Space Grotesk", sans-serif;
   }
 
   a {
@@ -42,269 +71,246 @@
     @apply outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-primary)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--color-background)];
   }
 
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: color-mix(in srgb, var(--color-primary) 30%, transparent) transparent;
+  }
+
+  ::-webkit-scrollbar {
+    width: 4px;
+    height: 4px;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    background: color-mix(in srgb, var(--color-primary) 30%, transparent);
+    border-radius: 999px;
+  }
+
   .tooltip {
-    @apply absolute -top-20 left-1/2 transform -translate-x-1/2 text-xs px-3 py-2 rounded-lg opacity-0 group-hover:opacity-100 transition-all duration-300 pointer-events-none z-[100];
+    @apply absolute -top-20 left-1/2 z-[100] min-w-[200px] max-w-[250px] -translate-x-1/2 rounded-lg px-3 py-2 text-center text-xs font-medium opacity-0 transition-all duration-300 pointer-events-none group-hover:opacity-100;
     background-color: var(--color-tooltip-bg);
     color: var(--color-tooltip-text);
     box-shadow:
       0 4px 6px -1px rgba(0, 0, 0, 0.1),
       0 2px 4px -1px rgba(0, 0, 0, 0.06);
-    font-weight: 500;
     letter-spacing: 0.025em;
-    min-width: 200px;
-    max-width: 250px;
-    text-align: center;
   }
 
   .tooltip::after {
     content: "";
-    @apply absolute top-full left-1/2 transform -translate-x-1/2 w-0 h-0 border-l-4 border-r-4 border-t-4 border-transparent;
+    @apply absolute left-1/2 top-full h-0 w-0 -translate-x-1/2 border-l-4 border-r-4 border-t-4 border-transparent;
     border-top-color: var(--color-tooltip-bg);
-  }
-
-  /* Melhorar visibilidade dos tooltips em diferentes temas */
-  [data-theme="retro"] .tooltip {
-    background-color: var(--color-tooltip-bg);
-    color: var(--color-tooltip-text);
-    box-shadow:
-      0 4px 6px -1px rgba(255, 0, 128, 0.3),
-      0 2px 4px -1px rgba(0, 255, 255, 0.2);
-  }
-
-  [data-theme="matrix"] .tooltip {
-    background-color: var(--color-tooltip-bg);
-    color: var(--color-tooltip-text);
-    box-shadow:
-      0 4px 6px -1px rgba(0, 255, 0, 0.2),
-      0 2px 4px -1px rgba(0, 255, 0, 0.1);
   }
 }
 
 @layer components {
-  .card-surface {
-    @apply rounded-3xl border shadow-lg;
-    border-color: var(--color-border) !important;
-    background-color: var(--color-background) !important;
-    box-shadow:
-      0 20px 25px -5px rgba(0, 0, 0, 0.1),
-      0 10px 10px -5px rgba(0, 0, 0, 0.04),
-      0 0 0 1px var(--color-shadow),
-      0 0 20px var(--color-primary) !important;
-    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  .control-shell {
     position: relative;
-    overflow: hidden;
+    background:
+      radial-gradient(circle at top left, rgba(56, 189, 248, 0.08), transparent 22%),
+      radial-gradient(circle at top right, rgba(129, 140, 248, 0.08), transparent 18%),
+      linear-gradient(180deg, rgba(2, 6, 23, 0.24), rgba(2, 6, 23, 0.08));
+  }
+
+  .sidebar-surface {
+    border: 1px solid var(--sidebar-border);
+    background:
+      linear-gradient(180deg, var(--sidebar-bg), color-mix(in srgb, var(--sidebar-bg) 86%, black 14%)),
+      linear-gradient(180deg, rgba(255, 255, 255, 0.02), transparent);
+    box-shadow:
+      0 30px 60px -28px rgba(2, 6, 23, 0.95),
+      inset 0 1px 0 rgba(255, 255, 255, 0.06),
+      inset 0 0 0 1px color-mix(in srgb, var(--sidebar-border) 22%, transparent);
+    backdrop-filter: blur(18px);
+  }
+
+  .nav-item-active {
+    border-color: color-mix(in srgb, var(--color-primary) 52%, transparent);
+    background:
+      linear-gradient(135deg, color-mix(in srgb, var(--color-primary) 22%, transparent), color-mix(in srgb, var(--color-secondary) 14%, transparent)),
+      rgba(255, 255, 255, 0.05);
+    box-shadow:
+      0 20px 40px -28px color-mix(in srgb, var(--color-primary) 58%, transparent),
+      0 0 0 1px color-mix(in srgb, var(--color-primary) 24%, transparent),
+      inset 0 1px 0 rgba(255, 255, 255, 0.1);
+    color: var(--sidebar-active-text);
+  }
+
+  .editor-pane {
+    background:
+      linear-gradient(180deg, rgba(255, 255, 255, 0.02), transparent 16%),
+      rgba(2, 6, 23, 0.08);
+  }
+
+  .catalog-grid {
+    align-items: stretch;
+  }
+
+  .toolbar-sticky {
+    position: sticky;
+    top: 0;
+    z-index: 10;
+    backdrop-filter: blur(16px);
+  }
+
+  .glass-card {
+    border: 1px solid var(--glass-border);
+    background: linear-gradient(180deg, color-mix(in srgb, var(--glass-bg) 92%, white 8%), var(--glass-bg));
+    box-shadow:
+      0 24px 80px -28px var(--glass-shadow),
+      inset 0 1px 0 rgba(255, 255, 255, 0.08);
+    backdrop-filter: blur(18px);
+  }
+
+  .card-surface {
+    @apply relative overflow-hidden rounded-3xl border shadow-lg;
+    border-color: var(--glass-border) !important;
+    background: linear-gradient(180deg, color-mix(in srgb, var(--glass-bg) 94%, white 6%), var(--color-background)) !important;
+    box-shadow:
+      0 20px 25px -5px rgba(2, 6, 23, 0.3),
+      0 10px 10px -5px rgba(2, 6, 23, 0.24),
+      0 0 0 1px rgba(255, 255, 255, 0.03),
+      0 0 40px color-mix(in srgb, var(--color-primary) 20%, transparent) !important;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    backdrop-filter: blur(16px);
   }
 
   .card-surface::before {
     content: "";
     position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background: linear-gradient(
-      135deg,
-      var(--color-primary) 0%,
-      transparent 50%,
-      var(--color-secondary) 100%
-    );
-    opacity: 0.05;
+    inset: 0;
+    background: var(--gradient-primary);
+    opacity: 0.08;
     pointer-events: none;
     transition: opacity 0.3s ease;
   }
 
   .card-surface:hover::before {
-    opacity: 0.1;
+    opacity: 0.14;
   }
 
   .board-card {
-    @apply flex h-16 flex-col items-center justify-center gap-1 rounded-2xl border text-center text-sm transition-all duration-300;
+    @apply relative flex h-16 flex-col items-center justify-center gap-1 overflow-hidden rounded-2xl border text-center text-sm transition-all duration-300;
     background-color: var(--film-bg);
-    border-color: var(--film-primary);
+    border-color: color-mix(in srgb, var(--film-primary) 52%, transparent);
     color: var(--film-text);
     box-shadow:
-      0 4px 6px -1px rgba(0, 0, 0, 0.1),
-      0 2px 4px -1px rgba(0, 0, 0, 0.06);
-    position: relative;
-    overflow: hidden;
+      inset 0 1px 0 rgba(255, 255, 255, 0.04),
+      0 8px 20px -12px rgba(2, 6, 23, 0.8);
   }
 
   .board-card::before {
     content: "";
     position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background: linear-gradient(
-      45deg,
-      var(--film-primary) 0%,
-      transparent 50%,
-      var(--film-accent) 100%
-    );
+    inset: 0;
+    background: linear-gradient(135deg, var(--film-primary), transparent 50%, var(--film-accent));
     opacity: 0;
     transition: opacity 0.3s ease;
   }
 
   .board-card:hover::before {
-    opacity: 0.1;
+    opacity: 0.14;
   }
 
   .board-card:hover {
-    transform: translateY(-2px);
+    transform: translateY(-2px) scale(1.01);
     box-shadow:
-      0 10px 15px -3px rgba(0, 0, 0, 0.1),
-      0 4px 6px -2px rgba(0, 0, 0, 0.05);
+      0 14px 30px -12px rgba(2, 6, 23, 0.95),
+      0 0 24px color-mix(in srgb, var(--film-primary) 26%, transparent);
+  }
+
+  .board-card[data-selected="true"] {
+    box-shadow:
+      0 18px 36px -14px rgba(2, 6, 23, 0.95),
+      0 0 0 1px color-mix(in srgb, var(--film-accent) 35%, transparent),
+      0 0 28px color-mix(in srgb, var(--film-accent) 40%, transparent);
   }
 
   .board-card[data-state="active"] {
     @apply scale-[1.05];
-    background-color: var(--film-primary);
+    background: linear-gradient(135deg, color-mix(in srgb, var(--film-primary) 88%, black 12%), var(--film-accent));
     border-color: var(--film-primary);
-    color: var(--color-background);
+    color: #fff;
     box-shadow:
-      0 20px 25px -5px var(--film-primary),
-      0 10px 10px -5px var(--film-primary),
-      0 0 30px var(--film-primary);
+      0 20px 25px -5px color-mix(in srgb, var(--film-primary) 30%, transparent),
+      0 10px 10px -5px color-mix(in srgb, var(--film-primary) 25%, transparent),
+      0 0 34px color-mix(in srgb, var(--film-primary) 55%, transparent);
     animation: pulse-glow 2s infinite;
-  }
-
-  @keyframes pulse-glow {
-    0%,
-    100% {
-      box-shadow:
-        0 20px 25px -5px var(--film-primary),
-        0 10px 10px -5px var(--film-primary),
-        0 0 30px var(--film-primary);
-    }
-    50% {
-      box-shadow:
-        0 20px 25px -5px var(--film-primary),
-        0 10px 10px -5px var(--film-primary),
-        0 0 40px var(--film-primary),
-        0 0 60px var(--film-primary);
-    }
   }
 
   .board-card[data-state="answered"] {
     background-color: var(--color-disabled);
-    border-color: var(--color-border);
+    border-color: color-mix(in srgb, var(--color-border) 75%, transparent);
     color: var(--color-disabled-text);
     text-decoration-thickness: 2px;
   }
 
   .board-column {
-    @apply flex min-w-[200px] flex-col gap-3 rounded-2xl p-4 shadow-sm;
-    background-color: var(--color-background) !important;
-    border: 2px solid
-      color-mix(in srgb, var(--film-primary) 40%, var(--color-background) 60%) !important;
-    background-image: linear-gradient(
-      135deg,
-      color-mix(in srgb, var(--film-primary) 10%, var(--color-background) 90%),
-      var(--color-background)
-    ) !important;
-    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-    position: relative;
-    overflow: hidden;
+    @apply relative flex min-w-[180px] flex-col gap-3 overflow-hidden rounded-[20px] p-3 shadow-sm;
+    background: linear-gradient(180deg, color-mix(in srgb, var(--glass-bg) 95%, white 5%), var(--color-background)) !important;
+    border: 1px solid color-mix(in srgb, var(--film-primary) 28%, transparent) !important;
     box-shadow:
-      0 4px 6px -1px rgba(0, 0, 0, 0.1),
-      0 0 0 1px color-mix(in srgb, var(--film-primary) 20%, transparent 80%) !important;
+      0 18px 40px -24px rgba(2, 6, 23, 0.88),
+      inset 0 1px 0 rgba(255, 255, 255, 0.05) !important;
+    backdrop-filter: blur(14px);
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   }
 
   .board-column::before {
     content: "";
     position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background: linear-gradient(
-      135deg,
-      var(--film-primary) 0%,
-      transparent 30%,
-      var(--film-accent) 100%
-    );
-    opacity: 0.03;
+    inset: 0;
+    background: linear-gradient(135deg, var(--film-primary) 0%, transparent 30%, var(--film-accent) 100%);
+    opacity: 0.06;
     pointer-events: none;
     transition: opacity 0.3s ease;
   }
 
   .board-column:hover::before {
-    opacity: 0.08;
+    opacity: 0.12;
   }
 
-  .board-column:hover {
-    transform: translateY(-1px);
+  .score-pulse {
+    animation: score-pop 600ms cubic-bezier(0.16, 1, 0.3, 1);
+  }
+}
+
+@keyframes pulse-glow {
+  0%,
+  100% {
     box-shadow:
-      0 10px 15px -3px rgba(0, 0, 0, 0.1),
-      0 4px 6px -2px rgba(0, 0, 0, 0.05);
+      0 20px 25px -5px color-mix(in srgb, var(--film-primary) 30%, transparent),
+      0 10px 10px -5px color-mix(in srgb, var(--film-primary) 25%, transparent),
+      0 0 34px color-mix(in srgb, var(--film-primary) 55%, transparent);
   }
-
-  /* Efeitos especiais para tema Retro */
-  [data-theme="retro"] .card-surface {
+  50% {
     box-shadow:
-      0 20px 25px -5px rgba(255, 0, 128, 0.3),
-      0 10px 10px -5px rgba(0, 255, 255, 0.2),
-      0 0 0 1px var(--color-shadow),
-      0 0 30px var(--color-primary) !important;
+      0 20px 25px -5px color-mix(in srgb, var(--film-primary) 38%, transparent),
+      0 10px 10px -5px color-mix(in srgb, var(--film-primary) 30%, transparent),
+      0 0 50px color-mix(in srgb, var(--film-primary) 70%, transparent);
+  }
+}
+
+@keyframes score-pop {
+  0% {
+    opacity: 0;
+    transform: translateY(8px) scale(0.94);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
   }
 
-  [data-theme="retro"] .board-card:hover {
-    box-shadow:
-      0 10px 15px -3px rgba(255, 0, 128, 0.4),
-      0 4px 6px -2px rgba(0, 255, 255, 0.3),
-      0 0 20px var(--color-primary);
-  }
-
-  /* Efeitos especiais para tema Matrix */
-  [data-theme="matrix"] .card-surface {
-    box-shadow:
-      0 20px 25px -5px rgba(0, 255, 0, 0.2),
-      0 10px 10px -5px rgba(0, 255, 0, 0.1),
-      0 0 0 1px var(--color-shadow),
-      0 0 25px var(--color-primary) !important;
-  }
-
-  [data-theme="matrix"] .board-card:hover {
-    box-shadow:
-      0 10px 15px -3px rgba(0, 255, 0, 0.3),
-      0 4px 6px -2px rgba(0, 255, 0, 0.2),
-      0 0 15px var(--color-primary);
-  }
-
-  [data-theme="matrix"] .board-card[data-state="active"] {
-    animation: matrix-glow 1.5s infinite;
-  }
-
-  @keyframes matrix-glow {
-    0%,
-    100% {
-      box-shadow:
-        0 20px 25px -5px var(--film-primary),
-        0 10px 10px -5px var(--film-primary),
-        0 0 30px var(--film-primary);
-    }
-    50% {
-      box-shadow:
-        0 20px 25px -5px var(--film-primary),
-        0 10px 10px -5px var(--film-primary),
-        0 0 50px var(--film-primary),
-        0 0 80px var(--film-primary);
-    }
-  }
-
-  /* Efeito de texto brilhante para tema Retro */
-  [data-theme="retro"] .card-surface h1,
-  [data-theme="retro"] .card-surface h2,
-  [data-theme="retro"] .card-surface h3 {
-    text-shadow: 0 0 10px var(--color-primary);
-  }
-
-  /* Efeito de terminal para tema Matrix */
-  [data-theme="matrix"] .card-surface h1,
-  [data-theme="matrix"] .card-surface h2,
-  [data-theme="matrix"] .card-surface h3 {
-    text-shadow: 0 0 5px var(--color-primary);
-    font-family: "Courier New", monospace;
+  *,
+  *::before,
+  *::after {
+    animation: none !important;
+    transition: none !important;
   }
 }

@@ -32,8 +32,8 @@ interface OfflineConfig {
 }
 
 const themeOptions = [
-  { id: "light", name: "Tema Claro", description: "Cores claras e vibrantes" },
   { id: "dark", name: "Tema Escuro", description: "Cores escuras e elegantes" },
+  { id: "light", name: "Tema Claro", description: "Cores claras e vibrantes" },
   { id: "cinema", name: "Tema Cinema", description: "Atmosfera cinematográfica" },
   { id: "retro", name: "Tema Retro 80s", description: "Cores neon e nostalgia dos anos 80" },
   { id: "matrix", name: "Tema Matrix", description: "Verde digital e efeito terminal" },
@@ -63,9 +63,9 @@ export function OfflineOnboardingModal({
   const { setTheme } = useThemeMode();
   const [currentStep, setCurrentStep] = useState(1);
   const [config, setConfig] = useState<OfflineConfig>({
-    theme: "light",
+    theme: "dark",
     pin: "",
-    sessionTitle: "Nova Sessão Offline",
+    sessionTitle: "Nova Sessão Local",
     sessionDate: new Date().toISOString().split('T')[0],
     customFilms: [],
     teams: [],
@@ -83,8 +83,7 @@ export function OfflineOnboardingModal({
 
   const handleThemeSelect = (themeId: string) => {
     setConfig((prev) => ({ ...prev, theme: themeId }));
-    console.log('Aplicando tema no onboarding:', themeId); // Debug
-    setTheme(themeId as "light" | "dark" | "cinema" | "retro" | "matrix");
+    setTheme(themeId as "light" | "dark" | "cinema" | "retro" | "matrix" | "brazil");
   };
 
   const handlePinChange = (pin: string) => {
@@ -193,9 +192,9 @@ export function OfflineOnboardingModal({
     // Reset do estado quando fechar
     setCurrentStep(1);
     setConfig({
-      theme: "light",
+      theme: "dark",
       pin: "",
-      sessionTitle: "Nova Sessão Offline",
+      sessionTitle: "Nova Sessão Local",
       sessionDate: new Date().toISOString().split('T')[0],
       customFilms: [],
       teams: [],
@@ -211,7 +210,7 @@ export function OfflineOnboardingModal({
       case 1:
         return config.theme !== "";
       case 2:
-        return config.pin.length >= 4;
+        return config.pin.length === 0 || config.pin.length >= 4;
       case 3:
         return config.sessionTitle.trim().length > 0;
       case 4:
@@ -280,28 +279,28 @@ export function OfflineOnboardingModal({
           <Lock className="h-8 w-8 text-[var(--color-primary)]" />
         </div>
         <h3 className="text-xl font-semibold text-[var(--color-text)]">
-          Configure o PIN de Acesso
+          PIN opcional de proteção
         </h3>
         <p className="text-[var(--color-muted)]">
-          Defina um PIN personalizado para acessar as configurações do jogo
+          Se quiser, defina um PIN para proteger biblioteca e ações sensíveis. Você também pode deixar sem PIN.
         </p>
       </div>
 
       <div className="space-y-4">
         <div>
           <label className="block text-sm font-medium text-[var(--color-text)] mb-2">
-            PIN de Acesso
+            PIN opcional
           </label>
           <input
             type="password"
             value={config.pin}
             onChange={(e) => handlePinChange(e.target.value)}
-            placeholder="Digite um PIN com pelo menos 4 dígitos"
+            placeholder="Deixe em branco para não usar PIN"
             className="w-full px-4 py-3 rounded-2xl border border-[var(--color-border)] bg-[var(--color-background)] text-[var(--color-text)] placeholder-[var(--color-muted)] focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)] focus:border-transparent"
             maxLength={20}
           />
           <p className="text-xs text-[var(--color-muted)] mt-1">
-            Mínimo 4 caracteres. Use apenas números e letras.
+            Se preencher, use 4 ou mais caracteres. Se deixar vazio, o jogo abre sem pedir PIN.
           </p>
         </div>
 
@@ -310,11 +309,10 @@ export function OfflineOnboardingModal({
             <Check className="h-5 w-5 text-[var(--color-primary)] mt-0.5" />
             <div>
               <h4 className="font-semibold text-[var(--color-text)] text-sm">
-                Dica de Segurança
+                Quando vale usar
               </h4>
               <p className="text-xs text-[var(--color-muted)] mt-1">
-                Escolha um PIN que você possa lembrar facilmente, mas que não seja
-                óbvio para outros jogadores.
+                Use PIN apenas se quiser restringir edição de perguntas, biblioteca ou ações administrativas durante a partida.
               </p>
             </div>
           </div>
@@ -757,7 +755,7 @@ export function OfflineOnboardingModal({
             <div className="flex justify-between">
               <span className="text-[var(--color-muted)]">PIN:</span>
               <span className="text-[var(--color-text)]">
-                {config.pin ? "•".repeat(config.pin.length) : "Não definido"}
+                {config.pin ? "•".repeat(config.pin.length) : "Não configurado"}
               </span>
             </div>
             <div className="flex justify-between">

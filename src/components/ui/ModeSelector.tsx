@@ -1,16 +1,15 @@
-import { useState } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
+import type { ReactNode } from 'react'
+import { Link } from 'react-router-dom'
 import { Button } from './Button'
-import { Play, Wifi, WifiOff, Monitor } from 'lucide-react'
-import { OnlinePasswordModal } from './OnlinePasswordModal'
-
-export type GameMode = 'demo' | 'offline' | 'online'
+import { Play, HardDriveDownload, Monitor, Sparkles } from 'lucide-react'
+import { GAME_MODE_LABELS } from '../../shared/constants/game'
+import type { GameMode } from '../../shared/types/game'
 
 export interface ModeOption {
   id: GameMode
   title: string
   description: string
-  icon: React.ReactNode
+  icon: ReactNode
   route: string
   variant: 'primary' | 'secondary' | 'outline'
   features: string[]
@@ -19,161 +18,90 @@ export interface ModeOption {
 const modeOptions: ModeOption[] = [
   {
     id: 'demo',
-    title: 'Modo Demo',
-    description: 'Experimente o jogo com dados de teste pré-configurados',
+    title: GAME_MODE_LABELS.demo,
+    description: 'Entre em segundos com um board de exemplo pronto para apresentar e testar o fluxo completo.',
     icon: <Monitor className="h-8 w-8" />,
     route: '/control?mode=demo',
     variant: 'outline',
-    features: ['Dados de teste', 'Sem persistência', 'Para demonstração']
+    features: ['Board pronto', 'Sem persistência local', 'Ideal para apresentar']
   },
   {
     id: 'offline',
-    title: 'Play Offline',
-    description: 'Jogue localmente criando times e jogadores do zero',
-    icon: <WifiOff className="h-8 w-8" />,
+    title: 'Sessão Local no Navegador',
+    description: 'Crie uma partida real, salve no navegador atual e continue depois neste mesmo dispositivo.',
+    icon: <HardDriveDownload className="h-8 w-8" />,
     route: '/control?mode=offline',
     variant: 'secondary',
-    features: ['Criação do zero', 'Dados locais', 'Sem autenticação']
-  },
-  {
-    id: 'online',
-    title: 'Play Online',
-    description: 'Jogue com autenticação e persistência na nuvem',
-    icon: <Wifi className="h-8 w-8" />,
-    route: '/control?mode=online',
-    variant: 'primary',
-    features: ['Autenticação Google', 'Persistência Firebase', 'Histórico de jogos']
+    features: ['Salvo neste navegador', 'Times e filmes próprios', 'Melhor opção para jogar']
   }
 ]
 
 export function ModeSelector() {
-  const [passwordModalOpen, setPasswordModalOpen] = useState(false)
-  const navigate = useNavigate()
-
-  const handleModeClick = (mode: ModeOption, e: React.MouseEvent) => {
-    if (mode.id === 'online') {
-      e.preventDefault()
-      setPasswordModalOpen(true)
-    }
-  }
-
-  const handlePasswordSuccess = () => {
-    navigate('/control?mode=online')
-  }
-
   return (
-    <>
-      <div className="grid gap-6 md:grid-cols-3">
-        {modeOptions.map((mode) => (
-          mode.id === 'online' ? (
-            <button
-              key={mode.id}
-              onClick={(e) => handleModeClick(mode, e)}
-              className="group block text-left w-full"
-            >
-              <div className="card-surface h-full rounded-3xl p-8 transition-all duration-300 hover:scale-105 hover:shadow-xl hover:shadow-[var(--color-primary)]/10">
-                <div className="flex flex-col items-center text-center space-y-4">
-                  <div className={`rounded-2xl p-4 ${
-                    mode.variant === 'primary' 
-                      ? 'bg-[var(--color-primary)]/10 text-[var(--color-primary)]' 
-                      : mode.variant === 'secondary'
-                      ? 'bg-[var(--color-secondary)]/10 text-[var(--color-secondary)]'
-                      : 'bg-[var(--color-muted)]/10 text-[var(--color-muted)]'
-                  }`}>
-                    {mode.icon}
-                  </div>
-                  
-                  <div className="space-y-2">
-                    <h3 className="text-xl font-semibold text-[var(--color-text)]">
-                      {mode.title}
-                    </h3>
-                    <p className="text-sm text-[var(--color-muted)] leading-relaxed">
-                      {mode.description}
-                    </p>
-                  </div>
-                  
-                  <div className="space-y-2 w-full">
-                    {mode.features.map((feature, index) => (
-                      <div
-                        key={index}
-                        className="flex items-center justify-center gap-2 text-xs text-[var(--color-muted)]"
-                      >
-                        <div className="h-1.5 w-1.5 rounded-full bg-[var(--color-primary)]/60" />
-                        {feature}
-                      </div>
-                    ))}
-                  </div>
-                  
-                  <Button
-                    variant={mode.variant}
-                    size="md"
-                    className="w-full mt-4"
-                  >
-                    <Play className="h-4 w-4" />
-                    Selecionar Modo
-                  </Button>
+    <div className="grid gap-4 xl:grid-cols-2">
+      {modeOptions.map((mode) => (
+        <Link
+          key={mode.id}
+          to={mode.route}
+          className="group block"
+        >
+          <div className="card-surface h-full rounded-[32px] p-5 transition-all duration-300 hover:-translate-y-1 hover:shadow-xl hover:shadow-[var(--color-primary)]/10 sm:p-6">
+            <div className="flex h-full flex-col gap-5">
+              <div className="flex items-start justify-between gap-4">
+                <div className={`inline-flex rounded-2xl p-3.5 ${
+                  mode.variant === 'secondary'
+                    ? 'bg-[var(--color-secondary)]/12 text-[var(--color-secondary)]'
+                    : 'bg-[var(--color-primary)]/10 text-[var(--color-primary)]'
+                }`}>
+                  {mode.icon}
                 </div>
+                <span className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.22em] text-[var(--color-muted)]">
+                  <Sparkles className="h-3.5 w-3.5" />
+                  {mode.id === 'offline' ? 'principal' : 'rápido'}
+                </span>
               </div>
-            </button>
-          ) : (
-            <Link
-              key={mode.id}
-              to={mode.route}
-              className="group block"
-            >
-              <div className="card-surface h-full rounded-3xl p-8 transition-all duration-300 hover:scale-105 hover:shadow-xl hover:shadow-[var(--color-primary)]/10">
-                <div className="flex flex-col items-center text-center space-y-4">
-                  <div className={`rounded-2xl p-4 ${
-                    mode.variant === 'primary' 
-                      ? 'bg-[var(--color-primary)]/10 text-[var(--color-primary)]' 
-                      : mode.variant === 'secondary'
-                      ? 'bg-[var(--color-secondary)]/10 text-[var(--color-secondary)]'
-                      : 'bg-[var(--color-muted)]/10 text-[var(--color-muted)]'
-                  }`}>
-                    {mode.icon}
-                  </div>
-                  
-                  <div className="space-y-2">
-                    <h3 className="text-xl font-semibold text-[var(--color-text)]">
-                      {mode.title}
-                    </h3>
-                    <p className="text-sm text-[var(--color-muted)] leading-relaxed">
-                      {mode.description}
-                    </p>
-                  </div>
-                  
-                  <div className="space-y-2 w-full">
-                    {mode.features.map((feature, index) => (
-                      <div
-                        key={index}
-                        className="flex items-center justify-center gap-2 text-xs text-[var(--color-muted)]"
-                      >
-                        <div className="h-1.5 w-1.5 rounded-full bg-[var(--color-primary)]/60" />
-                        {feature}
-                      </div>
-                    ))}
-                  </div>
-                  
-                  <Button
-                    variant={mode.variant}
-                    size="md"
-                    className="w-full mt-4"
-                  >
-                    <Play className="h-4 w-4" />
-                    Selecionar Modo
-                  </Button>
-                </div>
-              </div>
-            </Link>
-          )
-        ))}
-      </div>
 
-      <OnlinePasswordModal
-        isOpen={passwordModalOpen}
-        onClose={() => setPasswordModalOpen(false)}
-        onSuccess={handlePasswordSuccess}
-      />
-    </>
+              <div className="grid gap-4 lg:grid-cols-[minmax(0,1.1fr)_minmax(220px,0.9fr)] lg:items-start">
+                <div className="space-y-2">
+                  <h3 className="text-2xl font-semibold text-[var(--color-text)]">
+                    {mode.title}
+                  </h3>
+                  <p className="text-sm leading-7 text-[var(--color-muted)]">
+                    {mode.description}
+                  </p>
+                </div>
+
+                <div className="grid gap-2">
+                  {mode.features.map((feature, index) => (
+                    <div
+                      key={index}
+                      className="flex items-center gap-2 rounded-2xl border border-white/8 bg-black/10 px-3 py-2 text-xs font-medium text-[var(--color-text)]"
+                    >
+                      <div className={`h-1.5 w-1.5 rounded-full ${
+                        mode.variant === 'secondary'
+                          ? 'bg-[var(--color-secondary)]/90'
+                          : 'bg-[var(--color-primary)]/80'
+                      }`} />
+                      {feature}
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              <div className="mt-auto pt-1">
+                <Button
+                  variant={mode.variant}
+                  size="md"
+                  className="w-full sm:w-auto"
+                >
+                  <Play className="h-4 w-4" />
+                  {mode.id === 'offline' ? 'Abrir Sessão Local' : 'Entrar no Demo'}
+                </Button>
+              </div>
+            </div>
+          </div>
+        </Link>
+      ))}
+    </div>
   )
 }

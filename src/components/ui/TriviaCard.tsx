@@ -10,12 +10,15 @@ type TriviaCardProps = {
     background: string
     text: string
   }
+  isSelected?: boolean
   onSelect?: (tile: TriviaQuestionTile) => void
 }
 
-export function TriviaCard({ tile, theme, onSelect }: TriviaCardProps) {
+export function TriviaCard({ tile, theme, isSelected = false, onSelect }: TriviaCardProps) {
   const isAvailable = tile.state === 'available'
   const state = tile.state === 'answered' ? 'answered' : tile.state === 'active' ? 'active' : 'default'
+  const label =
+    tile.state === 'answered' ? 'respondida' : tile.state === 'active' ? 'ao vivo' : 'pontos'
 
   const style = theme
     ? ({
@@ -31,15 +34,17 @@ export function TriviaCard({ tile, theme, onSelect }: TriviaCardProps) {
       type="button"
       className={clsx(
         'board-card text-lg font-semibold uppercase tracking-wide',
+        isSelected && 'ring-2 ring-[var(--film-accent)] ring-offset-2 ring-offset-[var(--color-background)]',
         !isAvailable && 'cursor-not-allowed opacity-50'
       )}
       data-state={state}
+      data-selected={isSelected ? 'true' : 'false'}
       style={style}
       disabled={!isAvailable}
       onClick={() => isAvailable && onSelect?.(tile)}
     >
-      <span>{tile.points}</span>
-      <span className="text-xs font-medium text-[var(--film-text)]/70">pontos</span>
+      <span className="relative z-10 text-3xl font-bold leading-none">{tile.points}</span>
+      <span className="relative z-10 text-[10px] font-semibold uppercase tracking-[0.28em] text-[var(--film-text)]/75">{label}</span>
     </button>
   )
 }

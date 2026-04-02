@@ -9,30 +9,38 @@ if (typeof document !== 'undefined' && !document.getElementById('trivia-portal')
   document.body.appendChild(portalRoot)
 }
 
+const sizeClasses = {
+  sm: 'max-w-sm',
+  md: 'max-w-xl',
+  lg: 'max-w-3xl',
+  xl: 'max-w-5xl',
+}
+
 type ModalProps = {
   isOpen: boolean
   title: string
   description?: string
   children: ReactNode
   onClose: () => void
+  size?: 'sm' | 'md' | 'lg' | 'xl'
 }
 
-export function Modal({ isOpen, title, description, children, onClose }: ModalProps) {
+export function Modal({ isOpen, title, description, children, onClose, size = 'md' }: ModalProps) {
   if (!isOpen) return null
 
   const content = (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm">
-      <div className="card-surface max-h-[85vh] w-full max-w-xl overflow-hidden rounded-3xl">
-        <div className="flex items-start justify-between px-6 pt-6">
-          <div className="space-y-1 pr-4">
-            <h2 className="text-2xl font-semibold text-[var(--color-text)]">{title}</h2>
-            {description ? <p className="text-sm text-[var(--color-muted)]">{description}</p> : null}
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4 backdrop-blur-sm">
+      <div className={`card-surface flex max-h-[90vh] w-full flex-col overflow-hidden rounded-3xl ${sizeClasses[size]}`}>
+        <div className="flex shrink-0 items-start justify-between px-5 pt-5">
+          <div className="min-w-0 flex-1 pr-3">
+            <h2 className="text-lg font-semibold text-[var(--color-text)]">{title}</h2>
+            {description ? <p className="mt-0.5 text-xs text-[var(--color-muted)]">{description}</p> : null}
           </div>
           <Button variant="ghost" size="icon" aria-label="Fechar" onClick={onClose}>
-            <X size={18} />
+            <X size={16} />
           </Button>
         </div>
-        <div className="mt-4 max-h-[70vh] space-y-4 overflow-y-auto px-6 pb-6 pr-8">{children}</div>
+        <div className="min-h-0 flex-1 overflow-y-auto px-5 pb-5 pt-4">{children}</div>
       </div>
     </div>
   )

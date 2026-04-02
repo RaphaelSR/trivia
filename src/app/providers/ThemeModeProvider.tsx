@@ -1,15 +1,18 @@
 import { useEffect, useMemo, useState, type ReactNode } from 'react'
-import { applyTheme, type ThemeMode } from './themeTokens'
+import { DEFAULT_THEME_MODE } from '../../shared/constants/theme'
+import { STORAGE_KEYS } from '../../shared/constants/storage'
+import { storageService } from '../../shared/services/storage.service'
+import type { ThemeMode } from '../../shared/types/game'
+import { applyTheme } from './themeTokens'
 import { ThemeContext } from './ThemeContext'
-const STORAGE_KEY = 'trivia-theme-mode'
 
 export function ThemeModeProvider({ children }: { children: ReactNode }) {
   const [theme, setThemeState] = useState<ThemeMode>(() => {
     if (typeof window === 'undefined') {
-      return 'light'
+      return DEFAULT_THEME_MODE
     }
-    const stored = window.localStorage.getItem(STORAGE_KEY)
-    return (stored as ThemeMode) || 'light'
+    const stored = storageService.get(STORAGE_KEYS.themeMode)
+    return (stored as ThemeMode) || DEFAULT_THEME_MODE
   })
 
   useEffect(() => {
@@ -17,11 +20,10 @@ export function ThemeModeProvider({ children }: { children: ReactNode }) {
       return
     }
     applyTheme(theme)
-    window.localStorage.setItem(STORAGE_KEY, theme)
+    storageService.set(STORAGE_KEYS.themeMode, theme)
   }, [theme])
 
   const value = useMemo(() => ({ theme, setTheme: setThemeState }), [theme])
 
   return <ThemeContext.Provider value={value}>{children}</ThemeContext.Provider>
 }
-

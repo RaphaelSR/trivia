@@ -19,15 +19,15 @@ const variantClasses: Record<ButtonVariant, string> = {
 }
 
 const sizeClasses: Record<ButtonSize, string> = {
-  sm: 'h-9 px-4 text-sm',
-  md: 'h-11 px-5 text-sm',
-  lg: 'h-12 px-6 text-base',
-  icon: 'h-11 w-11 p-0 text-base',
+  sm: 'h-7 px-3 text-xs',
+  md: 'h-9 px-4 text-sm',
+  lg: 'h-10 px-5 text-sm',
+  icon: 'h-9 w-9 p-0 text-sm',
 }
 
 export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
   ({ className, variant = 'primary', size = 'md', type = 'button', disabled, ...props }, ref) => {
-    const baseClasses = 'inline-flex items-center justify-center gap-2 rounded-2xl font-semibold transition-all duration-300 transform hover:scale-105 active:scale-95 relative overflow-hidden disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none disabled:hover:scale-100'
+    const baseClasses = 'inline-flex items-center justify-center gap-2 rounded-2xl font-semibold transition-all duration-200 active:scale-[0.97] relative overflow-hidden disabled:opacity-50 disabled:cursor-not-allowed disabled:active:scale-100'
     return (
       <button
         ref={ref}

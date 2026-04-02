@@ -1,12 +1,12 @@
 import type { TriviaTeam, TriviaParticipant, TriviaColumn } from '@/modules/trivia/types'
-import { createAlternatingTurnSequence } from '@/modules/trivia/utils/createAlternatingTurnSequence'
-import { createBalancedTurnSequence } from '@/modules/trivia/utils/createBalancedTurnSequence'
+import { countTotalTiles } from '@/modules/game/domain/board.utils'
+import { buildTurnSequence } from '@/modules/game/domain/turn-order'
 
 /**
  * Calcula total de perguntas no board
  */
 export function calculateTotalQuestions(board: TriviaColumn[]): number {
-  return board.reduce((acc, column) => acc + column.tiles.length, 0)
+  return countTotalTiles(board)
 }
 
 /**
@@ -17,12 +17,7 @@ export function generateTurnSequence(
   board: TriviaColumn[]
 ): string[] {
   const totalQuestions = calculateTotalQuestions(board)
-  
-  if (totalQuestions > 0) {
-    return createBalancedTurnSequence(teams, totalQuestions)
-  }
-  
-  return createAlternatingTurnSequence(teams)
+  return buildTurnSequence(teams, totalQuestions)
 }
 
 /**
@@ -73,4 +68,3 @@ export function convertDraftsToParticipants(
     }))
   )
 }
-

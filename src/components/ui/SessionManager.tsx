@@ -221,7 +221,7 @@ export function SessionManager({ isOpen, onClose, onLoadSession, onNewSession, o
                         ? 'bg-orange-100 text-orange-700'
                         : 'bg-green-100 text-green-700'
                     }`}>
-                      {session.mode === 'demo' ? 'Demo' : session.mode === 'offline' ? 'Offline' : 'Online'}
+                      {session.mode === 'demo' ? 'Demo' : session.mode === 'offline' ? 'Sessão Local' : 'Online'}
                     </span>
                     {session.isActive && (
                       <span className="px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-700">
@@ -318,7 +318,7 @@ export function SessionManager({ isOpen, onClose, onLoadSession, onNewSession, o
             <Settings className="h-5 w-5 text-[var(--color-secondary)] mt-0.5" />
             <div>
               <h4 className="font-semibold text-[var(--color-text)] text-sm mb-1">
-                Modo {gameMode === 'demo' ? 'Demo' : gameMode === 'offline' ? 'Offline' : 'Online'}
+                Modo {gameMode === 'demo' ? 'Demo' : gameMode === 'offline' ? 'Sessão Local' : 'Online'}
               </h4>
               <p className="text-xs text-[var(--color-muted)]">
                 {gameMode === 'demo' 

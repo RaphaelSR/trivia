@@ -1,4 +1,3 @@
-import { useMemo } from "react";
 import { useTriviaSessionContext } from "./useTriviaSessionContext";
 
 export function useTriviaSession() {
@@ -24,12 +23,10 @@ export function useTriviaSession() {
     restoreSession
   } = useTriviaSessionContext();
 
-  const orderedTeams = useMemo(() => teams, [teams]);
-
   return {
     session,
     theme: session.theme,
-    orderedTeams,
+    orderedTeams: teams,
     participants,
     activeTeam,
     nextTeam,

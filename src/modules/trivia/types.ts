@@ -1,3 +1,5 @@
+import type { MimicaScoringMode, TileState } from '../../shared/types/game';
+
 export type TriviaRole = "host" | "assistant" | "player";
 
 export type TriviaParticipant = {
@@ -33,7 +35,7 @@ export type TriviaQuestionTile = {
   id: string;
   film: string;
   points: number;
-  state: "available" | "active" | "answered";
+  state: TileState;
   question: string;
   answer: string;
   answeredBy?: {
@@ -44,7 +46,7 @@ export type TriviaQuestionTile = {
     source?: 'trivia' | 'mimica';
     turnNumber?: number;
     roundNumber?: number;
-    mimicaMode?: 'full-current' | 'half-current' | 'steal' | 'everyone' | 'void';
+    mimicaMode?: MimicaScoringMode;
   };
 };
 
@@ -56,7 +58,7 @@ export type MimicaScore = {
   timestamp: string;
   turnNumber: number;
   roundNumber: number;
-  mode: 'full-current' | 'half-current' | 'steal' | 'everyone' | 'void';
+  mode: MimicaScoringMode;
   targetTeamId?: string;
 };
 
