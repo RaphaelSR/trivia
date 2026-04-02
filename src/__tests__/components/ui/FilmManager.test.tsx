@@ -1,5 +1,5 @@
 import '@testing-library/jest-dom'
-import { render, screen, fireEvent, waitFor } from '@testing-library/react'
+import { render, screen, fireEvent, waitFor, within } from '@testing-library/react'
 import { FilmManager } from '../../../components/ui/FilmManager'
 import type { CustomFilm } from '../../../data/customFilms'
 import type { TriviaParticipant } from '../../../modules/trivia/types'
@@ -14,7 +14,7 @@ const mockFilms: CustomFilm[] = [
     link: 'https://example.com/matrix',
     notes: 'Filme clássico',
     addedBy: 'João',
-    addedAt: new Date().toISOString()
+    addedAt: new Date().toISOString(),
   },
   {
     id: 'film-2',
@@ -23,8 +23,8 @@ const mockFilms: CustomFilm[] = [
     genre: 'romance',
     streaming: 'prime-video',
     addedBy: 'Maria',
-    addedAt: new Date().toISOString()
-  }
+    addedAt: new Date().toISOString(),
+  },
 ]
 
 const mockParticipants: TriviaParticipant[] = [
@@ -32,14 +32,14 @@ const mockParticipants: TriviaParticipant[] = [
     id: 'p1',
     name: 'João',
     role: 'player',
-    teamId: 'team-1'
+    teamId: 'team-1',
   },
   {
     id: 'p2',
     name: 'Maria',
     role: 'host',
-    teamId: 'team-1'
-  }
+    teamId: 'team-1',
+  },
 ]
 
 describe('FilmManager', () => {
@@ -62,10 +62,10 @@ describe('FilmManager', () => {
           onUpdateFilm={mockOnUpdateFilm}
           onRemoveFilm={mockOnRemoveFilm}
           onClose={mockOnClose}
-        />
+        />,
       )
 
-      expect(screen.getByText('Gerenciar Filmes (2)')).toBeInTheDocument()
+      expect(screen.getByText('Catálogo da sessão')).toBeInTheDocument()
       expect(screen.getByText('Matrix')).toBeInTheDocument()
       expect(screen.getByText('Titanic')).toBeInTheDocument()
     })
@@ -79,25 +79,10 @@ describe('FilmManager', () => {
           onUpdateFilm={mockOnUpdateFilm}
           onRemoveFilm={mockOnRemoveFilm}
           onClose={mockOnClose}
-        />
+        />,
       )
 
-      expect(screen.getByText('Nenhum filme adicionado ainda')).toBeInTheDocument()
-    })
-
-    it('deve mostrar contagem de participantes integrados', () => {
-      render(
-        <FilmManager
-          films={mockFilms}
-          participants={mockParticipants}
-          onAddFilm={mockOnAddFilm}
-          onUpdateFilm={mockOnUpdateFilm}
-          onRemoveFilm={mockOnRemoveFilm}
-          onClose={mockOnClose}
-        />
-      )
-
-      expect(screen.getByText(/Integrado com 2 participantes/)).toBeInTheDocument()
+      expect(screen.getByText('Nenhum filme personalizado adicionado ainda.')).toBeInTheDocument()
     })
   })
 
@@ -111,10 +96,10 @@ describe('FilmManager', () => {
           onUpdateFilm={mockOnUpdateFilm}
           onRemoveFilm={mockOnRemoveFilm}
           onClose={mockOnClose}
-        />
+        />,
       )
 
-      const searchInput = screen.getByPlaceholderText('Buscar filmes...')
+      const searchInput = screen.getByPlaceholderText('Buscar por título, nota ou responsável...')
       fireEvent.change(searchInput, { target: { value: 'Matrix' } })
 
       expect(screen.getByText('Matrix')).toBeInTheDocument()
@@ -130,11 +115,11 @@ describe('FilmManager', () => {
           onUpdateFilm={mockOnUpdateFilm}
           onRemoveFilm={mockOnRemoveFilm}
           onClose={mockOnClose}
-        />
+        />,
       )
 
-      const genreSelect = screen.getAllByRole('combobox')[0]
-      fireEvent.change(genreSelect, { target: { value: 'ficção-científica' } })
+      const genreChip = screen.getByRole('button', { name: 'Ficção Científica' })
+      fireEvent.click(genreChip)
 
       expect(screen.getByText('Matrix')).toBeInTheDocument()
       expect(screen.queryByText('Titanic')).not.toBeInTheDocument()
@@ -149,11 +134,11 @@ describe('FilmManager', () => {
           onUpdateFilm={mockOnUpdateFilm}
           onRemoveFilm={mockOnRemoveFilm}
           onClose={mockOnClose}
-        />
+        />,
       )
 
-      const streamingSelect = screen.getAllByRole('combobox')[1]
-      fireEvent.change(streamingSelect, { target: { value: 'netflix' } })
+      const streamingChip = screen.getByRole('button', { name: 'Netflix' })
+      fireEvent.click(streamingChip)
 
       expect(screen.getByText('Matrix')).toBeInTheDocument()
       expect(screen.queryByText('Titanic')).not.toBeInTheDocument()
@@ -168,14 +153,14 @@ describe('FilmManager', () => {
           onUpdateFilm={mockOnUpdateFilm}
           onRemoveFilm={mockOnRemoveFilm}
           onClose={mockOnClose}
-        />
+        />,
       )
 
-      const searchInput = screen.getByPlaceholderText('Buscar filmes...')
-      const genreSelect = screen.getAllByRole('combobox')[0]
+      const searchInput = screen.getByPlaceholderText('Buscar por título, nota ou responsável...')
+      const genreChip = screen.getByRole('button', { name: 'Ficção Científica' })
 
       fireEvent.change(searchInput, { target: { value: 'Matrix' } })
-      fireEvent.change(genreSelect, { target: { value: 'ficção-científica' } })
+      fireEvent.click(genreChip)
 
       expect(screen.getByText('Matrix')).toBeInTheDocument()
       expect(screen.queryByText('Titanic')).not.toBeInTheDocument()
@@ -192,13 +177,13 @@ describe('FilmManager', () => {
           onUpdateFilm={mockOnUpdateFilm}
           onRemoveFilm={mockOnRemoveFilm}
           onClose={mockOnClose}
-        />
+        />,
       )
 
-      const addButton = screen.getByText('Adicionar')
+      const addButton = screen.getByText('Adicionar filme')
       fireEvent.click(addButton)
 
-      expect(screen.getByText('Adicionar Novo Filme')).toBeInTheDocument()
+      expect(screen.getByText('Adicionar novo filme')).toBeInTheDocument()
     })
 
     it('deve chamar onAddFilm ao submeter formulário', async () => {
@@ -210,10 +195,10 @@ describe('FilmManager', () => {
           onUpdateFilm={mockOnUpdateFilm}
           onRemoveFilm={mockOnRemoveFilm}
           onClose={mockOnClose}
-        />
+        />,
       )
 
-      const addButton = screen.getByText('Adicionar')
+      const addButton = screen.getByText('Adicionar filme')
       fireEvent.click(addButton)
 
       const nameInput = screen.getByLabelText(/Nome do Filme/i)
@@ -225,8 +210,8 @@ describe('FilmManager', () => {
       await waitFor(() => {
         expect(mockOnAddFilm).toHaveBeenCalledWith(
           expect.objectContaining({
-            name: 'Novo Filme'
-          })
+            name: 'Novo Filme',
+          }),
         )
       })
     })
@@ -240,13 +225,14 @@ describe('FilmManager', () => {
           onUpdateFilm={mockOnUpdateFilm}
           onRemoveFilm={mockOnRemoveFilm}
           onClose={mockOnClose}
-        />
+        />,
       )
 
-      const editButtons = screen.getAllByTitle('Editar filme')
-      fireEvent.click(editButtons[0])
+      const matrixCard = screen.getByText('Matrix').closest('article')
+      expect(matrixCard).not.toBeNull()
+      fireEvent.click(within(matrixCard as HTMLElement).getByTitle('Editar filme'))
 
-      expect(screen.getByText('Editar Filme')).toBeInTheDocument()
+      expect(screen.getByText('Editar filme')).toBeInTheDocument()
       expect(screen.getByDisplayValue('Matrix')).toBeInTheDocument()
     })
 
@@ -261,11 +247,12 @@ describe('FilmManager', () => {
           onUpdateFilm={mockOnUpdateFilm}
           onRemoveFilm={mockOnRemoveFilm}
           onClose={mockOnClose}
-        />
+        />,
       )
 
-      const editButtons = screen.getAllByTitle('Editar filme')
-      fireEvent.click(editButtons[0])
+      const matrixCard = screen.getByText('Matrix').closest('article')
+      expect(matrixCard).not.toBeNull()
+      fireEvent.click(within(matrixCard as HTMLElement).getByTitle('Editar filme'))
 
       const nameInput = screen.getByLabelText(/Nome do Filme/i)
       fireEvent.change(nameInput, { target: { value: 'Matrix Reloaded' } })
@@ -277,8 +264,8 @@ describe('FilmManager', () => {
         expect(mockOnUpdateFilm).toHaveBeenCalledWith(
           'film-1',
           expect.objectContaining({
-            name: 'Matrix Reloaded'
-          })
+            name: 'Matrix Reloaded',
+          }),
         )
       })
     })
@@ -294,11 +281,12 @@ describe('FilmManager', () => {
           onUpdateFilm={mockOnUpdateFilm}
           onRemoveFilm={mockOnRemoveFilm}
           onClose={mockOnClose}
-        />
+        />,
       )
 
-      const removeButtons = screen.getAllByTitle('Remover filme')
-      fireEvent.click(removeButtons[0])
+      const matrixCard = screen.getByText('Matrix').closest('article')
+      expect(matrixCard).not.toBeNull()
+      fireEvent.click(within(matrixCard as HTMLElement).getByTitle('Remover filme'))
 
       expect(window.confirm).toHaveBeenCalledWith(expect.stringContaining('Matrix'))
       expect(mockOnRemoveFilm).toHaveBeenCalledWith('film-1')
@@ -315,11 +303,12 @@ describe('FilmManager', () => {
           onUpdateFilm={mockOnUpdateFilm}
           onRemoveFilm={mockOnRemoveFilm}
           onClose={mockOnClose}
-        />
+        />,
       )
 
-      const removeButtons = screen.getAllByTitle('Remover filme')
-      fireEvent.click(removeButtons[0])
+      const matrixCard = screen.getByText('Matrix').closest('article')
+      expect(matrixCard).not.toBeNull()
+      fireEvent.click(within(matrixCard as HTMLElement).getByTitle('Remover filme'))
 
       expect(window.confirm).toHaveBeenCalled()
       expect(mockOnRemoveFilm).not.toHaveBeenCalled()
@@ -336,12 +325,10 @@ describe('FilmManager', () => {
           onUpdateFilm={mockOnUpdateFilm}
           onRemoveFilm={mockOnRemoveFilm}
           onClose={mockOnClose}
-        />
+        />,
       )
 
-      const addedByElements = screen.getAllByText(/Adicionado por:/)
-      expect(addedByElements.length).toBeGreaterThan(0)
-      expect(screen.getByText('João')).toBeInTheDocument()
+      expect(screen.getByText('Adicionado por João')).toBeInTheDocument()
     })
 
     it('deve permitir selecionar participante no formulário', () => {
@@ -353,10 +340,10 @@ describe('FilmManager', () => {
           onUpdateFilm={mockOnUpdateFilm}
           onRemoveFilm={mockOnRemoveFilm}
           onClose={mockOnClose}
-        />
+        />,
       )
 
-      const addButton = screen.getByText('Adicionar')
+      const addButton = screen.getByText('Adicionar filme')
       fireEvent.click(addButton)
 
       const participantSelect = screen.getByLabelText(/Adicionado por/i)
@@ -364,4 +351,3 @@ describe('FilmManager', () => {
     })
   })
 })
-
