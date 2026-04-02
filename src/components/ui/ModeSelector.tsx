@@ -40,13 +40,9 @@ export function ModeSelector() {
   return (
     <div className="grid gap-4 xl:grid-cols-2">
       {modeOptions.map((mode) => (
-        <Link
-          key={mode.id}
-          to={mode.route}
-          className="group block"
-        >
-          <div className="card-surface h-full rounded-[32px] p-5 transition-all duration-300 hover:-translate-y-1 hover:shadow-xl hover:shadow-[var(--color-primary)]/10 sm:p-6">
-            <div className="flex h-full flex-col gap-5">
+        <Link key={mode.id} to={mode.route} className="group block">
+          <div className="card-surface h-full rounded-[32px] p-5 transition-all duration-300 hover:-translate-y-1 hover:shadow-xl hover:shadow-[var(--color-primary)]/10 sm:p-6 xl:p-7">
+            <div className="flex h-full flex-col gap-6">
               <div className="flex items-start justify-between gap-4">
                 <div className={`inline-flex rounded-2xl p-3.5 ${
                   mode.variant === 'secondary'
@@ -61,38 +57,36 @@ export function ModeSelector() {
                 </span>
               </div>
 
-              <div className="grid gap-4 lg:grid-cols-[minmax(0,1.1fr)_minmax(220px,0.9fr)] lg:items-start">
-                <div className="space-y-2">
-                  <h3 className="text-2xl font-semibold text-[var(--color-text)]">
-                    {mode.title}
-                  </h3>
-                  <p className="text-sm leading-7 text-[var(--color-muted)]">
-                    {mode.description}
-                  </p>
-                </div>
-
-                <div className="grid gap-2">
-                  {mode.features.map((feature, index) => (
-                    <div
-                      key={index}
-                      className="flex items-center gap-2 rounded-2xl border border-white/8 bg-black/10 px-3 py-2 text-xs font-medium text-[var(--color-text)]"
-                    >
-                      <div className={`h-1.5 w-1.5 rounded-full ${
-                        mode.variant === 'secondary'
-                          ? 'bg-[var(--color-secondary)]/90'
-                          : 'bg-[var(--color-primary)]/80'
-                      }`} />
-                      {feature}
-                    </div>
-                  ))}
-                </div>
+              <div className="space-y-3">
+                <h3 className="max-w-[16ch] text-3xl font-semibold leading-[1.08] text-[var(--color-text)] xl:text-[2.15rem]">
+                  {mode.title}
+                </h3>
+                <p className="max-w-[34rem] text-base leading-7 text-[var(--color-muted)]">
+                  {mode.description}
+                </p>
               </div>
 
-              <div className="mt-auto pt-1">
+              <div className="flex flex-wrap gap-2.5">
+                {mode.features.map((feature, index) => (
+                  <div
+                    key={index}
+                    className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-black/10 px-3.5 py-2 text-sm font-medium text-[var(--color-text)]"
+                  >
+                    <div className={`h-1.5 w-1.5 rounded-full ${
+                      mode.variant === 'secondary'
+                        ? 'bg-[var(--color-secondary)]/90'
+                        : 'bg-[var(--color-primary)]/80'
+                    }`} />
+                    <span className="whitespace-nowrap">{feature}</span>
+                  </div>
+                ))}
+              </div>
+
+              <div className="mt-auto pt-2">
                 <Button
                   variant={mode.variant}
                   size="md"
-                  className="w-full sm:w-auto"
+                  className="w-full sm:w-auto sm:min-w-[220px]"
                 >
                   <Play className="h-4 w-4" />
                   {mode.id === 'offline' ? 'Abrir Sessão Local' : 'Entrar no Demo'}
