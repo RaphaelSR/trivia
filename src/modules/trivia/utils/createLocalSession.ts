@@ -20,6 +20,14 @@ const defaultTeams: TriviaTeam[] = [
     order: 1,
     members: ["participant-4", "participant-5", "participant-6"],
     score: 0
+  },
+  {
+    id: "team-3",
+    name: "Pipoca & Caos",
+    color: "#f97316",
+    order: 2,
+    members: ["participant-7", "participant-8", "participant-9"],
+    score: 0
   }
 ];
 
@@ -57,8 +65,26 @@ const defaultParticipants = [
   {
     id: "participant-6",
     name: "Rapha",
-    role: "assistant" as const,
+    role: "player" as const,
     teamId: "team-2"
+  },
+  {
+    id: "participant-7",
+    name: "Leo",
+    role: "player" as const,
+    teamId: "team-3"
+  },
+  {
+    id: "participant-8",
+    name: "Bia",
+    role: "player" as const,
+    teamId: "team-3"
+  },
+  {
+    id: "participant-9",
+    name: "Gui",
+    role: "player" as const,
+    teamId: "team-3"
   }
 ];
 
@@ -66,7 +92,14 @@ export function createLocalSession(): TriviaSession {
   const films = Object.keys(questionBank);
   const board = films.map((filmId) => {
     const metadata = getFilmMetadata(filmId);
-    const entries = questionBank[filmId] ?? [];
+    const allEntries = questionBank[filmId] ?? [];
+    // Keep only 1 question per point value (max 6 per film) for a faster demo
+    const seenPoints = new Set<number>();
+    const entries = allEntries.filter((entry) => {
+      if (seenPoints.has(entry.points)) return false;
+      seenPoints.add(entry.points);
+      return true;
+    });
     const tiles = entries.map((entry, index) => ({
       id: `${slugify(metadata.displayName)}-${entry.points}-${index}`,
       filmId,

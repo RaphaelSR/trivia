@@ -1,6 +1,6 @@
 export type GameMode = 'demo' | 'offline' | 'online'
 
-export type ThemeMode = 'light' | 'dark' | 'cinema' | 'retro' | 'matrix' | 'brazil'
+export type ThemeMode = 'light' | 'dark' | 'cinema' | 'retro' | 'matrix' | 'brazil' | 'easter'
 
 export type TileState = 'available' | 'active' | 'answered'
 
