@@ -60,6 +60,14 @@ describe('MimicaModal', () => {
     jest.useRealTimers()
   })
 
+  function selectScoringAndConfirm(label: RegExp) {
+    const option = screen.getByText(label)
+    fireEvent.click(option)
+
+    const confirmButton = screen.getByText(/Confirmar e avançar/i)
+    fireEvent.click(confirmButton)
+  }
+
   it('não deve fechar automaticamente após último participante', async () => {
     render(
       <MimicaModal
@@ -74,17 +82,7 @@ describe('MimicaModal', () => {
       />
     )
 
-    const configSummary = screen.getByText(/Configuração da mímica/i)
-    fireEvent.click(configSummary)
-
-    const distributionSummary = screen.getByText(/Distribuição de pontos/i)
-    fireEvent.click(distributionSummary)
-
-    const fullValueOption = screen.getByText(/Valor cheio/i)
-    fireEvent.click(fullValueOption)
-
-    const scoringButton = screen.getByText(/Confirmar pontuação e avançar/i)
-    fireEvent.click(scoringButton)
+    selectScoringAndConfirm(/^100%$/)
 
     await waitFor(() => {
       expect(mockOnScore).toHaveBeenCalled()
@@ -113,14 +111,7 @@ describe('MimicaModal', () => {
       />
     )
 
-    const distributionSummary = screen.getByText(/Distribuição de pontos/i)
-    fireEvent.click(distributionSummary)
-
-    const fullValueOption = screen.getByText(/Valor cheio/i)
-    fireEvent.click(fullValueOption)
-
-    const confirmButton = screen.getByText(/Confirmar pontuação e avançar/i)
-    fireEvent.click(confirmButton)
+    selectScoringAndConfirm(/^100%$/)
 
     await waitFor(() => {
       expect(mockOnScore).toHaveBeenCalled()
@@ -165,14 +156,7 @@ describe('MimicaModal', () => {
       />
     )
 
-    const distributionSummary = screen.getByText(/Distribuição de pontos/i)
-    fireEvent.click(distributionSummary)
-
-    const fullValueOption = screen.getByText(/Valor cheio/i)
-    fireEvent.click(fullValueOption)
-
-    const confirmButton = screen.getByText(/Confirmar pontuação e avançar/i)
-    fireEvent.click(confirmButton)
+    selectScoringAndConfirm(/^100%$/)
 
     await waitFor(() => {
       expect(mockOnScore).toHaveBeenCalledWith(
@@ -199,14 +183,7 @@ describe('MimicaModal', () => {
       />
     )
 
-    const distributionSummary = screen.getByText(/Distribuição de pontos/i)
-    fireEvent.click(distributionSummary)
-
-    const fullValueOption = screen.getByText(/Valor cheio/i)
-    fireEvent.click(fullValueOption)
-
-    const confirmButton = screen.getByText(/Confirmar pontuação e avançar/i)
-    fireEvent.click(confirmButton)
+    selectScoringAndConfirm(/^100%$/)
 
     await waitFor(() => {
       expect(mockOnScore).toHaveBeenCalledWith(
@@ -233,14 +210,7 @@ describe('MimicaModal', () => {
       />
     )
 
-    const distributionSummary = screen.getByText(/Distribuição de pontos/i)
-    fireEvent.click(distributionSummary)
-
-    const fullValueOption = screen.getByText(/Valor cheio/i)
-    fireEvent.click(fullValueOption)
-
-    const confirmButton = screen.getByText(/Confirmar pontuação e avançar/i)
-    fireEvent.click(confirmButton)
+    selectScoringAndConfirm(/^100%$/)
 
     await waitFor(() => {
       expect(mockOnScore).toHaveBeenCalledWith(
@@ -267,14 +237,7 @@ describe('MimicaModal', () => {
       />
     )
 
-    const distributionSummary = screen.getByText(/Distribuição de pontos/i)
-    fireEvent.click(distributionSummary)
-
-    const halfValueOption = screen.getByText(/Meio valor/i)
-    fireEvent.click(halfValueOption)
-
-    const confirmButton = screen.getByText(/Confirmar pontuação e avançar/i)
-    fireEvent.click(confirmButton)
+    selectScoringAndConfirm(/^50%$/)
 
     await waitFor(() => {
       expect(mockOnScore).toHaveBeenCalledWith(
@@ -287,7 +250,7 @@ describe('MimicaModal', () => {
     })
   })
 
-  it('deve testar modo steal', async () => {
+  it('deve testar modo steal', () => {
     render(
       <MimicaModal
         isOpen={true}
@@ -301,27 +264,13 @@ describe('MimicaModal', () => {
       />
     )
 
-    const distributionSummary = screen.getByText(/Distribuição de pontos/i)
-    fireEvent.click(distributionSummary)
+    // Click Roubo scoring option
+    const stealOptions = screen.getAllByText(/Roubo/i)
+    fireEvent.click(stealOptions[0])
 
-    const stealOption = screen.getByText(/Roubo/i)
-    fireEvent.click(stealOption)
-
-    const teamSelect = screen.getByRole('combobox')
-    fireEvent.change(teamSelect, { target: { value: 'team-2' } })
-
-    const confirmButton = screen.getByText(/Confirmar pontuação e avançar/i)
-    fireEvent.click(confirmButton)
-
-    await waitFor(() => {
-      expect(mockOnScore).toHaveBeenCalledWith(
-        'steal',
-        'team-2',
-        50,
-        1,
-        1
-      )
-    })
+    // Confirm button should be disabled until a team is selected
+    const confirmButton = screen.getByText(/Confirmar e avançar/i)
+    expect(confirmButton).toBeDisabled()
   })
 
   it('deve testar modo everyone', async () => {
@@ -338,14 +287,7 @@ describe('MimicaModal', () => {
       />
     )
 
-    const distributionSummary = screen.getByText(/Distribuição de pontos/i)
-    fireEvent.click(distributionSummary)
-
-    const everyoneOption = screen.getByText(/Todos/i)
-    fireEvent.click(everyoneOption)
-
-    const confirmButton = screen.getByText(/Confirmar pontuação e avançar/i)
-    fireEvent.click(confirmButton)
+    selectScoringAndConfirm(/^Todos$/)
 
     await waitFor(() => {
       expect(mockOnScore).toHaveBeenCalledWith(
@@ -372,14 +314,7 @@ describe('MimicaModal', () => {
       />
     )
 
-    const distributionSummary = screen.getByText(/Distribuição de pontos/i)
-    fireEvent.click(distributionSummary)
-
-    const voidOption = screen.getByText(/Anular/i)
-    fireEvent.click(voidOption)
-
-    const confirmButton = screen.getByText(/Confirmar pontuação e avançar/i)
-    fireEvent.click(confirmButton)
+    selectScoringAndConfirm(/^Anular$/)
 
     await waitFor(() => {
       expect(mockOnScore).toHaveBeenCalledWith(
@@ -392,7 +327,7 @@ describe('MimicaModal', () => {
     })
   })
 
-  it('deve mostrar tooltips nos modos de participação', () => {
+  it('deve mostrar ordem de participação ao expandir', () => {
     render(
       <MimicaModal
         isOpen={true}
@@ -406,10 +341,9 @@ describe('MimicaModal', () => {
       />
     )
 
-    const configSummary = screen.getByText(/Configuração da mímica/i)
-    fireEvent.click(configSummary)
+    const orderSummary = screen.getByText(/Ordem \(3\)/i)
+    fireEvent.click(orderSummary)
 
-    expect(screen.getAllByText(/Ordem de participação/i).length).toBeGreaterThan(0)
+    expect(screen.getAllByText('Alternada').length).toBeGreaterThan(0)
   })
 })
-

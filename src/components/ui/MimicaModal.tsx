@@ -1,4 +1,4 @@
-import { HelpCircle, UsersRound } from 'lucide-react'
+import { HelpCircle, Minus, Plus, UsersRound } from 'lucide-react'
 import { useEffect, useMemo, useState } from 'react'
 import { toast } from 'sonner'
 import { Button } from './Button'
@@ -26,15 +26,10 @@ type MimicaModalProps = {
 
 type ScoringMode = 'full-current' | 'half-current' | 'steal' | 'everyone' | 'void'
 
+const TIMER_PRESETS = [30, 45, 60, 90, 120]
+
 /**
  * Modal para modo mímica com lista de participantes alternada
- * @param isOpen - Estado de abertura do modal
- * @param onClose - Função para fechar o modal
- * @param teams - Lista de times
- * @param participants - Lista de participantes
- * @param activeParticipant - Participante ativo atual
- * @param onAdvanceTurn - Função para avançar turno
- * @param onScore - Função para pontuar
  */
 export function MimicaModal({
   isOpen,
@@ -52,8 +47,9 @@ export function MimicaModal({
   const [shuffleMode, setShuffleMode] = useState<'alternate' | 'shuffle' | 'team-shuffle'>('alternate')
   const [shuffledSequence, setShuffledSequence] = useState<string[]>([])
   const [roundNumber, setRoundNumber] = useState(1)
+  const [timerSeconds, setTimerSeconds] = useState(60)
+  const [timerResetKey, setTimerResetKey] = useState(0)
 
-  // Função para embaralhar array (Fisher-Yates)
   const shuffleArray = (array: string[]) => {
     const shuffled = [...array]
     for (let i = shuffled.length - 1; i > 0; i--) {
@@ -63,27 +59,24 @@ export function MimicaModal({
     return shuffled
   }
 
-  // Reset roundNumber quando modal abre
   useEffect(() => {
     if (isOpen) {
       setRoundNumber(1)
     }
   }, [isOpen])
 
-  // Gerar sequência baseada no modo escolhido
   useEffect(() => {
     if (isOpen && turnSequence.length > 0) {
       let newSequence: string[] = []
-      
+
       switch (shuffleMode) {
         case 'alternate': {
-          // Ordem alternada: 1 de cada time por vez
           const participantsByTeam = teams.map(team => ({
             team,
             members: participants.filter(p => p.teamId === team.id)
           }))
           const maxMembers = Math.max(...participantsByTeam.map(t => t.members.length))
-          
+
           for (let i = 0; i < maxMembers; i++) {
             participantsByTeam.forEach(({ members }) => {
               if (members[i]) {
@@ -93,20 +86,18 @@ export function MimicaModal({
           }
           break
         }
-          
+
         case 'shuffle':
-          // Embaralhamento completo
           newSequence = shuffleArray(turnSequence)
           break
-          
+
         case 'team-shuffle': {
-          // Embaralhar dentro de cada time, mas manter alternância
           const shuffledByTeam = teams.map(team => ({
             team,
             members: shuffleArray(participants.filter(p => p.teamId === team.id).map(p => p.id))
           }))
           const maxShuffledMembers = Math.max(...shuffledByTeam.map(t => t.members.length))
-          
+
           for (let i = 0; i < maxShuffledMembers; i++) {
             shuffledByTeam.forEach(({ members }) => {
               if (members[i]) {
@@ -117,7 +108,7 @@ export function MimicaModal({
           break
         }
       }
-      
+
       setShuffledSequence(newSequence)
     }
   }, [isOpen, turnSequence, shuffleMode, teams, participants])
@@ -159,7 +150,6 @@ export function MimicaModal({
     onClose()
   }
 
-
   const handleScore = (mode: ScoringMode, targetTeamId?: string) => {
     let points = mimicaPoints
     switch (mode) {
@@ -179,36 +169,34 @@ export function MimicaModal({
         points = 0
         break
     }
-    
+
     onScore(mode, targetTeamId, points, turnNumber, roundNumber)
     setScoringMode(null)
     setSelectedTeam(null)
-    
-    // Avançar automaticamente para próxima pessoa
+    setTimerResetKey(k => k + 1)
+
     setTimeout(() => {
-      // Se ainda há participantes na sequência, avança
       if (currentParticipantIndex < alternateParticipants.length - 1) {
         onAdvanceTurn()
         if (nextParticipant) {
           toast.success(`Próximo turno: ${nextParticipant.name}`)
         }
       } else {
-        // Volta ao primeiro participante e incrementa a volta
         setRoundNumber(prev => prev + 1)
         onAdvanceTurn()
         if (alternateParticipants[0]) {
           toast.success(`Volta ${roundNumber + 1} iniciada! Próximo turno: ${alternateParticipants[0].name}`)
         }
       }
-    }, 500) // Pequeno delay para mostrar o feedback
+    }, 500)
   }
 
-  const scoringOptions: Array<{ id: ScoringMode; title: string; subtitle: string; points: number }> = [
-    { id: 'full-current', title: 'Valor cheio', subtitle: 'Time da vez recebe 100%', points: mimicaPoints },
-    { id: 'half-current', title: 'Meio valor', subtitle: 'Time da vez recebe 50%', points: Math.round(mimicaPoints / 2) },
-    { id: 'steal', title: 'Roubo', subtitle: 'Transferir para outro time', points: mimicaPoints },
-    { id: 'everyone', title: 'Todos', subtitle: 'Distribuir para todas as equipes', points: Math.round(mimicaPoints / teams.length) },
-    { id: 'void', title: 'Anular', subtitle: 'Mímica sem pontuação', points: 0 },
+  const scoringOptions: Array<{ id: ScoringMode; label: string; pts: number }> = [
+    { id: 'full-current', label: '100%', pts: mimicaPoints },
+    { id: 'half-current', label: '50%', pts: Math.round(mimicaPoints / 2) },
+    { id: 'steal', label: 'Roubo', pts: mimicaPoints },
+    { id: 'everyone', label: 'Todos', pts: Math.round(mimicaPoints / teams.length) },
+    { id: 'void', label: 'Anular', pts: 0 },
   ]
 
   const canConfirm = scoringMode !== null && (scoringMode !== 'steal' || (scoringMode === 'steal' && selectedTeam !== null))
@@ -217,242 +205,228 @@ export function MimicaModal({
     <Modal
       isOpen={isOpen}
       title="Modo Mímica"
-      description="Momento de mímica! Cada participante faz sua vez na ordem alternada."
+      description="Cada participante faz sua vez na ordem alternada."
       onClose={handleClose}
     >
-      <div className="space-y-6 text-[var(--color-text)]">
-        <div className="rounded-xl border border-[var(--color-primary)] bg-[var(--color-primary)]/5 p-3">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <UsersRound size={16} className="text-[var(--color-primary)]" />
-              <div>
-                <p className="text-sm font-semibold text-[var(--color-text)]">
-                  {activeParticipant?.name ?? 'Aguardando início'}
-                </p>
-                <p className="text-xs text-[var(--color-muted)]">
-                  {activeTeam?.name ?? 'Time não definido'}
-                </p>
-              </div>
-            </div>
-            <div className="text-right">
-              <p className="text-xs text-[var(--color-muted)]">Próximo:</p>
-              <p className="text-xs font-medium text-[var(--color-text)]">
-                {nextParticipant?.name ?? 'Fim'}
+      <div className="space-y-5 text-[var(--color-text)]">
+        {/* Participante atual + próximo */}
+        <div className="flex items-center justify-between rounded-xl border border-[var(--color-primary)]/30 bg-[var(--color-primary)]/5 px-4 py-3">
+          <div className="flex items-center gap-3">
+            <div
+              className="h-3 w-3 rounded-full"
+              style={{ backgroundColor: activeTeam?.color }}
+            />
+            <div>
+              <p className="text-sm font-semibold">
+                {activeParticipant?.name ?? 'Aguardando'}
+              </p>
+              <p className="text-xs text-[var(--color-muted)]">
+                {activeTeam?.name} · Volta {roundNumber} · Turno {turnNumber}
               </p>
             </div>
           </div>
-          <div className="mt-3 pt-3 border-t border-[var(--color-primary)]/20">
-            <div className="flex items-center justify-center gap-4">
-              <div className="inline-flex items-center gap-2 rounded-full border border-[var(--color-primary)]/30 bg-[var(--color-primary)]/10 px-3 py-1.5 text-xs font-semibold uppercase tracking-[0.3em] text-[var(--color-primary)]">
-                <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-                </svg>
-                Volta {roundNumber}
-              </div>
-              <div className="inline-flex items-center gap-2 rounded-full border border-[var(--color-secondary)]/30 bg-[var(--color-secondary)]/10 px-3 py-1.5 text-xs font-semibold uppercase tracking-[0.3em] text-[var(--color-secondary)]">
-                <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
-                Turno {turnNumber}
-              </div>
-            </div>
+          <div className="text-right text-xs text-[var(--color-muted)]">
+            <span>Próximo: </span>
+            <span className="font-medium text-[var(--color-text)]">{nextParticipant?.name ?? '—'}</span>
           </div>
         </div>
 
-        <div className="space-y-4">
-          <details className="rounded-2xl border border-[var(--color-border)] bg-[var(--color-background)]">
-            <summary className="flex cursor-pointer items-center justify-between px-4 py-3 text-sm font-semibold text-[var(--color-text)]">
-              Configuração da mímica
-              <span className="text-xs text-[var(--color-muted)]">Clique para expandir</span>
-            </summary>
-            <div className="px-4 pb-4 space-y-4">
-              <div className="flex items-center gap-4">
-                <label className="flex items-center gap-2 text-sm font-medium text-[var(--color-text)]">
-                  Valor 100%:
-                  <input
-                    type="number"
-                    min="1"
-                    max="1000"
-                    value={mimicaPoints}
-                    onChange={(event) => setMimicaPoints(Number(event.target.value))}
-                    className="w-20 rounded-lg border border-[var(--color-border)] bg-[var(--color-background)] px-2 py-1 text-center text-sm"
-                  />
-                  pts
-                </label>
-              </div>
-              
-              <div className="space-y-2">
-                <div className="flex items-center gap-2">
-                  <label className="text-sm font-medium text-[var(--color-text)]">
-                    Ordem de participação:
-                  </label>
-                  <Tooltip content="A mimica continua até você decidir finalizar manualmente. Quando todos participaram, recomeça do primeiro.">
-                    <HelpCircle size={14} className="text-[var(--color-muted)] cursor-help" />
-                  </Tooltip>
-                </div>
-                <div className="space-y-2">
-                  {[
-                    { 
-                      id: 'alternate', 
-                      label: 'Alternada', 
-                      description: '1 de cada time por vez',
-                      tooltip: 'Cada time participa uma vez por vez, em ordem. Quando todos participaram, recomeça do primeiro.'
-                    },
-                    { 
-                      id: 'shuffle', 
-                      label: 'Embaralhada', 
-                      description: 'Ordem completamente aleatória',
-                      tooltip: 'Ordem completamente aleatória de todos os participantes.'
-                    },
-                    { 
-                      id: 'team-shuffle', 
-                      label: 'Por time', 
-                      description: 'Embaralha dentro de cada time',
-                      tooltip: 'Embaralha participantes dentro de cada time, mas mantém alternância entre times.'
-                    }
-                  ].map((option) => (
-                    <label key={option.id} className="flex items-center gap-3 cursor-pointer">
-                      <input
-                        type="radio"
-                        name="shuffleMode"
-                        value={option.id}
-                        checked={shuffleMode === option.id}
-                        onChange={(e) => setShuffleMode(e.target.value as 'alternate' | 'shuffle' | 'team-shuffle')}
-                        className="text-[var(--color-primary)]"
-                      />
-                      <div className="flex-1">
-                        <div className="flex items-center gap-2">
-                          <span className="text-sm font-medium text-[var(--color-text)]">{option.label}</span>
-                          <Tooltip content={option.tooltip}>
-                            <HelpCircle size={12} className="text-[var(--color-muted)] cursor-help" />
-                          </Tooltip>
-                        </div>
-                        <p className="text-xs text-[var(--color-muted)]">{option.description}</p>
-                      </div>
-                    </label>
-                  ))}
-                </div>
+        {/* Timer com presets */}
+        <div className="space-y-2">
+          <div className="flex items-center gap-2">
+            <span className="text-xs font-semibold uppercase tracking-[0.2em] text-[var(--color-muted)]">Timer</span>
+            <div className="flex items-center gap-1 ml-auto">
+              {TIMER_PRESETS.map((preset) => (
+                <button
+                  key={preset}
+                  type="button"
+                  onClick={() => setTimerSeconds(preset)}
+                  className={`rounded-lg px-2 py-1 text-xs font-medium transition ${
+                    timerSeconds === preset
+                      ? 'bg-[var(--color-primary)] text-white'
+                      : 'bg-[var(--color-border)]/40 text-[var(--color-muted)] hover:bg-[var(--color-border)]'
+                  }`}
+                >
+                  {preset}s
+                </button>
+              ))}
+              <div className="flex items-center gap-0.5 ml-1">
+                <button
+                  type="button"
+                  onClick={() => setTimerSeconds(s => Math.max(10, s - 10))}
+                  className="rounded-md p-1 text-[var(--color-muted)] hover:bg-[var(--color-border)]/40"
+                  title="−10 segundos"
+                >
+                  <Minus className="h-3.5 w-3.5" />
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setTimerSeconds(s => Math.min(300, s + 10))}
+                  className="rounded-md p-1 text-[var(--color-muted)] hover:bg-[var(--color-border)]/40"
+                  title="+10 segundos"
+                >
+                  <Plus className="h-3.5 w-3.5" />
+                </button>
               </div>
             </div>
-          </details>
-          
+          </div>
           <Timer
-            initialSeconds={60}
+            key={timerResetKey}
+            initialSeconds={timerSeconds}
             variant="compact"
             editable
           />
         </div>
 
-        <div className="rounded-2xl border border-[var(--color-border)] bg-[var(--color-background)] p-4">
-          <div className="flex items-center justify-between mb-3">
-            <h3 className="text-sm font-semibold uppercase tracking-[0.3em] text-[var(--color-muted)]">
-              Ordem de Participação
-            </h3>
-            <span className="text-xs font-medium text-[var(--color-primary)] bg-[var(--color-primary)]/10 px-2 py-1 rounded-full">
-              {shuffleMode === 'alternate' ? '🔄 Alternada' : 
-               shuffleMode === 'shuffle' ? '🎲 Embaralhada' : 
-               '👥 Por time'}
-            </span>
-          </div>
-          <div className="space-y-2">
-            {alternateParticipants.map((participant, index) => {
-              const participantTeam = teams.find(team => team.id === participant.teamId)
-              const isActive = participant.id === activeParticipant?.id
-              const isCompleted = index < currentParticipantIndex
-              
-              return (
-                <div
-                  key={participant.id}
-                  className={`flex items-center justify-between rounded-xl px-3 py-2 transition-colors ${
-                    isActive
-                      ? 'bg-[var(--color-primary)]/10 border border-[var(--color-primary)]'
-                      : isCompleted
-                      ? 'bg-[var(--color-muted)]/10 text-[var(--color-muted)]'
-                      : 'bg-[var(--color-surface)]'
-                  }`}
-                >
-                  <div className="flex items-center gap-3">
-                    <span className={`text-xs font-semibold ${
-                      isActive ? 'text-[var(--color-primary)]' : 'text-[var(--color-muted)]'
-                    }`}>
-                      {index + 1}º
-                    </span>
-                    <span className="text-sm font-medium">{participant.name}</span>
-                  </div>
-                  <span className="text-xs text-[var(--color-muted)]">
-                    {participantTeam?.name}
-                  </span>
-                </div>
-              )
-            })}
-          </div>
-        </div>
-
+        {/* Pontuação inline */}
         <div className="space-y-3">
-          <details className="rounded-2xl border border-[var(--color-border)] bg-[var(--color-background)]">
-            <summary className="flex cursor-pointer items-center justify-between px-4 py-3 text-sm font-semibold text-[var(--color-text)]">
-              Distribuição de pontos
-              <span className="text-xs text-[var(--color-muted)]">Selecione uma opção</span>
-            </summary>
-            <div className="space-y-2 px-4 pb-4">
-              {scoringOptions.map((option) => (
-                <button
-                  key={option.id}
-                  type="button"
-                  onClick={() => setScoringMode(option.id)}
-                  className={`w-full rounded-xl border px-4 py-3 text-left transition ${
-                    scoringMode === option.id
-                      ? 'border-[var(--color-primary)] bg-[var(--color-primary)]/10'
-                      : 'border-[var(--color-border)] bg-[var(--color-background)]'
-                  }`}
-                >
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <span className="text-sm font-semibold text-[var(--color-text)]">{option.title}</span>
-                      <p className="text-xs text-[var(--color-muted)]">{option.subtitle}</p>
-                    </div>
-                    <span className="text-sm font-bold text-[var(--color-primary)]">
-                      {option.points} pts
-                    </span>
-                  </div>
-                </button>
-              ))}
-              {scoringMode === 'steal' ? (
-                <label className="flex flex-col gap-2 text-xs font-semibold uppercase tracking-[0.3em] text-[var(--color-muted)]">
-                  Selecionar time
-                  <select
-                    value={selectedTeam ?? ''}
-                    onChange={(event) => setSelectedTeam(event.target.value)}
-                    className="rounded-xl border border-[var(--color-border)] bg-[var(--color-background)] px-3 py-2 text-sm text-[var(--color-text)]"
-                  >
-                    {stealTargets.map((team) => (
-                      <option key={team.id} value={team.id}>
-                        {team.name}
-                      </option>
-                    ))}
-                  </select>
-                </label>
-              ) : null}
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-semibold uppercase tracking-[0.2em] text-[var(--color-muted)]">
+              Pontuação
+            </span>
+            <div className="flex items-center gap-1.5">
+              <button
+                type="button"
+                onClick={() => setMimicaPoints(p => Math.max(10, p - 10))}
+                className="rounded-md p-1 text-[var(--color-muted)] hover:bg-[var(--color-border)]/40"
+                title="−10 pontos"
+              >
+                <Minus className="h-3.5 w-3.5" />
+              </button>
+              <span className="min-w-[3rem] text-center text-sm font-bold text-[var(--color-primary)]">{mimicaPoints} pts</span>
+              <button
+                type="button"
+                onClick={() => setMimicaPoints(p => Math.min(500, p + 10))}
+                className="rounded-md p-1 text-[var(--color-muted)] hover:bg-[var(--color-border)]/40"
+                title="+10 pontos"
+              >
+                <Plus className="h-3.5 w-3.5" />
+              </button>
             </div>
-          </details>
-          
+          </div>
+
+          <div className="grid grid-cols-5 gap-1.5">
+            {scoringOptions.map((opt) => (
+              <button
+                key={opt.id}
+                type="button"
+                onClick={() => setScoringMode(opt.id)}
+                className={`flex flex-col items-center gap-0.5 rounded-xl border px-2 py-2.5 text-center transition ${
+                  scoringMode === opt.id
+                    ? 'border-[var(--color-primary)] bg-[var(--color-primary)]/10'
+                    : 'border-[var(--color-border)] hover:border-[var(--color-primary)]/40'
+                }`}
+              >
+                <span className="text-xs font-semibold text-[var(--color-text)]">{opt.label}</span>
+                <span className="text-[10px] text-[var(--color-muted)]">{opt.pts} pts</span>
+              </button>
+            ))}
+          </div>
+
+          {scoringMode === 'steal' && (
+            <div className="flex items-center gap-2">
+              <span className="text-xs text-[var(--color-muted)]">Para:</span>
+              <div className="flex gap-1.5">
+                {stealTargets.map((team) => (
+                  <button
+                    key={team.id}
+                    type="button"
+                    onClick={() => setSelectedTeam(team.id)}
+                    className={`flex items-center gap-1.5 rounded-lg border px-3 py-1.5 text-xs font-medium transition ${
+                      selectedTeam === team.id
+                        ? 'border-[var(--color-primary)] bg-[var(--color-primary)]/10'
+                        : 'border-[var(--color-border)] hover:border-[var(--color-primary)]/40'
+                    }`}
+                  >
+                    <span className="h-2 w-2 rounded-full" style={{ backgroundColor: team.color }} />
+                    {team.name}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+
           <Button
             variant={scoringMode ? 'secondary' : 'outline'}
             disabled={!canConfirm}
             onClick={() => handleScore(scoringMode ?? 'full-current', scoringMode === 'steal' ? selectedTeam ?? undefined : undefined)}
             className="w-full"
           >
-            Confirmar pontuação e avançar
+            Confirmar e avançar
           </Button>
         </div>
 
-        <Tooltip content="A mimica continua até você decidir finalizar manualmente">
-          <div>
-            <Button variant="outline" onClick={handleClose} className="w-full">
-              Fechar mímica
-            </Button>
+        {/* Ordem de participação - colapsada */}
+        <details className="rounded-xl border border-[var(--color-border)]">
+          <summary className="flex cursor-pointer items-center justify-between px-4 py-2.5 text-xs font-semibold uppercase tracking-[0.2em] text-[var(--color-muted)]">
+            <span className="flex items-center gap-2">
+              <UsersRound size={14} />
+              Ordem ({alternateParticipants.length})
+            </span>
+            <span className="text-[10px] normal-case tracking-normal">
+              {shuffleMode === 'alternate' ? 'Alternada' : shuffleMode === 'shuffle' ? 'Aleatória' : 'Por time'}
+            </span>
+          </summary>
+          <div className="border-t border-[var(--color-border)] px-4 py-3 space-y-3">
+            <div className="flex gap-1.5">
+              {([
+                { id: 'alternate', label: 'Alternada' },
+                { id: 'shuffle', label: 'Aleatória' },
+                { id: 'team-shuffle', label: 'Por time' },
+              ] as const).map((opt) => (
+                <button
+                  key={opt.id}
+                  type="button"
+                  onClick={() => setShuffleMode(opt.id)}
+                  className={`rounded-lg px-2.5 py-1 text-xs font-medium transition ${
+                    shuffleMode === opt.id
+                      ? 'bg-[var(--color-primary)] text-white'
+                      : 'bg-[var(--color-border)]/40 text-[var(--color-muted)] hover:bg-[var(--color-border)]'
+                  }`}
+                >
+                  {opt.label}
+                </button>
+              ))}
+              <Tooltip content="A mímica continua até você fechar. Quando todos participaram, recomeça do primeiro.">
+                <HelpCircle size={14} className="ml-1 self-center text-[var(--color-muted)] cursor-help" />
+              </Tooltip>
+            </div>
+
+            <div className="space-y-1">
+              {alternateParticipants.map((participant, index) => {
+                const participantTeam = teams.find(team => team.id === participant.teamId)
+                const isActive = participant.id === activeParticipant?.id
+                const isCompleted = index < currentParticipantIndex
+
+                return (
+                  <div
+                    key={participant.id}
+                    className={`flex items-center justify-between rounded-lg px-3 py-1.5 text-xs transition-colors ${
+                      isActive
+                        ? 'bg-[var(--color-primary)]/10 font-semibold'
+                        : isCompleted
+                        ? 'text-[var(--color-muted)] line-through opacity-50'
+                        : ''
+                    }`}
+                  >
+                    <span className="flex items-center gap-2">
+                      <span
+                        className="h-1.5 w-1.5 rounded-full"
+                        style={{ backgroundColor: participantTeam?.color }}
+                      />
+                      {participant.name}
+                    </span>
+                    <span className="text-[var(--color-muted)]">{participantTeam?.name}</span>
+                  </div>
+                )
+              })}
+            </div>
           </div>
-        </Tooltip>
+        </details>
+
+        <Button variant="outline" onClick={handleClose} className="w-full">
+          Fechar mímica
+        </Button>
       </div>
     </Modal>
   )
