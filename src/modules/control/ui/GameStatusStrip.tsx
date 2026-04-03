@@ -1,3 +1,5 @@
+import { useState } from 'react'
+import { Eye, EyeOff } from 'lucide-react'
 import type { TriviaParticipant, TriviaTeam } from '@/modules/trivia/types'
 
 interface ScoreboardItem {
@@ -21,6 +23,8 @@ export function GameStatusStrip({
   currentTurnLabel,
   scoreboard,
 }: GameStatusStripProps) {
+  const [scoresVisible, setScoresVisible] = useState(true)
+
   return (
     <div className="flex h-10 shrink-0 items-center gap-3 overflow-x-auto border-b border-white/8 bg-[var(--glass-bg)]/80 px-3 text-xs backdrop-blur lg:px-4">
       {/* Turno atual */}
@@ -61,11 +65,25 @@ export function GameStatusStrip({
                 <span className="text-[var(--color-muted)]">{position}º</span>
                 <span className="font-semibold text-[var(--color-text)]">{team.name}</span>
                 <span className="rounded-full bg-white/8 px-1.5 py-0.5 font-mono font-semibold text-[var(--color-primary)]">
-                  {points}
+                  {scoresVisible ? points : '••'}
                 </span>
               </div>
             ))}
           </div>
+
+          {/* Toggle visibilidade */}
+          <button
+            type="button"
+            onClick={() => setScoresVisible((v) => !v)}
+            className="ml-1 shrink-0 rounded-md p-1 text-[var(--color-muted)] transition-colors hover:bg-white/10 hover:text-[var(--color-text)]"
+            title={scoresVisible ? 'Ocultar pontuações' : 'Mostrar pontuações'}
+          >
+            {scoresVisible ? (
+              <Eye className="h-3.5 w-3.5" />
+            ) : (
+              <EyeOff className="h-3.5 w-3.5" />
+            )}
+          </button>
         </>
       ) : null}
     </div>
