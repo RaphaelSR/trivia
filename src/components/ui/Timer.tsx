@@ -5,6 +5,8 @@ import { Button } from './Button'
 type TimerProps = {
   initialSeconds?: number
   onTick?: (value: number) => void
+  onRunningChange?: (running: boolean) => void
+  onTimeEdit?: (newSeconds: number) => void
   variant?: 'standard' | 'compact'
   editable?: boolean
   showControls?: boolean
@@ -35,6 +37,8 @@ function parseTime(value: string): number | null {
 export function Timer({
   initialSeconds = 30,
   onTick,
+  onRunningChange,
+  onTimeEdit,
   variant = 'standard',
   editable = false,
   showControls = true,
@@ -55,6 +59,7 @@ export function Timer({
     if (!running) return
     if (seconds === 0) {
       setRunning(false)
+      onRunningChange?.(false)
       return
     }
     const id = window.setInterval(() => {
@@ -90,7 +95,8 @@ export function Timer({
     setSeconds(parsed)
     setEditing(false)
     setRunning(false)
-  }, [inputValue, seconds])
+    onTimeEdit?.(parsed)
+  }, [inputValue, seconds, onTimeEdit])
 
   const containerClasses = variant === 'compact' ? 'flex flex-col gap-4' : 'card-surface flex flex-col gap-4 rounded-2xl p-4'
   const headerClasses = variant === 'compact' ? 'flex items-center justify-between gap-3' : 'flex items-center justify-between'
@@ -143,7 +149,13 @@ export function Timer({
             size="icon"
             aria-label={running ? 'Pausar' : 'Iniciar'}
             title={running ? 'Pausar contador' : 'Iniciar contador'}
-            onClick={() => setRunning((prev) => !prev)}
+            onClick={() => {
+              setRunning((prev) => {
+                const next = !prev
+                onRunningChange?.(next)
+                return next
+              })
+            }}
           >
             {running ? <Pause size={16} /> : <Play size={16} />}
           </Button>

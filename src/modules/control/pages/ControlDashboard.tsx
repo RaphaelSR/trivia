@@ -11,7 +11,7 @@ import {
   UsersRound,
   Theater,
 } from 'lucide-react'
-import { useEffect, useMemo } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { toast } from 'sonner'
 import { Button } from '@/components/ui/Button'
 import { FilmRoulette } from '@/components/ui/FilmRoulette'
@@ -38,6 +38,20 @@ import { STORAGE_KEYS } from '@/shared/constants/storage'
 import { FloatingActionBar } from '@/shared/components/FloatingActionBar'
 import { storageService } from '@/shared/services/storage.service'
 import { countAnsweredTiles, countTotalTiles } from '@/modules/game/domain/board.utils'
+
+const POINTS_TIMER_DEFAULTS: Array<{ maxPoints: number; seconds: number }> = [
+  { maxPoints: 5, seconds: 30 },
+  { maxPoints: 10, seconds: 40 },
+  { maxPoints: 15, seconds: 50 },
+  { maxPoints: 20, seconds: 60 },
+  { maxPoints: 30, seconds: 65 },
+  { maxPoints: Infinity, seconds: 80 },
+]
+
+function getDefaultTimerForPoints(points: number): number {
+  const entry = POINTS_TIMER_DEFAULTS.find(e => points <= e.maxPoints)
+  return entry?.seconds ?? 80
+}
 import { buildTurnSequence } from '@/modules/game/domain/turn-order'
 import { FaqPanel } from '../ui/FaqPanel'
 import { GameStatusStrip } from '../ui/GameStatusStrip'
@@ -151,6 +165,14 @@ export function ControlDashboard() {
     confirmActionConfig,
     setConfirmActionConfig,
   } = dashboardState
+
+  const [timerOverrides, setTimerOverrides] = useState<Record<number, number>>({})
+  const [questionRevealed, setQuestionRevealed] = useState(false)
+
+  const getTimerForPoints = (points: number) => {
+    if (timerOverrides[points] !== undefined) return timerOverrides[points]
+    return getDefaultTimerForPoints(points)
+  }
 
   const teamManagement = useTeamManagement(
     orderedTeams,
@@ -308,6 +330,7 @@ export function ControlDashboard() {
     updateTileState(tile.id, 'active')
     setSelectedIds({ tileId: tile.id, columnId: column.id })
     setShowAnswer(false)
+    setQuestionRevealed(false)
   }
 
   const handleCloseQuestionModal = () => {
@@ -316,6 +339,7 @@ export function ControlDashboard() {
     }
     setSelectedIds(null)
     setShowAnswer(false)
+    setQuestionRevealed(false)
   }
 
   const handleRandomQuestion = () => {
@@ -938,23 +962,38 @@ export function ControlDashboard() {
                 <span className="text-xs text-[var(--color-muted)]">Sem turno ativo</span>
               )}
               <Timer
-                initialSeconds={selectedTile?.tile.points ? Math.min(90, selectedTile.tile.points * 4) : 45}
+                initialSeconds={getTimerForPoints(selectedTile?.tile.points ?? 0)}
                 variant="compact"
                 editable
+                onRunningChange={(running) => {
+                  if (running) setQuestionRevealed(true)
+                }}
+                onTimeEdit={(newSeconds) => {
+                  const points = selectedTile?.tile.points ?? 0
+                  if (points > 0) {
+                    setTimerOverrides(prev => ({ ...prev, [points]: newSeconds }))
+                  }
+                }}
               />
             </div>
 
             {/* Pergunta */}
-            <div className="rounded-xl bg-[var(--color-surface)] p-3">
-              <p className="mb-1 text-[10px] font-semibold uppercase tracking-[0.3em] text-[var(--color-muted)]">Pergunta</p>
-              <p className="text-sm leading-relaxed">{selectedTile?.tile.question}</p>
-            </div>
+            {questionRevealed ? (
+              <div className="rounded-xl bg-[var(--color-surface)] p-4 shadow-sm">
+                <p className="mb-2 text-[10px] font-semibold uppercase tracking-[0.3em] text-[var(--color-muted)]">Pergunta</p>
+                <p className="text-base font-medium leading-relaxed tracking-wide text-[var(--color-text)]">{selectedTile?.tile.question}</p>
+              </div>
+            ) : (
+              <Button variant="outline" size="sm" onClick={() => setQuestionRevealed(true)}>
+                Revelar pergunta
+              </Button>
+            )}
 
             {/* Resposta */}
             {showAnswer ? (
-              <div className="rounded-xl border border-[var(--color-border)] bg-[var(--color-background)] p-3">
-                <p className="mb-1 text-[10px] font-semibold uppercase tracking-[0.3em] text-[var(--color-muted)]">Resposta</p>
-                <p className="text-sm leading-relaxed">{selectedTile?.tile.answer || 'Resposta não cadastrada.'}</p>
+              <div className="rounded-xl border border-[var(--color-primary)]/20 bg-[var(--color-primary)]/5 p-4 shadow-sm">
+                <p className="mb-2 text-[10px] font-semibold uppercase tracking-[0.3em] text-[var(--color-primary)]">Resposta</p>
+                <p className="text-base font-bold leading-relaxed tracking-wide text-[var(--color-text)]">{selectedTile?.tile.answer || 'Resposta não cadastrada.'}</p>
               </div>
             ) : (
               <Button variant="outline" size="sm" onClick={() => setShowAnswer(true)}>
