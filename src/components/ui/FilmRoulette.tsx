@@ -100,7 +100,7 @@ function playVictory(ctx: AudioContext) {
   })
 }
 
-export function FilmRoulette({ isOpen, onClose, teams, participants, sessionFilms }: FilmRouletteProps) {
+export function FilmRoulette({ isOpen, onClose, teams, participants }: FilmRouletteProps) {
   const { films: globalCustomFilms, addFilm, updateFilm, removeFilm } = useCustomFilms()
 
   // Sorteio sempre usa apenas filmes do catálogo global — filmes da sessão não entram
