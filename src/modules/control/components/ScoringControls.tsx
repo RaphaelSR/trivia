@@ -170,6 +170,14 @@ export function ScoringControls({
 
   const totalPoints = distributions.reduce((sum, distribution) => sum + distribution.points, 0)
   const confirmLabel = selectedOutcome === 'none' ? 'Anular pergunta' : 'Aplicar pontuação'
+  const selectedSummary =
+    selectedOutcome === null
+      ? 'Escolha um resultado.'
+      : selectedOutcome === 'none'
+        ? 'Sem pontuação.'
+        : selectedOutcome === 'custom'
+          ? `${distributions.length} destino(s), ${totalPoints} pts.`
+          : `${activeTeam?.name ?? 'Time da vez'} recebe ${totalPoints} pts.`
 
   return (
     <div className="space-y-3">
@@ -208,9 +216,9 @@ export function ScoringControls({
         </div>
       </div>
 
-      {selectedOutcome && selectedOutcome !== 'none' ? (
-        <>
-          <div className="rounded-xl border border-[var(--color-border)] bg-[var(--color-background)] p-3">
+      {selectedOutcome === 'custom' ? (
+        <div className="rounded-xl border border-[var(--color-border)] bg-[var(--color-background)] p-3">
+          <div className="grid gap-3">
             <div className="flex items-center justify-between gap-3">
               <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-[var(--color-muted)]">
                 Valor
@@ -241,7 +249,7 @@ export function ScoringControls({
               ))}
             </div>
 
-            <label className="mt-2 block">
+            <label className="block">
               <span className="sr-only">Valor customizado</span>
               <input
                 type="number"
@@ -252,108 +260,60 @@ export function ScoringControls({
                 className="w-full rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] px-3 py-2 text-sm font-semibold text-[var(--color-text)] outline-none transition focus:border-[var(--color-primary)]"
               />
             </label>
-          </div>
 
-          <div className="rounded-xl border border-[var(--color-border)] bg-[var(--color-background)] p-3">
-            <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-[var(--color-muted)]">
-              Quem recebe
-            </p>
+            <div>
+              <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-[var(--color-muted)]">
+                Quem recebe
+              </p>
 
-            <div className="mt-2 space-y-2">
-              {teams.map((team) => {
-                const distribution = distributions.find((item) => item.teamId === team.id)
-                const teamParticipants = getParticipantsByTeam(participants, team.id)
+              <div className="mt-2 space-y-2">
+                {teams.map((team) => {
+                  const distribution = distributions.find((item) => item.teamId === team.id)
+                  const teamParticipants = getParticipantsByTeam(participants, team.id)
 
-                return (
-                  <ScoreRecipientEditor
-                    key={team.id}
-                    team={team}
-                    participants={teamParticipants}
-                    distribution={distribution}
-                    suggestedPoints={suggestedPoints}
-                    isActiveTeam={team.id === activeTeamId}
-                    onToggle={(enabled) => {
-                      updateDistribution(team.id, () =>
-                        enabled
-                          ? buildDistribution(
-                              team.id,
-                              suggestedPoints,
-                              team.id === activeTeamId ? activeParticipantId : undefined,
-                            )
-                          : null,
-                      )
-                    }}
-                    onPointsChange={(points) => {
-                      updateDistribution(team.id, (current) =>
-                        buildDistribution(
-                          team.id,
-                          points,
-                          current?.participantId ?? (team.id === activeTeamId ? activeParticipantId : undefined),
-                        ),
-                      )
-                    }}
-                    onParticipantChange={(participantId) => {
-                      updateDistribution(team.id, (current) =>
-                        buildDistribution(team.id, current?.points ?? suggestedPoints, participantId),
-                      )
-                    }}
-                  />
-                )
-              })}
+                  return (
+                    <ScoreRecipientEditor
+                      key={team.id}
+                      team={team}
+                      participants={teamParticipants}
+                      distribution={distribution}
+                      suggestedPoints={suggestedPoints}
+                      isActiveTeam={team.id === activeTeamId}
+                      onToggle={(enabled) => {
+                        updateDistribution(team.id, () =>
+                          enabled
+                            ? buildDistribution(
+                                team.id,
+                                suggestedPoints,
+                                team.id === activeTeamId ? activeParticipantId : undefined,
+                              )
+                            : null,
+                        )
+                      }}
+                      onPointsChange={(points) => {
+                        updateDistribution(team.id, (current) =>
+                          buildDistribution(
+                            team.id,
+                            points,
+                            current?.participantId ?? (team.id === activeTeamId ? activeParticipantId : undefined),
+                          )
+                        )
+                      }}
+                      onParticipantChange={(participantId) => {
+                        updateDistribution(team.id, (current) =>
+                          buildDistribution(team.id, current?.points ?? suggestedPoints, participantId),
+                        )
+                      }}
+                    />
+                  )
+                })}
+              </div>
             </div>
           </div>
-        </>
+        </div>
       ) : null}
 
-      <div className="rounded-xl border border-[var(--color-border)] bg-[var(--color-background)] p-3">
-        <div className="flex items-center justify-between gap-3">
-          <div>
-            <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-[var(--color-muted)]">
-              Resumo
-            </p>
-            <p className="mt-0.5 text-xs text-[var(--color-text)]">
-              {selectedOutcome === 'none'
-                ? 'A pergunta será encerrada sem pontuação.'
-                : distributions.length > 0
-                  ? `${distributions.length} destino(s) ativo(s), total de ${totalPoints} pontos.`
-                  : 'Nenhum time selecionado ainda.'}
-            </p>
-          </div>
-          {activeTeam ? (
-            <span className="shrink-0 rounded-full bg-[var(--color-surface)] px-2 py-1 text-[11px] font-semibold text-[var(--color-muted)]">
-              Vez de {activeTeam.name}
-            </span>
-          ) : null}
-        </div>
-
-        {selectedOutcome !== 'none' && distributions.length > 0 ? (
-          <div className="mt-2 space-y-2">
-            {distributions.map((distribution) => {
-              const team = teams.find((item) => item.id === distribution.teamId)
-              const participant = distribution.participantId
-                ? participants.find((item) => item.id === distribution.participantId)
-                : null
-
-              return (
-                <div
-                  key={distribution.teamId}
-                  className="flex items-center justify-between rounded-lg bg-[var(--color-surface)] px-3 py-2"
-                >
-                  <div className="min-w-0">
-                    <p className="truncate text-xs font-semibold text-[var(--color-text)]">{team?.name ?? 'Time'}</p>
-                    <p className="truncate text-xs text-[var(--color-muted)]">
-                      {participant ? participant.name : 'Crédito para o time inteiro'}
-                    </p>
-                  </div>
-                  <span className="text-xs font-bold text-[var(--color-primary)]">{distribution.points} pts</span>
-                </div>
-              )
-            })}
-          </div>
-        ) : null}
-      </div>
-
-      <div className="flex gap-2">
+      <div className="flex items-center gap-2">
         <Button
           variant={isValid ? 'secondary' : 'outline'}
           disabled={!isValid || selectedOutcome === null}
@@ -367,6 +327,7 @@ export function ScoringControls({
           Fechar
         </Button>
       </div>
+      <p className="text-center text-[11px] font-medium text-[var(--color-muted)]">{selectedSummary}</p>
     </div>
   )
 }
