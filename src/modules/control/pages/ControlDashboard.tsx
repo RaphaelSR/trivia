@@ -971,74 +971,74 @@ export function ControlDashboard() {
           </div>
 
           {/* Coluna direita: scoring */}
-          <div className="md:w-56 md:shrink-0">
+          <div className="md:w-72 md:max-w-72 md:shrink-0">
             <ScoringControls
-            teams={orderedTeams}
-            participants={participants}
-            activeTeamId={activeTeam?.id ?? null}
-            activeParticipantId={activeParticipant?.id ?? null}
-            basePoints={selectedTile?.tile.points ?? 0}
-            onConfirm={(distributions) => {
-              if (!selectedTile || !activeParticipant) {
-                toast.info('Selecione uma carta e certifique-se de que há um participante ativo')
-                return
-              }
-              
-              if (distributions.length === 0) {
+              teams={orderedTeams}
+              participants={participants}
+              activeTeamId={activeTeam?.id ?? null}
+              activeParticipantId={activeParticipant?.id ?? null}
+              basePoints={selectedTile?.tile.points ?? 0}
+              onConfirm={(distributions) => {
+                if (!selectedTile || !activeParticipant) {
+                  toast.info('Selecione uma carta e certifique-se de que há um participante ativo')
+                  return
+                }
+
+                if (distributions.length === 0) {
+                  setConfirmActionConfig({
+                    title: 'Anular Pergunta',
+                    description: `Esta ação irá anular a pergunta "${selectedTile.tile.question}" do filme "${selectedTile.column.film}" sem atribuir pontos. A pergunta será marcada como respondida e o turno avançará automaticamente para o próximo participante.`,
+                    onConfirm: () => {
+                      updateTileState(selectedTile.tile.id, 'answered')
+                      const message = `${selectedTile.column.film}: pergunta anulada (sem pontuação)`
+                      toast.success(message)
+                      advanceTurn()
+                      setSelectedIds(null)
+                      setShowAnswer(false)
+                    },
+                    variant: 'warning',
+                  })
+                  setConfirmActionOpen(true)
+                  return
+                }
+
+                const totalPoints = distributions.reduce((sum, d) => sum + d.points, 0)
+                const teamsAffected = [...new Set(distributions.map(d => d.teamId))].length
+
                 setConfirmActionConfig({
-                  title: 'Anular Pergunta',
-                  description: `Esta ação irá anular a pergunta "${selectedTile.tile.question}" do filme "${selectedTile.column.film}" sem atribuir pontos. A pergunta será marcada como respondida e o turno avançará automaticamente para o próximo participante.`,
+                  title: 'Confirmar Pontuação',
+                  description: `Esta ação irá atribuir ${totalPoints} pontos distribuídos entre ${teamsAffected} time(s) e avançará automaticamente para o próximo turno. A pergunta será marcada como respondida.`,
                   onConfirm: () => {
-                    updateTileState(selectedTile.tile.id, 'answered')
-                    const message = `${selectedTile.column.film}: pergunta anulada (sem pontuação)`
-                    toast.success(message)
+                    let message = ''
+
+                    distributions.forEach((distribution) => {
+                      const team = orderedTeams.find(t => t.id === distribution.teamId)
+                      const participant = distribution.participantId
+                        ? participants.find(p => p.id === distribution.participantId)
+                        : null
+
+                      awardPoints(
+                        selectedTile.tile.id,
+                        distribution.teamId,
+                        distribution.participantId || activeParticipant.id,
+                        distribution.points
+                      )
+
+                      const recipient = participant ? `${participant.name} (${team?.name})` : team?.name ?? 'time'
+                      message += `${team?.name}: ${distribution.points} pontos para ${recipient}\n`
+                    })
+
+                    toast.success(message.trim())
                     advanceTurn()
                     setSelectedIds(null)
                     setShowAnswer(false)
                   },
-                  variant: 'warning',
+                  variant: 'info',
                 })
                 setConfirmActionOpen(true)
-                return
-              }
-              
-              const totalPoints = distributions.reduce((sum, d) => sum + d.points, 0)
-              const teamsAffected = [...new Set(distributions.map(d => d.teamId))].length
-              
-              setConfirmActionConfig({
-                title: 'Confirmar Pontuação',
-                description: `Esta ação irá atribuir ${totalPoints} pontos distribuídos entre ${teamsAffected} time(s) e avançará automaticamente para o próximo turno. A pergunta será marcada como respondida.`,
-                onConfirm: () => {
-                  let message = ''
-                  
-                  distributions.forEach((distribution) => {
-                    const team = orderedTeams.find(t => t.id === distribution.teamId)
-                    const participant = distribution.participantId 
-                      ? participants.find(p => p.id === distribution.participantId)
-                      : null
-                    
-                    awardPoints(
-                      selectedTile.tile.id, 
-                      distribution.teamId, 
-                      distribution.participantId || activeParticipant.id, 
-                      distribution.points
-                    )
-                    
-                    const recipient = participant ? `${participant.name} (${team?.name})` : team?.name ?? 'time'
-                    message += `${team?.name}: ${distribution.points} pontos para ${recipient}\n`
-                  })
-                  
-                  toast.success(message.trim())
-                  advanceTurn()
-                  setSelectedIds(null)
-                  setShowAnswer(false)
-                },
-                variant: 'info',
-              })
-              setConfirmActionOpen(true)
-            }}
-            onClose={handleCloseQuestionModal}
-          />
+              }}
+              onClose={handleCloseQuestionModal}
+            />
           </div>
         </div>
       </Modal>

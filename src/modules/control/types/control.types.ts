@@ -1,4 +1,5 @@
 import type { TriviaParticipant } from '../../trivia/types'
+import type { FlexibleScoreValue } from '../../game/domain/scoring'
 
 export type ParticipantDraft = {
   id: string
@@ -20,6 +21,22 @@ export type PointDistribution = {
   participantId?: string
   points: number
   percentage?: number
+  valueKind?: FlexibleScoreValue['kind']
+  suggested?: boolean
+}
+
+export type QuickScoringTarget =
+  | 'current-team'
+  | 'other-team'
+  | 'all-teams'
+  | 'manual'
+  | 'none'
+
+export type QuickScoringDistributionTemplate = {
+  teamId?: string
+  participantId?: string
+  target?: 'current-team' | 'team'
+  value?: FlexibleScoreValue
 }
 
 export type QuickScoringOption = {
@@ -27,7 +44,9 @@ export type QuickScoringOption = {
   title: string
   subtitle: string
   multiplier: number
-  target: 'current-team' | 'other-team' | 'all-teams' | 'none'
+  target: QuickScoringTarget
+  scoringValue?: FlexibleScoreValue
+  distributions?: QuickScoringDistributionTemplate[]
 }
 
 export type ResetGameOptions = {
@@ -58,4 +77,3 @@ export type OnboardingConfig = {
     members: string[]
   }>
 }
-
