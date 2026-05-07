@@ -43,11 +43,12 @@
 - O PIN padrão é compartilhado por constante do sistema.
 - `demo` usa PIN padrão fixo.
 - `offline` e `online` podem sobrescrever o PIN por repositório.
+- Se não houver PIN customizado configurado, a biblioteca pode abrir sem bloqueio.
 
 ## Tema e interface
-- Temas válidos: `light`, `dark`, `cinema`, `retro`, `matrix`, `brazil`.
-- O tema padrão da aplicação passa a ser `dark`.
-- A direção visual alvo é `dark glassmorphism`, mantendo os outros temas funcionais.
+- Temas válidos: `light`, `dark`, `cinema`, `retro`, `matrix`, `brazil`, `easter`.
+- O projeto mantém um tema sazonal `easter` além dos temas base.
+- A direção visual alvo continua `dark glassmorphism`, mantendo os outros temas funcionais.
 
 ## Onboarding offline
 - O onboarding offline deve abrir automaticamente na primeira vez.

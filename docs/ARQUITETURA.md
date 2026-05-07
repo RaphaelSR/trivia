@@ -10,6 +10,12 @@
 - Firebase SDK
 - Jest + Testing Library
 
+## Documentacao oficial
+- `docs/README.md`: indice geral da documentacao do projeto.
+- `docs/FUNCIONALIDADES.md`: mapa funcional do que esta ativo, interno e planejado.
+- `docs/online/`: planejamento detalhado do modo `online`.
+- `.obsidian/` e `docs/obsidian/` sao workspace local e nao fazem parte da documentacao oficial versionada.
+
 ## Mapa atual
 - `src/app`: bootstrap, providers e rotas.
 - `src/modules/trivia`: provider/contexto legado do jogo.
@@ -35,3 +41,4 @@
 - A arquitetura já separa o modo `online` em repository próprio.
 - Enquanto a sincronização remota completa não estiver ativa, o adapter online deve permanecer isolado atrás de interface e com namespace dedicado.
 - O fluxo de UI não deve afirmar que o modo online está “fake”; ele deve refletir a capacidade real do adapter atual.
+- **Planejamento detalhado:** ver [`docs/online/ARQUITETURA-ONLINE.md`](./online/ARQUITETURA-ONLINE.md) — modelagem remota, queries, fluxo de jogo e próximos passos.
