@@ -1,4 +1,4 @@
-import { buildTurnSequence, getNextTurnState } from '@/modules/game/domain/turn-order'
+import { buildTurnSequence, getCurrentRound, getNextTurnState, getTurnLabel } from '@/modules/game/domain/turn-order'
 import type { TriviaSession, TriviaTeam } from '@/modules/trivia/types'
 
 const teams: TriviaTeam[] = [
@@ -9,6 +9,25 @@ const teams: TriviaTeam[] = [
 describe('turn-order domain', () => {
   it('builds alternating sequence without questions', () => {
     expect(buildTurnSequence(teams, 0)).toEqual(['a1', 'b1', 'a2', 'b2'])
+  })
+
+  it('calculates the current round from turn position and team count', () => {
+    expect(getCurrentRound('a1', ['a1', 'b1', 'a2', 'b2'], 2)).toBe(1)
+    expect(getCurrentRound('a2', ['a1', 'b1', 'a2', 'b2'], 2)).toBe(2)
+    expect(getCurrentRound('b2', ['a1', 'b1', 'a2', 'b2'], 2)).toBe(2)
+  })
+
+  it('falls back to round one when current turn data is incomplete', () => {
+    expect(getCurrentRound(null, ['a1'], 1)).toBe(1)
+    expect(getCurrentRound('missing', ['a1'], 1)).toBe(1)
+    expect(getCurrentRound('a1', [], 1)).toBe(1)
+    expect(getCurrentRound('a1', ['a1'], 0)).toBe(1)
+  })
+
+  it('formats the current turn label', () => {
+    expect(getTurnLabel('b1', ['a1', 'b1', 'a2'])).toBe('2 de 3')
+    expect(getTurnLabel(null, ['a1'])).toBe('Aguardando sequência')
+    expect(getTurnLabel('missing', ['a1'])).toBe('Aguardando sequência')
   })
 
   it('advances turn and preserves team alternation on wrap-around', () => {

@@ -11,6 +11,33 @@ export function buildTurnSequence(teams: TriviaTeam[], totalQuestions: number): 
   return createAlternatingTurnSequence(teams)
 }
 
+export function getCurrentRound(
+  activeParticipantId: string | null,
+  turnSequence: string[],
+  teamCount: number,
+): number {
+  if (!activeParticipantId || turnSequence.length === 0 || teamCount === 0) {
+    return 1
+  }
+
+  const currentIndex = turnSequence.indexOf(activeParticipantId)
+  if (currentIndex === -1) {
+    return 1
+  }
+
+  return Math.floor(currentIndex / teamCount) + 1
+}
+
+export function getTurnLabel(activeParticipantId: string | null, turnSequence: string[]): string {
+  const activeTurnIndex = activeParticipantId ? turnSequence.indexOf(activeParticipantId) : -1
+
+  if (activeTurnIndex === -1) {
+    return 'Aguardando sequência'
+  }
+
+  return `${activeTurnIndex + 1} de ${turnSequence.length}`
+}
+
 export function getNextTurnState(session: TriviaSession): {
   turnSequence: string[]
   activeParticipantId: string | null

@@ -38,21 +38,8 @@ import { STORAGE_KEYS } from '@/shared/constants/storage'
 import { FloatingActionBar } from '@/shared/components/FloatingActionBar'
 import { storageService } from '@/shared/services/storage.service'
 import { countAnsweredTiles, countTotalTiles } from '@/modules/game/domain/board.utils'
-
-const POINTS_TIMER_DEFAULTS: Array<{ maxPoints: number; seconds: number }> = [
-  { maxPoints: 5, seconds: 30 },
-  { maxPoints: 10, seconds: 40 },
-  { maxPoints: 15, seconds: 50 },
-  { maxPoints: 20, seconds: 60 },
-  { maxPoints: 30, seconds: 65 },
-  { maxPoints: Infinity, seconds: 80 },
-]
-
-function getDefaultTimerForPoints(points: number): number {
-  const entry = POINTS_TIMER_DEFAULTS.find(e => points <= e.maxPoints)
-  return entry?.seconds ?? 80
-}
-import { buildTurnSequence } from '@/modules/game/domain/turn-order'
+import { getDefaultTimerForPoints } from '@/modules/game/domain/timer'
+import { buildTurnSequence, getCurrentRound, getTurnLabel } from '@/modules/game/domain/turn-order'
 import { FaqPanel } from '../ui/FaqPanel'
 import { GameStatusStrip } from '../ui/GameStatusStrip'
 import { ControlShell } from '../ui/ControlShell'
@@ -68,6 +55,7 @@ import { useSessionManagement } from '../hooks/useSessionManagement'
 import { TeamsManagementModal } from '../components/TeamsManagementModal'
 import { ScoringControls } from '../components/ScoringControls'
 import { createTeamId, createParticipantId } from '../utils/teamUtils'
+import { buildParticipantScoreBreakdown, buildTeamScoreboard } from '../utils/scoreboardUtils'
 // PIN será gerenciado pelo hook usePinManagement
 
 export function ControlDashboard() {
@@ -222,39 +210,19 @@ export function ControlDashboard() {
   }, [session.board])
 
   const scoreboard = useMemo(() => {
-    // Ordena times por pontuação (maior para menor)
-    const sorted = [...orderedTeams].sort((a, b) => (b.score || 0) - (a.score || 0))
-    return sorted.map((team, index) => ({
-      team,
-      position: index + 1,
-      points: team.score || 0,
-    }))
+    return buildTeamScoreboard(orderedTeams)
   }, [orderedTeams])
 
 
-  // Calcula o turno atual (rodada completa)
-  // Uma rodada completa = todos os times jogaram uma vez (um participante de cada time)
   const currentRound = useMemo(() => {
-    if (!session.activeParticipantId || session.turnSequence.length === 0 || orderedTeams.length === 0) return 1;
-    const currentIndex = session.turnSequence.indexOf(session.activeParticipantId);
-    if (currentIndex === -1) return 1;
-    
-    // Uma rodada = número de times (um de cada time por rodada)
-    const teamsPerRound = orderedTeams.length;
-    if (teamsPerRound === 0) return 1;
-    
-    // Calcula quantas rodadas completas já passaram + 1 (rodada atual)
-    return Math.floor(currentIndex / teamsPerRound) + 1;
+    return getCurrentRound(session.activeParticipantId, session.turnSequence, orderedTeams.length)
   }, [session.activeParticipantId, session.turnSequence, orderedTeams.length])
 
   const answeredCards = useMemo(() => countAnsweredTiles(session.board), [session.board])
   const totalCards = useMemo(() => countTotalTiles(session.board), [session.board])
   const sessionStatus = getSessionStatus()
   const backendLabel = gameMode === 'online' ? 'online-cache' : gameMode === 'offline' ? 'local' : 'demo'
-  const activeTurnIndex = session.activeParticipantId ? session.turnSequence.indexOf(session.activeParticipantId) : -1
-  const currentTurnLabel = activeTurnIndex >= 0
-    ? `${activeTurnIndex + 1} de ${session.turnSequence.length}`
-    : 'Aguardando sequência'
+  const currentTurnLabel = getTurnLabel(session.activeParticipantId, session.turnSequence)
   const sessionFilms = useMemo(
     () => session.board.map((column) => ({ id: column.id, name: column.film })),
     [session.board],
@@ -1088,29 +1056,12 @@ export function ControlDashboard() {
           {scoreboard.map(({ team, position, points }) => {
             const isExpanded = scoreboardAccordions[`scoreboard-${team.id}`]
             
-            // Calcula pontuação de cada participante do time
-            const participantScores = team.members.map((memberId) => {
-              const participant = participants.find((p) => p.id === memberId)
-              // Soma todos os pontos das perguntas respondidas por este participante
-              const triviaPoints = session.board
-                .flatMap((column) => column.tiles)
-                .filter((tile) => tile.answeredBy?.participantId === memberId)
-                .reduce((sum, tile) => sum + (tile.answeredBy?.pointsAwarded || 0), 0)
-              
-              // Soma pontos de mimica
-              const mimicaPoints = (session.mimicaScores || [])
-                .filter((score) => score.participantId === memberId)
-                .reduce((sum, score) => sum + score.pointsAwarded, 0)
-              
-              const individualPoints = triviaPoints + mimicaPoints
-              
-              return {
-                participant,
-                points: individualPoints,
-                triviaPoints,
-                mimicaPoints,
-              }
-            }).filter((p) => p.participant) // Remove participantes não encontrados
+            const participantScores = buildParticipantScoreBreakdown(
+              team,
+              participants,
+              session.board,
+              session.mimicaScores,
+            )
             
             return (
               <div key={team.id} className="rounded-2xl border border-[var(--color-border)] bg-[var(--color-background)] overflow-hidden">
@@ -1146,10 +1097,10 @@ export function ControlDashboard() {
                   <div className="px-4 pb-3 pt-1 border-t border-[var(--color-border)] bg-[var(--color-surface)]">
                     <div className="space-y-2">
                       {participantScores.map(({ participant, points: individualPoints, triviaPoints, mimicaPoints }) => (
-                        <div key={participant?.id} className="flex items-center justify-between py-2 px-3 rounded-lg bg-[var(--color-background)]">
+                        <div key={participant.id} className="flex items-center justify-between py-2 px-3 rounded-lg bg-[var(--color-background)]">
                           <div className="flex-1">
                             <span className="text-xs font-medium text-[var(--color-muted)]">
-                              {participant?.name}
+                              {participant.name}
                             </span>
                             <div className="flex items-center gap-2 mt-1">
                               <span className="text-xs text-[var(--color-muted)]">
@@ -1170,7 +1121,7 @@ export function ControlDashboard() {
                               variant="ghost"
                               size="sm"
                               onClick={() => {
-                                setSelectedParticipantId(participant?.id || null)
+                                setSelectedParticipantId(participant.id)
                                 setScoreDetailOpen(true)
                               }}
                               className="text-xs"
