@@ -19,6 +19,7 @@
 - Evite novos acessos diretos a `localStorage`.
 - Mantenha compatibilidade com a API pública de `useTriviaSession` enquanto a UI estiver sendo migrada.
 - Trate `.obsidian/` e `docs/obsidian/` como workspace local, fora da documentacao oficial do projeto.
+- Só criar commits depois de validação explícita do usuário.
 
 ## Regras Essenciais
 - `GameMode`: `demo | offline | online`

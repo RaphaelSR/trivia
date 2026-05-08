@@ -72,6 +72,7 @@ export function ScoringControls({
   onClose,
 }: ScoringControlsProps) {
   const [selectedOutcome, setSelectedOutcome] = useState<ScoreOutcome | null>(null)
+  const [customModeOpen, setCustomModeOpen] = useState(false)
   const [suggestedPoints, setSuggestedPoints] = useState(basePoints)
   const [customPointsInput, setCustomPointsInput] = useState(String(basePoints))
   const [distributions, setDistributions] = useState<PointDistribution[]>([])
@@ -83,6 +84,7 @@ export function ScoringControls({
 
   useEffect(() => {
     setSelectedOutcome(null)
+    setCustomModeOpen(false)
     setSuggestedPoints(basePoints)
     setCustomPointsInput(String(basePoints))
     setDistributions([])
@@ -91,7 +93,15 @@ export function ScoringControls({
   const applyOutcome = (outcome: ScoreOutcome) => {
     setSelectedOutcome(outcome)
 
+    if (outcome === 'custom') {
+      setCustomModeOpen(true)
+      setDistributions([])
+      setSuggestedPoints(Math.max(0, Number(customPointsInput) || basePoints))
+      return
+    }
+
     if (outcome === 'none') {
+      setCustomModeOpen(false)
       setDistributions([])
       return
     }
@@ -104,15 +114,7 @@ export function ScoringControls({
           : Math.max(0, Number(customPointsInput) || 0)
 
     setSuggestedPoints(nextSuggestedPoints)
-
-    if (outcome === 'custom') {
-      if (activeTeamId) {
-        setDistributions([
-          buildDistribution(activeTeamId, nextSuggestedPoints, activeParticipantId),
-        ])
-      }
-      return
-    }
+    setCustomModeOpen(false)
 
     if (!activeTeamId) {
       setDistributions([])
@@ -175,64 +177,45 @@ export function ScoringControls({
       ? 'Escolha um resultado.'
       : selectedOutcome === 'none'
         ? 'Sem pontuação.'
-        : selectedOutcome === 'custom'
+        : customModeOpen
           ? `${distributions.length} destino(s), ${totalPoints} pts.`
           : `${activeTeam?.name ?? 'Time da vez'} recebe ${totalPoints} pts.`
 
   return (
     <div className="space-y-3">
-      <div className="rounded-xl border border-[var(--color-border)] bg-[var(--color-background)] p-3">
-        <div className="flex items-center justify-between gap-3">
-          <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-[var(--color-muted)]">
-            Resultado
-          </p>
-          <span className="text-xs font-semibold text-[var(--color-primary)]">{basePoints} pts</span>
-        </div>
-
-        <div className="mt-2 grid grid-cols-2 gap-2">
-          {OUTCOME_OPTIONS.map((option) => {
-            const isSelected = selectedOutcome === option.id
-            return (
-              <button
-                key={option.id}
-                type="button"
-                onClick={() => applyOutcome(option.id)}
-                className={`rounded-xl border px-3 py-2 text-left transition ${
-                  isSelected
-                    ? 'border-[var(--color-primary)] bg-[var(--color-primary)]/10'
-                    : 'border-[var(--color-border)] bg-[var(--color-surface)] hover:border-[var(--color-primary)]/40'
-                }`}
-              >
-                <div className="flex items-center justify-between gap-2">
-                  <span className="text-xs font-semibold text-[var(--color-text)]">{option.title}</span>
-                  {isSelected ? (
-                    <span className="h-2 w-2 rounded-full bg-[var(--color-primary)]" aria-label="Selecionado" />
-                  ) : null}
-                </div>
-                <p className="mt-0.5 text-[11px] leading-snug text-[var(--color-muted)]">{option.description}</p>
-              </button>
-            )
-          })}
-        </div>
-      </div>
-
-      {selectedOutcome === 'custom' ? (
+      {customModeOpen ? (
         <div className="rounded-xl border border-[var(--color-border)] bg-[var(--color-background)] p-3">
           <div className="grid gap-3">
             <div className="flex items-center justify-between gap-3">
               <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-[var(--color-muted)]">
-                Valor
+                Personalizar
               </p>
-              <span className="rounded-full bg-[var(--color-primary)]/10 px-2 py-1 text-xs font-bold text-[var(--color-primary)]">
-                {suggestedPoints} pts
-              </span>
+              <button
+                type="button"
+                onClick={() => {
+                  setCustomModeOpen(false)
+                  setSelectedOutcome(null)
+                  setDistributions([])
+                }}
+                className="text-xs font-semibold text-[var(--color-primary)] hover:underline"
+              >
+                Voltar
+              </button>
             </div>
 
-            <div className="mt-2 flex flex-wrap gap-2">
+            <div className="flex items-center gap-2">
+              <input
+                type="number"
+                min="0"
+                step="1"
+                value={customPointsInput}
+                onChange={(event) => handleCustomPointsChange(event.target.value)}
+                aria-label="Valor customizado"
+                className="h-9 w-20 rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)] px-2 text-sm font-semibold text-[var(--color-text)] outline-none transition focus:border-[var(--color-primary)]"
+              />
               {[
                 { label: 'Cheio', points: basePoints },
                 { label: 'Metade', points: Math.round(basePoints / 2) },
-                { label: 'Quarto', points: Math.round(basePoints / 4) },
               ].map((preset) => (
                 <button
                   key={`${preset.label}-${preset.points}`}
@@ -244,22 +227,10 @@ export function ScoringControls({
                       : 'border border-[var(--color-border)] bg-[var(--color-surface)] text-[var(--color-text)]'
                   }`}
                 >
-                  {preset.label} ({preset.points})
+                  {preset.label}
                 </button>
               ))}
             </div>
-
-            <label className="block">
-              <span className="sr-only">Valor customizado</span>
-              <input
-                type="number"
-                min="0"
-                step="1"
-                value={customPointsInput}
-                onChange={(event) => handleCustomPointsChange(event.target.value)}
-                className="w-full rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] px-3 py-2 text-sm font-semibold text-[var(--color-text)] outline-none transition focus:border-[var(--color-primary)]"
-              />
-            </label>
 
             <div>
               <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-[var(--color-muted)]">
@@ -285,7 +256,6 @@ export function ScoringControls({
                             ? buildDistribution(
                                 team.id,
                                 suggestedPoints,
-                                team.id === activeTeamId ? activeParticipantId : undefined,
                               )
                             : null,
                         )
@@ -295,7 +265,7 @@ export function ScoringControls({
                           buildDistribution(
                             team.id,
                             points,
-                            current?.participantId ?? (team.id === activeTeamId ? activeParticipantId : undefined),
+                            current?.participantId,
                           )
                         )
                       }}
@@ -311,7 +281,42 @@ export function ScoringControls({
             </div>
           </div>
         </div>
-      ) : null}
+      ) : (
+        <div className="rounded-xl border border-[var(--color-border)] bg-[var(--color-background)] p-3">
+          <div className="flex items-center justify-between gap-3">
+            <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-[var(--color-muted)]">
+              Resultado
+            </p>
+            <span className="text-xs font-semibold text-[var(--color-primary)]">{basePoints} pts</span>
+          </div>
+
+          <div className="mt-2 grid grid-cols-2 gap-2">
+            {OUTCOME_OPTIONS.map((option) => {
+              const isSelected = selectedOutcome === option.id
+              return (
+                <button
+                  key={option.id}
+                  type="button"
+                  onClick={() => applyOutcome(option.id)}
+                  className={`rounded-xl border px-3 py-2 text-left transition ${
+                    isSelected
+                      ? 'border-[var(--color-primary)] bg-[var(--color-primary)]/10'
+                      : 'border-[var(--color-border)] bg-[var(--color-surface)] hover:border-[var(--color-primary)]/40'
+                  }`}
+                >
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="text-xs font-semibold text-[var(--color-text)]">{option.title}</span>
+                    {isSelected ? (
+                      <span className="h-2 w-2 rounded-full bg-[var(--color-primary)]" aria-label="Selecionado" />
+                    ) : null}
+                  </div>
+                  <p className="mt-0.5 text-[11px] leading-snug text-[var(--color-muted)]">{option.description}</p>
+                </button>
+              )
+            })}
+          </div>
+        </div>
+      )}
 
       <div className="flex items-center gap-2">
         <Button
