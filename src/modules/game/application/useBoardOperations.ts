@@ -2,6 +2,7 @@ import { useCallback, type Dispatch, type SetStateAction } from 'react'
 import { getFilmMetadata } from '../../../data/films'
 import { slugify } from '../../../utils/slugify'
 import type { TriviaColumn, TriviaQuestionTile, TriviaSession } from '../../trivia/types'
+import { syncTurnSequenceWithBoard } from '../domain/session'
 
 export function useBoardOperations(setSession: Dispatch<SetStateAction<TriviaSession>>) {
   const updateTileState = useCallback((tileId: string, state: TriviaQuestionTile['state']) => {
@@ -45,27 +46,23 @@ export function useBoardOperations(setSession: Dispatch<SetStateAction<TriviaSes
       tiles: [],
     }
 
-    setSession((prev) => ({
-      ...prev,
-      board: [...prev.board, newColumn],
-    }))
+    setSession((prev) => syncTurnSequenceWithBoard(prev, [...prev.board, newColumn]))
 
     return columnId
   }, [setSession])
 
   const removeFilmColumn = useCallback((columnId: string) => {
-    setSession((prev) => ({
-      ...prev,
-      board: prev.board.filter((column) => column.id !== columnId),
-    }))
+    setSession((prev) => syncTurnSequenceWithBoard(
+      prev,
+      prev.board.filter((column) => column.id !== columnId),
+    ))
   }, [setSession])
 
   const addQuestionTile = useCallback((columnId: string, defaults: Partial<TriviaQuestionTile> = {}) => {
     const tileId = `${columnId}-tile-${Date.now()}`
 
-    setSession((prev) => ({
-      ...prev,
-      board: prev.board.map((column) => {
+    setSession((prev) => {
+      const nextBoard = prev.board.map((column) => {
         if (column.id !== columnId) return column
 
         const metadata = column.theme ?? getFilmMetadata(column.film).theme
@@ -83,21 +80,24 @@ export function useBoardOperations(setSession: Dispatch<SetStateAction<TriviaSes
           theme: column.theme ?? metadata,
           tiles: [...column.tiles, newTile].sort((a, b) => a.points - b.points),
         }
-      }),
-    }))
+      })
+
+      return syncTurnSequenceWithBoard(prev, nextBoard)
+    })
 
     return tileId
   }, [setSession])
 
   const removeQuestionTile = useCallback((columnId: string, tileId: string) => {
-    setSession((prev) => ({
-      ...prev,
-      board: prev.board.map((column) =>
+    setSession((prev) => {
+      const nextBoard = prev.board.map((column) =>
         column.id === columnId
           ? { ...column, tiles: column.tiles.filter((tile) => tile.id !== tileId) }
           : column,
-      ),
-    }))
+      )
+
+      return syncTurnSequenceWithBoard(prev, nextBoard)
+    })
   }, [setSession])
 
   return {

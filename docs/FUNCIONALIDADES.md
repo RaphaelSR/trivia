@@ -15,7 +15,7 @@ Mapa funcional do projeto com foco no que existe hoje, no que esta em migracao e
 - `ativo`: nao existe rota `/display`
 
 ## Modos de jogo
-- `ativo`: `demo` inicia com sessao pronta para demonstracao
+- `ativo`: `demo` inicia com sessao pronta para demonstracao e permite variar escala de times e perguntas
 - `ativo`: `offline` permite sessao local persistida no navegador
 - `interno`: `online` ja usa camada dedicada de repository e PIN, mas a experiencia completa de sincronizacao remota ainda esta em evolucao
 
@@ -23,7 +23,7 @@ Mapa funcional do projeto com foco no que existe hoje, no que esta em migracao e
 - `ativo`: configuracao de times e participantes
 - `ativo`: criacao, edicao e remocao de colunas de filmes
 - `ativo`: criacao, edicao e remocao de tiles de perguntas
-- `ativo`: exibicao de status da sessao, rodada atual e progresso do board
+- `ativo`: exibicao de status da sessao, turno atual e progresso do board
 - `ativo`: acoes rapidas para biblioteca, filmes, tema, ranking, reset e gerenciamento de sessao
 
 ## Board e progresso do jogo
@@ -36,6 +36,7 @@ Mapa funcional do projeto com foco no que existe hoje, no que esta em migracao e
 - `ativo`: pontuacao agregada por time
 - `ativo`: participante ativo e proximo participante derivados da sequencia de turnos
 - `ativo`: sequencia simples ou balanceada conforme a quantidade de perguntas
+- `ativo`: preview da ordem da partida quando a sessao ja tem times validos e perguntas no board
 - `ativo`: regeneracao manual da sequencia para evitar repeticao ruim entre times quando possivel
 
 ## Pontuacao

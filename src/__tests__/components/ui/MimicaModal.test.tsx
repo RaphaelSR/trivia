@@ -97,7 +97,7 @@ describe('MimicaModal', () => {
     expect(mockOnClose).not.toHaveBeenCalled()
   })
 
-  it('deve incrementar roundNumber quando volta ao primeiro participante', async () => {
+  it('deve incrementar roundNumber quando retorna ao primeiro participante', async () => {
     render(
       <MimicaModal
         isOpen={true}
@@ -124,7 +124,7 @@ describe('MimicaModal', () => {
     })
   })
 
-  it('deve mostrar contador de turnos e voltas', () => {
+  it('deve mostrar contador de turnos e rodadas', () => {
     render(
       <MimicaModal
         isOpen={true}
@@ -138,7 +138,7 @@ describe('MimicaModal', () => {
       />
     )
 
-    expect(screen.getByText(/Volta 1/i)).toBeInTheDocument()
+    expect(screen.getByText(/Rodada 1/i)).toBeInTheDocument()
     expect(screen.getByText(/Turno 1/i)).toBeInTheDocument()
   })
 

@@ -12,8 +12,8 @@ type TriviaSessionProviderProps = {
 }
 
 export function TriviaSessionProvider({ children }: TriviaSessionProviderProps) {
-  const { gameMode } = useGameMode()
-  const { createInitialSession } = useSessionInitialization(gameMode)
+  const { gameMode, demoConfig } = useGameMode()
+  const { createInitialSession } = useSessionInitialization(gameMode, demoConfig)
   const [session, setSession] = useState<TriviaSession>(() => createInitialSession())
 
   useEffect(() => {

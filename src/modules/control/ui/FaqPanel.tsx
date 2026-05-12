@@ -43,7 +43,12 @@ const faqSections: FaqSection[] = [
       {
         question: 'Como a rodada funciona no painel?',
         answer:
-          'O host seleciona uma carta do board, conduz o cronometro, revela a resposta quando fizer sentido e confirma a distribuicao de pontos no final da pergunta.',
+          'O host seleciona uma carta do board, conduz o cronometro, revela a resposta quando fizer sentido e confirma a distribuicao de pontos no final da pergunta. A ordem real dos turnos vem da sequencia prevista da partida.',
+      },
+      {
+        question: 'Quando uma rodada fecha?',
+        answer:
+          'A rodada fecha quando todos os participantes aparecerem pelo menos uma vez. Com times desiguais, times menores podem reiniciar a fila antes dos maiores completarem a rodada.',
       },
       {
         question: 'O que acontece quando uma pergunta eh anulada?',
@@ -97,7 +102,7 @@ const faqSections: FaqSection[] = [
       {
         question: 'A mimica usa a mesma ordem de turnos?',
         answer:
-          'Sim. O modal mostra a ordem atual, a volta e o proximo participante, mantendo a alternancia entre equipes.',
+          'Sim. O modal mostra a ordem atual, a rodada e o proximo participante, mantendo a alternancia entre equipes.',
       },
     ],
   },
@@ -110,6 +115,11 @@ const faqSections: FaqSection[] = [
         question: 'Como os turnos sao montados?',
         answer:
           'Com perguntas no board, a sequencia eh balanceada para alternar equipes ao longo da partida. Sem perguntas, a alternancia usa a ordem normal dos participantes por time.',
+      },
+      {
+        question: 'Consigo prever quem joga em cada rodada?',
+        answer:
+          'Sim. Quando a sessao ja tem times validos e perguntas no board, voce pode abrir a previa completa da ordem. Ela usa a mesma sequencia real do jogo e agrupa os turnos por rodada.',
       },
       {
         question: 'Posso reorganizar os times depois?',

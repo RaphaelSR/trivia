@@ -6,9 +6,9 @@ type TurnDisplayProps = {
   activeTeam: TriviaTeam | null
   nextParticipant: TriviaParticipant | null
   nextParticipantTeamName: string | null
-  currentRound: number
   turnSequence: string[]
   activeParticipantId: string | null
+  activeTurnIndex: number
   gameMode: 'demo' | 'offline' | 'online'
   orderedTeamsLength: number
 }
@@ -21,9 +21,9 @@ export function TurnDisplay({
   activeTeam,
   nextParticipant,
   nextParticipantTeamName,
-  currentRound,
   turnSequence,
   activeParticipantId,
+  activeTurnIndex,
   gameMode,
   orderedTeamsLength,
 }: TurnDisplayProps) {
@@ -43,20 +43,11 @@ export function TurnDisplay({
 
       <div className="ml-auto flex flex-col gap-2">
         {orderedTeamsLength > 0 && (
-          <div className="inline-flex items-center justify-center gap-2 rounded-full border border-[var(--color-primary)]/30 bg-[var(--color-primary)]/10 px-4 py-1.5 text-xs font-bold uppercase tracking-[0.3em] text-[var(--color-primary)] shadow-sm">
-            <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-            </svg>
-            Rodada {currentRound}
-          </div>
-        )}
-
-        {orderedTeamsLength > 0 && (
           <div className="inline-flex items-center justify-center gap-2 rounded-full border border-[var(--color-secondary)]/30 bg-[var(--color-secondary)]/10 px-4 py-1.5 text-xs font-semibold uppercase tracking-[0.3em] text-[var(--color-secondary)]">
             <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
             </svg>
-            Turno {turnSequence.indexOf(activeParticipantId || '') + 1} de {turnSequence.length}
+            Turno {(activeParticipantId ? activeTurnIndex : -1) + 1} de {turnSequence.length}
           </div>
         )}
 
@@ -76,4 +67,3 @@ export function TurnDisplay({
     </>
   )
 }
-

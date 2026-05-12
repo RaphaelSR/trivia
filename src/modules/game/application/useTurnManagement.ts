@@ -29,10 +29,10 @@ export function useTurnManagement(
 
   const nextParticipant = useMemo(() => {
     if (!session.turnSequence.length) return null
-    const currentIndex = session.activeParticipantId ? session.turnSequence.indexOf(session.activeParticipantId) : -1
+    const currentIndex = session.activeTurnIndex >= 0 ? session.activeTurnIndex : -1
     const nextIndex = currentIndex === -1 ? 0 : (currentIndex + 1) % session.turnSequence.length
     return participantsById.get(session.turnSequence[nextIndex]) ?? null
-  }, [participantsById, session.activeParticipantId, session.turnSequence])
+  }, [participantsById, session.activeTurnIndex, session.turnSequence])
 
   const nextTeam = useMemo(() => {
     if (!nextParticipant) return null

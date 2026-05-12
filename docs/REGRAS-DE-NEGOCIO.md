@@ -1,7 +1,7 @@
 # Regras de Negocio
 
 ## Modos de jogo
-- `demo`: inicia com dados de exemplo prontos para demonstração.
+- `demo`: inicia com dados de exemplo prontos para demonstração e aceita presets de times, jogadores por time e quantidade de perguntas.
 - `offline`: inicia vazio e persiste a sessão localmente.
 - `online`: usa o mesmo fluxo de jogo, mas com repositório separado para sessão e PIN, preparado para backend/Firebase.
 
@@ -24,6 +24,9 @@
 ## Turnos
 - Sem perguntas, a sequência usa alternância simples entre times.
 - Com perguntas, a sequência usa alternância balanceada pelo total de tiles.
+- Uma rodada fecha quando todos os participantes ativos aparecerem ao menos uma vez.
+- Em times desiguais, times menores podem repetir participantes antes de times maiores completarem a rodada.
+- A preview de ordem deve ser derivada da mesma sequência real usada pelo jogo.
 - Ao dar wrap-around na sequência, ela pode ser regenerada para evitar time repetido entre o fim e o novo começo.
 
 ## Pontuacao de trivia

@@ -11,7 +11,6 @@ interface ScoreboardItem {
 interface GameStatusStripProps {
   activeParticipant: TriviaParticipant | null
   activeTeam: TriviaTeam | null
-  currentRound: number
   currentTurnLabel: string
   scoreboard: ScoreboardItem[]
 }
@@ -19,7 +18,6 @@ interface GameStatusStripProps {
 export function GameStatusStrip({
   activeParticipant,
   activeTeam,
-  currentRound,
   currentTurnLabel,
   scoreboard,
 }: GameStatusStripProps) {
@@ -47,7 +45,7 @@ export function GameStatusStrip({
 
       {/* Rodada / Turno */}
       <span className="shrink-0 font-mono text-[var(--color-muted)]">
-        R{currentRound} · {currentTurnLabel}
+        Turno {currentTurnLabel}
       </span>
 
       {scoreboard.length > 0 ? (

@@ -2,6 +2,7 @@ import { useState, useMemo, useEffect } from 'react'
 import { toast } from 'sonner'
 import type { TriviaTeam, TriviaParticipant, TriviaColumn } from '@/modules/trivia/types'
 import type { TeamDraft } from '../types/control.types'
+import { countTotalTiles } from '@/modules/game/domain/board.utils'
 import {
   addTeamDraft,
   removeTeamDraft,
@@ -54,6 +55,13 @@ export function useTeamManagement(
   }, [teams, participants])
 
   const canSave = useMemo(() => canSaveTeams(teamDrafts), [teamDrafts])
+  const previewTeams = useMemo(() => convertDraftsToTeams(teamDrafts, teams), [teamDrafts, teams])
+  const previewParticipants = useMemo(() => convertDraftsToParticipants(teamDrafts), [teamDrafts])
+  const previewTurnSequence = useMemo(() => {
+    const sortedTeams = [...previewTeams].sort((a, b) => a.order - b.order)
+    return generateTurnSequence(sortedTeams, board as TriviaColumn[])
+  }, [board, previewTeams])
+  const previewQuestionCount = useMemo(() => countTotalTiles(board as TriviaColumn[]), [board])
 
   const addTeam = () => {
     setTeamDrafts((prev) => addTeamDraft(prev))
@@ -116,6 +124,9 @@ export function useTeamManagement(
     updateParticipant,
     moveParticipant,
     saveTeams,
+    previewTeams,
+    previewParticipants,
+    previewTurnSequence,
+    previewQuestionCount,
   }
 }
-

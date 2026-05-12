@@ -39,7 +39,7 @@ import { FloatingActionBar } from '@/shared/components/FloatingActionBar'
 import { storageService } from '@/shared/services/storage.service'
 import { countAnsweredTiles, countTotalTiles } from '@/modules/game/domain/board.utils'
 import { getDefaultTimerForPoints } from '@/modules/game/domain/timer'
-import { buildTurnSequence, getCurrentRound, getTurnLabel } from '@/modules/game/domain/turn-order'
+import { buildTurnSequence, getTurnLabel } from '@/modules/game/domain/turn-order'
 import { FaqPanel } from '../ui/FaqPanel'
 import { GameStatusStrip } from '../ui/GameStatusStrip'
 import { ControlShell } from '../ui/ControlShell'
@@ -54,8 +54,10 @@ import { useTeamManagement } from '../hooks/useTeamManagement'
 import { useSessionManagement } from '../hooks/useSessionManagement'
 import { TeamsManagementModal } from '../components/TeamsManagementModal'
 import { ScoringControls } from '../components/ScoringControls'
+import { TurnOrderPreview } from '../components/TurnOrderPreview'
 import { createTeamId, createParticipantId } from '../utils/teamUtils'
 import { buildParticipantScoreBreakdown, buildTeamScoreboard } from '../utils/scoreboardUtils'
+import type { OnboardingConfig } from '../types/control.types'
 // PIN será gerenciado pelo hook usePinManagement
 
 export function ControlDashboard() {
@@ -156,6 +158,7 @@ export function ControlDashboard() {
 
   const [timerOverrides, setTimerOverrides] = useState<Record<number, number>>({})
   const [questionRevealed, setQuestionRevealed] = useState(false)
+  const [turnPreviewOpen, setTurnPreviewOpen] = useState(false)
 
   const getTimerForPoints = (points: number) => {
     if (timerOverrides[points] !== undefined) return timerOverrides[points]
@@ -213,19 +216,26 @@ export function ControlDashboard() {
     return buildTeamScoreboard(orderedTeams)
   }, [orderedTeams])
 
-
-  const currentRound = useMemo(() => {
-    return getCurrentRound(session.activeParticipantId, session.turnSequence, orderedTeams.length)
-  }, [session.activeParticipantId, session.turnSequence, orderedTeams.length])
-
   const answeredCards = useMemo(() => countAnsweredTiles(session.board), [session.board])
   const totalCards = useMemo(() => countTotalTiles(session.board), [session.board])
   const sessionStatus = getSessionStatus()
   const backendLabel = gameMode === 'online' ? 'online-cache' : gameMode === 'offline' ? 'local' : 'demo'
-  const currentTurnLabel = getTurnLabel(session.activeParticipantId, session.turnSequence)
+  const currentTurnLabel = getTurnLabel(
+    session.activeParticipantId,
+    session.turnSequence,
+    session.activeTurnIndex,
+  )
   const sessionFilms = useMemo(
     () => session.board.map((column) => ({ id: column.id, name: column.film })),
     [session.board],
+  )
+  const canOpenTurnPreview = useMemo(
+    () =>
+      totalCards > 0 &&
+      session.turnSequence.length > 0 &&
+      orderedTeams.length >= 2 &&
+      orderedTeams.every((team) => team.members.length > 0),
+    [orderedTeams, session.turnSequence.length, totalCards],
   )
 
 
@@ -433,28 +443,10 @@ export function ControlDashboard() {
 
   const handleResetGame = sessionManagement.resetGame
 
-  const handleOfflineOnboardingComplete = (config: { 
-    theme: string; 
-    pin: string; 
-    sessionTitle: string; 
-    sessionDate: string;
-    customFilms: Array<{
-      name: string;
-      year?: number;
-      genre?: string;
-      streaming?: string;
-      link?: string;
-      notes?: string;
-    }>;
-    teams: Array<{
-      name: string;
-      color: string;
-      members: string[];
-    }>;
-  }) => {
+  const handleOfflineOnboardingComplete = (config: OnboardingConfig) => {
     try {
       // Aplica o tema selecionado
-      setTheme(config.theme as "light" | "dark" | "cinema" | "retro" | "matrix" | "brazil")
+      setTheme(config.theme as "light" | "dark" | "cinema" | "retro" | "matrix" | "brazil" | "easter")
       
       // Salva PIN apenas se o host quiser usar protecao
       if (config.pin.trim()) {
@@ -773,6 +765,16 @@ export function ControlDashboard() {
           }}
         />
         <SidebarNavItem
+          icon={<ClipboardList size={18} />}
+          title="Preview da ordem"
+          description="Mostra a ordem completa da partida quando a sessão já tem times válidos e perguntas no board."
+          disabled={!canOpenTurnPreview}
+          onClick={() => {
+            setTurnPreviewOpen(true)
+            handleCloseMobileSidebar()
+          }}
+        />
+        <SidebarNavItem
           icon={<UserPlus size={18} />}
           title="Detalhes por participante"
           description="Abre o detalhe do jogador atual ou leva ao ranking se ninguém estiver ativo."
@@ -808,7 +810,6 @@ export function ControlDashboard() {
         <GameStatusStrip
           activeParticipant={activeParticipant}
           activeTeam={activeTeam}
-          currentRound={currentRound}
           currentTurnLabel={currentTurnLabel}
           scoreboard={scoreboard}
         />
@@ -1156,6 +1157,10 @@ export function ControlDashboard() {
         onRemoveParticipant={teamManagement.removeParticipant}
         onUpdateParticipant={teamManagement.updateParticipant}
         onMoveParticipant={teamManagement.moveParticipant}
+        previewTeams={teamManagement.previewTeams}
+        previewParticipants={teamManagement.previewParticipants}
+        previewTurnSequence={teamManagement.previewTurnSequence}
+        previewQuestionCount={teamManagement.previewQuestionCount}
         onSave={() => {
           teamManagement.saveTeams()
           setTeamsModalOpen(false)
@@ -1415,6 +1420,22 @@ export function ControlDashboard() {
           setActivePanel('board')
         }}
       />
+
+      <Modal
+        isOpen={turnPreviewOpen}
+        title="Preview completo da partida"
+        description="Use esta checagem para revisar a ordem inteira depois que a sessão já tiver times e perguntas reais."
+        onClose={() => setTurnPreviewOpen(false)}
+        size="xl"
+      >
+        <TurnOrderPreview
+          teams={orderedTeams}
+          participants={participants}
+          turnSequenceLength={session.turnSequence.length}
+          title="Ordem prevista da sessão atual"
+          description="A rodada fecha quando todos os participantes aparecerem pelo menos uma vez."
+        />
+      </Modal>
 
       <SessionManager
         isOpen={sessionManagerOpen}

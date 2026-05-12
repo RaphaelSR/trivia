@@ -29,6 +29,7 @@ describe('LocalSessionRepository', () => {
       board: [],
       activeTeamId: '',
       activeParticipantId: null,
+      activeTurnIndex: 0,
       turnSequence: [],
       mimicaScores: [],
     }

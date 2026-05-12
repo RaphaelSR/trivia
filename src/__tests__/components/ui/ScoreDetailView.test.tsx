@@ -175,8 +175,8 @@ describe('ScoreDetailView', () => {
     const mimicaTab = screen.getByText(/Mímica \(2\)/i)
     fireEvent.click(mimicaTab)
 
-    expect(screen.getByText(/Volta 1 · Turno 1/i)).toBeInTheDocument()
-    expect(screen.getByText(/Volta 1 · Turno 2/i)).toBeInTheDocument()
+    expect(screen.getByText(/Rodada 1 · Turno 1/i)).toBeInTheDocument()
+    expect(screen.getByText(/Rodada 1 · Turno 2/i)).toBeInTheDocument()
     expect(screen.getByText(/50 pts/i)).toBeInTheDocument()
     expect(screen.getByText(/25 pts/i)).toBeInTheDocument()
   })
@@ -325,4 +325,3 @@ describe('ScoreDetailView', () => {
     expect(screen.getByText(/→ Time 2/i)).toBeInTheDocument()
   })
 })
-

@@ -185,7 +185,7 @@ export function MimicaModal({
         setRoundNumber(prev => prev + 1)
         onAdvanceTurn()
         if (alternateParticipants[0]) {
-          toast.success(`Volta ${roundNumber + 1} iniciada! Próximo turno: ${alternateParticipants[0].name}`)
+          toast.success(`Rodada ${roundNumber + 1} iniciada! Próximo turno: ${alternateParticipants[0].name}`)
         }
       }
     }, 500)
@@ -221,7 +221,7 @@ export function MimicaModal({
                 {activeParticipant?.name ?? 'Aguardando'}
               </p>
               <p className="text-xs text-[var(--color-muted)]">
-                {activeTeam?.name} · Volta {roundNumber} · Turno {turnNumber}
+                {activeTeam?.name} · Rodada {roundNumber} · Turno {turnNumber}
               </p>
             </div>
           </div>

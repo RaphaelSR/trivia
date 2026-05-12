@@ -25,6 +25,7 @@ npm run dev
 
 ## Status real
 - Fluxo principal ativo em `/` e `/control?mode=...`.
+- O modo `demo` pode simular sessao pequena, media ou grande sem precisar montar tudo manualmente.
 - Modo `offline` persiste sessoes localmente.
 - Modo `online` ja usa camada dedicada de repositorio e pode evoluir para sincronizacao remota sem acoplar a UI.
 - A interface esta em migracao para uma experiencia `dark glassmorphism` mais proxima de dashboard jogavel.

@@ -85,6 +85,7 @@ export type TriviaSession = {
   board: TriviaColumn[];
   activeTeamId: string;
   activeParticipantId: string | null;
+  activeTurnIndex: number;
   turnSequence: string[];
   mimicaScores?: MimicaScore[];
 };
