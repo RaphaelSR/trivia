@@ -16,12 +16,16 @@ dist-ssr
 .vscode/*
 !.vscode/extensions.json
 .idea
+.obsidian/
 .DS_Store
 *.suo
 *.ntvs*
 *.njsproj
 *.sln
 *.sw?
+
+# Local knowledge workspace
+docs/obsidian/
 
 # Templates directory (now in docs/)
 templates/

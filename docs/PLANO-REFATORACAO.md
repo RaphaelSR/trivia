@@ -19,6 +19,7 @@
 - Provider e hooks começam a consumir contratos novos sem quebrar a API publica.
 
 ## Proximas frentes
+- Implementar fundacao Supabase para o modo `online`.
 - Reduzir `ControlDashboard.tsx` com `useReducer`.
 - Mover componentes de dominio de `components/ui` para modulos adequados.
 - Completar redesign do dashboard principal.

@@ -9,7 +9,8 @@
 1. `docs/REGRAS-DE-NEGOCIO.md`
 2. `docs/ARQUITETURA.md`
 3. `docs/PLANO-REFATORACAO.md`
-4. `README.md`
+4. `docs/FUNCIONALIDADES.md`
+5. `README.md`
 
 ## Como Trabalhar
 - Preserve as regras de negócio antes de mexer em layout.
@@ -17,10 +18,12 @@
 - Toda persistência deve passar por `src/shared/services` ou `src/modules/game/infrastructure`.
 - Evite novos acessos diretos a `localStorage`.
 - Mantenha compatibilidade com a API pública de `useTriviaSession` enquanto a UI estiver sendo migrada.
+- Trate `.obsidian/` e `docs/obsidian/` como workspace local, fora da documentacao oficial do projeto.
+- Só criar commits depois de validação explícita do usuário.
 
 ## Regras Essenciais
 - `GameMode`: `demo | offline | online`
-- `ThemeMode`: `light | dark | cinema | retro | matrix | brazil`
+- `ThemeMode`: `light | dark | cinema | retro | matrix | brazil | easter`
 - `TileState`: `available | active | answered`
 - `MimicaScoringMode`: `full-current | half-current | steal | everyone | void`
 - Jogo termina quando todas as tiles estão `answered`.

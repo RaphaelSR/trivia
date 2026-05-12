@@ -1,9 +1,9 @@
 # Regras de Negocio
 
 ## Modos de jogo
-- `demo`: inicia com dados de exemplo prontos para demonstração.
+- `demo`: inicia com dados de exemplo prontos para demonstração e aceita presets de times, jogadores por time e quantidade de perguntas.
 - `offline`: inicia vazio e persiste a sessão localmente.
-- `online`: usa o mesmo fluxo de jogo, mas com repositório separado para sessão e PIN, preparado para backend/Firebase.
+- `online`: usa o mesmo fluxo de jogo, mas com repositório separado para sessão e PIN, preparado para Supabase.
 
 ## Sessao
 - Uma sessão contém: metadados, tema, times, participantes, board, turno ativo e histórico de mímica.
@@ -24,6 +24,9 @@
 ## Turnos
 - Sem perguntas, a sequência usa alternância simples entre times.
 - Com perguntas, a sequência usa alternância balanceada pelo total de tiles.
+- Uma rodada fecha quando todos os participantes ativos aparecerem ao menos uma vez.
+- Em times desiguais, times menores podem repetir participantes antes de times maiores completarem a rodada.
+- A preview de ordem deve ser derivada da mesma sequência real usada pelo jogo.
 - Ao dar wrap-around na sequência, ela pode ser regenerada para evitar time repetido entre o fim e o novo começo.
 
 ## Pontuacao de trivia
@@ -43,11 +46,12 @@
 - O PIN padrão é compartilhado por constante do sistema.
 - `demo` usa PIN padrão fixo.
 - `offline` e `online` podem sobrescrever o PIN por repositório.
+- Se não houver PIN customizado configurado, a biblioteca pode abrir sem bloqueio.
 
 ## Tema e interface
-- Temas válidos: `light`, `dark`, `cinema`, `retro`, `matrix`, `brazil`.
-- O tema padrão da aplicação passa a ser `dark`.
-- A direção visual alvo é `dark glassmorphism`, mantendo os outros temas funcionais.
+- Temas válidos: `light`, `dark`, `cinema`, `retro`, `matrix`, `brazil`, `easter`.
+- O projeto mantém um tema sazonal `easter` além dos temas base.
+- A direção visual alvo continua `dark glassmorphism`, mantendo os outros temas funcionais.
 
 ## Onboarding offline
 - O onboarding offline deve abrir automaticamente na primeira vez.

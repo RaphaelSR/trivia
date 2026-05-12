@@ -3,32 +3,13 @@ import { Button } from "./Button";
 import { Modal } from "./Modal";
 import { Palette, Lock, Users, Check, CheckCircle, Edit, Film, Plus, Trash2, X, Info } from "lucide-react";
 import { useThemeMode } from "../../app/providers/useThemeMode";
+import type { OnboardingConfig } from "@/modules/control/types/control.types";
 
 interface OfflineOnboardingModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onComplete: (config: OfflineConfig) => void;
+  onComplete: (config: OnboardingConfig) => void;
   onSkip?: () => void;
-}
-
-interface OfflineConfig {
-  theme: string;
-  pin: string;
-  sessionTitle: string;
-  sessionDate: string;
-  customFilms: Array<{
-    name: string;
-    year?: number;
-    genre?: string;
-    streaming?: string;
-    link?: string;
-    notes?: string;
-  }>;
-  teams: Array<{
-    name: string;
-    color: string;
-    members: string[];
-  }>;
 }
 
 const themeOptions = [
@@ -63,7 +44,7 @@ export function OfflineOnboardingModal({
 }: OfflineOnboardingModalProps) {
   const { setTheme } = useThemeMode();
   const [currentStep, setCurrentStep] = useState(1);
-  const [config, setConfig] = useState<OfflineConfig>({
+  const [config, setConfig] = useState<OnboardingConfig>({
     theme: "dark",
     pin: "",
     sessionTitle: "Nova Sessão Local",
@@ -711,6 +692,7 @@ export function OfflineOnboardingModal({
           <Plus className="w-4 h-4 mr-2" />
           Adicionar Time
         </Button>
+
       </div>
     </div>
   );

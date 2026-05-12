@@ -81,7 +81,7 @@ describe('ControlDashboard - Mimica Integration', () => {
     })
   })
 
-  it('deve testar múltiplas voltas na mimica', async () => {
+  it('deve testar múltiplas rodadas na mimica', async () => {
     const { result } = renderHook(() => useTriviaSession(), { wrapper })
 
     await act(async () => {
@@ -179,4 +179,3 @@ describe('ControlDashboard - Mimica Integration', () => {
     expect(result.current.orderedTeams[0].score).toBe(60)
   })
 })
-

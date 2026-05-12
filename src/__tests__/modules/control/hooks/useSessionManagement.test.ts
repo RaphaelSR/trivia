@@ -109,6 +109,7 @@ const mockSession: TriviaSession = {
   turnSequence: ['participant-1', 'participant-3', 'participant-2'],
   activeTeamId: 'team-1',
   activeParticipantId: 'participant-1',
+  activeTurnIndex: 0,
 }
 
 describe('useSessionManagement', () => {
@@ -232,6 +233,7 @@ describe('useSessionManagement', () => {
           turnSequence: ['participant-1', 'participant-3', 'participant-2'],
           activeTeamId: 'team-1',
           activeParticipantId: 'participant-1',
+          activeTurnIndex: 0,
         })
       )
     })
@@ -330,4 +332,3 @@ describe('useSessionManagement', () => {
     })
   })
 })
-

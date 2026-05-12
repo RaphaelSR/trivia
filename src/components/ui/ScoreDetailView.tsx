@@ -242,7 +242,7 @@ export function ScoreDetailView({
                           {score.turnNumber !== undefined && (
                             <div className="text-xs text-[var(--color-muted)]">
                               Turno {score.turnNumber}
-                              {score.roundNumber !== undefined && ` (Volta ${score.roundNumber})`}
+                              {score.roundNumber !== undefined && ` (Rodada ${score.roundNumber})`}
                             </div>
                           )}
                         </div>
@@ -327,7 +327,7 @@ export function ScoreDetailView({
                               )}
                             </div>
                             <p className="text-sm font-medium text-[var(--color-text)]">
-                              Volta {score.roundNumber} · Turno {score.turnNumber}
+                              Rodada {score.roundNumber} · Turno {score.turnNumber}
                             </p>
                           </div>
                           <div className="text-right ml-4">
@@ -355,4 +355,3 @@ export function ScoreDetailView({
     </Modal>
   )
 }
-

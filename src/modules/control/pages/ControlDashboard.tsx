@@ -38,21 +38,8 @@ import { STORAGE_KEYS } from '@/shared/constants/storage'
 import { FloatingActionBar } from '@/shared/components/FloatingActionBar'
 import { storageService } from '@/shared/services/storage.service'
 import { countAnsweredTiles, countTotalTiles } from '@/modules/game/domain/board.utils'
-
-const POINTS_TIMER_DEFAULTS: Array<{ maxPoints: number; seconds: number }> = [
-  { maxPoints: 5, seconds: 30 },
-  { maxPoints: 10, seconds: 40 },
-  { maxPoints: 15, seconds: 50 },
-  { maxPoints: 20, seconds: 60 },
-  { maxPoints: 30, seconds: 65 },
-  { maxPoints: Infinity, seconds: 80 },
-]
-
-function getDefaultTimerForPoints(points: number): number {
-  const entry = POINTS_TIMER_DEFAULTS.find(e => points <= e.maxPoints)
-  return entry?.seconds ?? 80
-}
-import { buildTurnSequence } from '@/modules/game/domain/turn-order'
+import { getDefaultTimerForPoints } from '@/modules/game/domain/timer'
+import { buildTurnSequence, getTurnLabel } from '@/modules/game/domain/turn-order'
 import { FaqPanel } from '../ui/FaqPanel'
 import { GameStatusStrip } from '../ui/GameStatusStrip'
 import { ControlShell } from '../ui/ControlShell'
@@ -67,7 +54,10 @@ import { useTeamManagement } from '../hooks/useTeamManagement'
 import { useSessionManagement } from '../hooks/useSessionManagement'
 import { TeamsManagementModal } from '../components/TeamsManagementModal'
 import { ScoringControls } from '../components/ScoringControls'
+import { TurnOrderPreview } from '../components/TurnOrderPreview'
 import { createTeamId, createParticipantId } from '../utils/teamUtils'
+import { buildParticipantScoreBreakdown, buildTeamScoreboard } from '../utils/scoreboardUtils'
+import type { OnboardingConfig } from '../types/control.types'
 // PIN será gerenciado pelo hook usePinManagement
 
 export function ControlDashboard() {
@@ -168,6 +158,7 @@ export function ControlDashboard() {
 
   const [timerOverrides, setTimerOverrides] = useState<Record<number, number>>({})
   const [questionRevealed, setQuestionRevealed] = useState(false)
+  const [turnPreviewOpen, setTurnPreviewOpen] = useState(false)
 
   const getTimerForPoints = (points: number) => {
     if (timerOverrides[points] !== undefined) return timerOverrides[points]
@@ -222,42 +213,29 @@ export function ControlDashboard() {
   }, [session.board])
 
   const scoreboard = useMemo(() => {
-    // Ordena times por pontuação (maior para menor)
-    const sorted = [...orderedTeams].sort((a, b) => (b.score || 0) - (a.score || 0))
-    return sorted.map((team, index) => ({
-      team,
-      position: index + 1,
-      points: team.score || 0,
-    }))
+    return buildTeamScoreboard(orderedTeams)
   }, [orderedTeams])
-
-
-  // Calcula o turno atual (rodada completa)
-  // Uma rodada completa = todos os times jogaram uma vez (um participante de cada time)
-  const currentRound = useMemo(() => {
-    if (!session.activeParticipantId || session.turnSequence.length === 0 || orderedTeams.length === 0) return 1;
-    const currentIndex = session.turnSequence.indexOf(session.activeParticipantId);
-    if (currentIndex === -1) return 1;
-    
-    // Uma rodada = número de times (um de cada time por rodada)
-    const teamsPerRound = orderedTeams.length;
-    if (teamsPerRound === 0) return 1;
-    
-    // Calcula quantas rodadas completas já passaram + 1 (rodada atual)
-    return Math.floor(currentIndex / teamsPerRound) + 1;
-  }, [session.activeParticipantId, session.turnSequence, orderedTeams.length])
 
   const answeredCards = useMemo(() => countAnsweredTiles(session.board), [session.board])
   const totalCards = useMemo(() => countTotalTiles(session.board), [session.board])
   const sessionStatus = getSessionStatus()
   const backendLabel = gameMode === 'online' ? 'online-cache' : gameMode === 'offline' ? 'local' : 'demo'
-  const activeTurnIndex = session.activeParticipantId ? session.turnSequence.indexOf(session.activeParticipantId) : -1
-  const currentTurnLabel = activeTurnIndex >= 0
-    ? `${activeTurnIndex + 1} de ${session.turnSequence.length}`
-    : 'Aguardando sequência'
+  const currentTurnLabel = getTurnLabel(
+    session.activeParticipantId,
+    session.turnSequence,
+    session.activeTurnIndex,
+  )
   const sessionFilms = useMemo(
     () => session.board.map((column) => ({ id: column.id, name: column.film })),
     [session.board],
+  )
+  const canOpenTurnPreview = useMemo(
+    () =>
+      totalCards > 0 &&
+      session.turnSequence.length > 0 &&
+      orderedTeams.length >= 2 &&
+      orderedTeams.every((team) => team.members.length > 0),
+    [orderedTeams, session.turnSequence.length, totalCards],
   )
 
 
@@ -465,28 +443,10 @@ export function ControlDashboard() {
 
   const handleResetGame = sessionManagement.resetGame
 
-  const handleOfflineOnboardingComplete = (config: { 
-    theme: string; 
-    pin: string; 
-    sessionTitle: string; 
-    sessionDate: string;
-    customFilms: Array<{
-      name: string;
-      year?: number;
-      genre?: string;
-      streaming?: string;
-      link?: string;
-      notes?: string;
-    }>;
-    teams: Array<{
-      name: string;
-      color: string;
-      members: string[];
-    }>;
-  }) => {
+  const handleOfflineOnboardingComplete = (config: OnboardingConfig) => {
     try {
       // Aplica o tema selecionado
-      setTheme(config.theme as "light" | "dark" | "cinema" | "retro" | "matrix" | "brazil")
+      setTheme(config.theme as "light" | "dark" | "cinema" | "retro" | "matrix" | "brazil" | "easter")
       
       // Salva PIN apenas se o host quiser usar protecao
       if (config.pin.trim()) {
@@ -805,6 +765,16 @@ export function ControlDashboard() {
           }}
         />
         <SidebarNavItem
+          icon={<ClipboardList size={18} />}
+          title="Preview da ordem"
+          description="Mostra a ordem completa da partida quando a sessão já tem times válidos e perguntas no board."
+          disabled={!canOpenTurnPreview}
+          onClick={() => {
+            setTurnPreviewOpen(true)
+            handleCloseMobileSidebar()
+          }}
+        />
+        <SidebarNavItem
           icon={<UserPlus size={18} />}
           title="Detalhes por participante"
           description="Abre o detalhe do jogador atual ou leva ao ranking se ninguém estiver ativo."
@@ -840,7 +810,6 @@ export function ControlDashboard() {
         <GameStatusStrip
           activeParticipant={activeParticipant}
           activeTeam={activeTeam}
-          currentRound={currentRound}
           currentTurnLabel={currentTurnLabel}
           scoreboard={scoreboard}
         />
@@ -1003,74 +972,74 @@ export function ControlDashboard() {
           </div>
 
           {/* Coluna direita: scoring */}
-          <div className="md:w-56 md:shrink-0">
+          <div className="md:w-72 md:max-w-72 md:shrink-0">
             <ScoringControls
-            teams={orderedTeams}
-            participants={participants}
-            activeTeamId={activeTeam?.id ?? null}
-            activeParticipantId={activeParticipant?.id ?? null}
-            basePoints={selectedTile?.tile.points ?? 0}
-            onConfirm={(distributions) => {
-              if (!selectedTile || !activeParticipant) {
-                toast.info('Selecione uma carta e certifique-se de que há um participante ativo')
-                return
-              }
-              
-              if (distributions.length === 0) {
+              teams={orderedTeams}
+              participants={participants}
+              activeTeamId={activeTeam?.id ?? null}
+              activeParticipantId={activeParticipant?.id ?? null}
+              basePoints={selectedTile?.tile.points ?? 0}
+              onConfirm={(distributions) => {
+                if (!selectedTile || !activeParticipant) {
+                  toast.info('Selecione uma carta e certifique-se de que há um participante ativo')
+                  return
+                }
+
+                if (distributions.length === 0) {
+                  setConfirmActionConfig({
+                    title: 'Anular Pergunta',
+                    description: `Esta ação irá anular a pergunta "${selectedTile.tile.question}" do filme "${selectedTile.column.film}" sem atribuir pontos. A pergunta será marcada como respondida e o turno avançará automaticamente para o próximo participante.`,
+                    onConfirm: () => {
+                      updateTileState(selectedTile.tile.id, 'answered')
+                      const message = `${selectedTile.column.film}: pergunta anulada (sem pontuação)`
+                      toast.success(message)
+                      advanceTurn()
+                      setSelectedIds(null)
+                      setShowAnswer(false)
+                    },
+                    variant: 'warning',
+                  })
+                  setConfirmActionOpen(true)
+                  return
+                }
+
+                const totalPoints = distributions.reduce((sum, d) => sum + d.points, 0)
+                const teamsAffected = [...new Set(distributions.map(d => d.teamId))].length
+
                 setConfirmActionConfig({
-                  title: 'Anular Pergunta',
-                  description: `Esta ação irá anular a pergunta "${selectedTile.tile.question}" do filme "${selectedTile.column.film}" sem atribuir pontos. A pergunta será marcada como respondida e o turno avançará automaticamente para o próximo participante.`,
+                  title: 'Confirmar Pontuação',
+                  description: `Esta ação irá atribuir ${totalPoints} pontos distribuídos entre ${teamsAffected} time(s) e avançará automaticamente para o próximo turno. A pergunta será marcada como respondida.`,
                   onConfirm: () => {
-                    updateTileState(selectedTile.tile.id, 'answered')
-                    const message = `${selectedTile.column.film}: pergunta anulada (sem pontuação)`
-                    toast.success(message)
+                    let message = ''
+
+                    distributions.forEach((distribution) => {
+                      const team = orderedTeams.find(t => t.id === distribution.teamId)
+                      const participant = distribution.participantId
+                        ? participants.find(p => p.id === distribution.participantId)
+                        : null
+
+                      awardPoints(
+                        selectedTile.tile.id,
+                        distribution.teamId,
+                        distribution.participantId || activeParticipant.id,
+                        distribution.points
+                      )
+
+                      const recipient = participant ? `${participant.name} (${team?.name})` : team?.name ?? 'time'
+                      message += `${team?.name}: ${distribution.points} pontos para ${recipient}\n`
+                    })
+
+                    toast.success(message.trim())
                     advanceTurn()
                     setSelectedIds(null)
                     setShowAnswer(false)
                   },
-                  variant: 'warning',
+                  variant: 'info',
                 })
                 setConfirmActionOpen(true)
-                return
-              }
-              
-              const totalPoints = distributions.reduce((sum, d) => sum + d.points, 0)
-              const teamsAffected = [...new Set(distributions.map(d => d.teamId))].length
-              
-              setConfirmActionConfig({
-                title: 'Confirmar Pontuação',
-                description: `Esta ação irá atribuir ${totalPoints} pontos distribuídos entre ${teamsAffected} time(s) e avançará automaticamente para o próximo turno. A pergunta será marcada como respondida.`,
-                onConfirm: () => {
-                  let message = ''
-                  
-                  distributions.forEach((distribution) => {
-                    const team = orderedTeams.find(t => t.id === distribution.teamId)
-                    const participant = distribution.participantId 
-                      ? participants.find(p => p.id === distribution.participantId)
-                      : null
-                    
-                    awardPoints(
-                      selectedTile.tile.id, 
-                      distribution.teamId, 
-                      distribution.participantId || activeParticipant.id, 
-                      distribution.points
-                    )
-                    
-                    const recipient = participant ? `${participant.name} (${team?.name})` : team?.name ?? 'time'
-                    message += `${team?.name}: ${distribution.points} pontos para ${recipient}\n`
-                  })
-                  
-                  toast.success(message.trim())
-                  advanceTurn()
-                  setSelectedIds(null)
-                  setShowAnswer(false)
-                },
-                variant: 'info',
-              })
-              setConfirmActionOpen(true)
-            }}
-            onClose={handleCloseQuestionModal}
-          />
+              }}
+              onClose={handleCloseQuestionModal}
+            />
           </div>
         </div>
       </Modal>
@@ -1088,29 +1057,12 @@ export function ControlDashboard() {
           {scoreboard.map(({ team, position, points }) => {
             const isExpanded = scoreboardAccordions[`scoreboard-${team.id}`]
             
-            // Calcula pontuação de cada participante do time
-            const participantScores = team.members.map((memberId) => {
-              const participant = participants.find((p) => p.id === memberId)
-              // Soma todos os pontos das perguntas respondidas por este participante
-              const triviaPoints = session.board
-                .flatMap((column) => column.tiles)
-                .filter((tile) => tile.answeredBy?.participantId === memberId)
-                .reduce((sum, tile) => sum + (tile.answeredBy?.pointsAwarded || 0), 0)
-              
-              // Soma pontos de mimica
-              const mimicaPoints = (session.mimicaScores || [])
-                .filter((score) => score.participantId === memberId)
-                .reduce((sum, score) => sum + score.pointsAwarded, 0)
-              
-              const individualPoints = triviaPoints + mimicaPoints
-              
-              return {
-                participant,
-                points: individualPoints,
-                triviaPoints,
-                mimicaPoints,
-              }
-            }).filter((p) => p.participant) // Remove participantes não encontrados
+            const participantScores = buildParticipantScoreBreakdown(
+              team,
+              participants,
+              session.board,
+              session.mimicaScores,
+            )
             
             return (
               <div key={team.id} className="rounded-2xl border border-[var(--color-border)] bg-[var(--color-background)] overflow-hidden">
@@ -1146,10 +1098,10 @@ export function ControlDashboard() {
                   <div className="px-4 pb-3 pt-1 border-t border-[var(--color-border)] bg-[var(--color-surface)]">
                     <div className="space-y-2">
                       {participantScores.map(({ participant, points: individualPoints, triviaPoints, mimicaPoints }) => (
-                        <div key={participant?.id} className="flex items-center justify-between py-2 px-3 rounded-lg bg-[var(--color-background)]">
+                        <div key={participant.id} className="flex items-center justify-between py-2 px-3 rounded-lg bg-[var(--color-background)]">
                           <div className="flex-1">
                             <span className="text-xs font-medium text-[var(--color-muted)]">
-                              {participant?.name}
+                              {participant.name}
                             </span>
                             <div className="flex items-center gap-2 mt-1">
                               <span className="text-xs text-[var(--color-muted)]">
@@ -1170,7 +1122,7 @@ export function ControlDashboard() {
                               variant="ghost"
                               size="sm"
                               onClick={() => {
-                                setSelectedParticipantId(participant?.id || null)
+                                setSelectedParticipantId(participant.id)
                                 setScoreDetailOpen(true)
                               }}
                               className="text-xs"
@@ -1205,6 +1157,10 @@ export function ControlDashboard() {
         onRemoveParticipant={teamManagement.removeParticipant}
         onUpdateParticipant={teamManagement.updateParticipant}
         onMoveParticipant={teamManagement.moveParticipant}
+        previewTeams={teamManagement.previewTeams}
+        previewParticipants={teamManagement.previewParticipants}
+        previewTurnSequence={teamManagement.previewTurnSequence}
+        previewQuestionCount={teamManagement.previewQuestionCount}
         onSave={() => {
           teamManagement.saveTeams()
           setTeamsModalOpen(false)
@@ -1464,6 +1420,22 @@ export function ControlDashboard() {
           setActivePanel('board')
         }}
       />
+
+      <Modal
+        isOpen={turnPreviewOpen}
+        title="Preview completo da partida"
+        description="Use esta checagem para revisar a ordem inteira depois que a sessão já tiver times e perguntas reais."
+        onClose={() => setTurnPreviewOpen(false)}
+        size="xl"
+      >
+        <TurnOrderPreview
+          teams={orderedTeams}
+          participants={participants}
+          turnSequenceLength={session.turnSequence.length}
+          title="Ordem prevista da sessão atual"
+          description="A rodada fecha quando todos os participantes aparecerem pelo menos uma vez."
+        />
+      </Modal>
 
       <SessionManager
         isOpen={sessionManagerOpen}

@@ -1,7 +1,25 @@
 import { useSearchParams } from 'react-router-dom'
 import { useMemo } from 'react'
-import { DEFAULT_GAME_MODE, GAME_MODE_DESCRIPTIONS, GAME_MODE_LABELS, GAME_MODES } from '../shared/constants/game'
-import type { GameMode } from '../shared/types/game'
+import {
+  DEFAULT_DEMO_SESSION_CONFIG,
+  DEFAULT_GAME_MODE,
+  DEMO_MEMBERS_PER_TEAM_OPTIONS,
+  DEMO_QUESTION_OPTIONS,
+  DEMO_TEAM_OPTIONS,
+  GAME_MODE_DESCRIPTIONS,
+  GAME_MODE_LABELS,
+  GAME_MODES,
+} from '../shared/constants/game'
+import type { DemoSessionConfig, GameMode } from '../shared/types/game'
+
+function readDemoOption(
+  rawValue: string | null,
+  allowedValues: readonly number[],
+  fallbackValue: number,
+): number {
+  const parsedValue = Number(rawValue)
+  return Number.isInteger(parsedValue) && allowedValues.includes(parsedValue) ? parsedValue : fallbackValue
+}
 
 /**
  * Hook para gerenciar o modo de jogo atual
@@ -13,6 +31,26 @@ export function useGameMode() {
   const gameMode = useMemo((): GameMode => {
     const mode = searchParams.get('mode') as GameMode | null
     return mode && GAME_MODES.includes(mode) ? mode : DEFAULT_GAME_MODE
+  }, [searchParams])
+
+  const demoConfig = useMemo<DemoSessionConfig>(() => {
+    return {
+      teamCount: readDemoOption(
+        searchParams.get('demoTeams'),
+        DEMO_TEAM_OPTIONS,
+        DEFAULT_DEMO_SESSION_CONFIG.teamCount,
+      ),
+      membersPerTeam: readDemoOption(
+        searchParams.get('demoMembers'),
+        DEMO_MEMBERS_PER_TEAM_OPTIONS,
+        DEFAULT_DEMO_SESSION_CONFIG.membersPerTeam,
+      ),
+      questionCount: readDemoOption(
+        searchParams.get('demoQuestions'),
+        DEMO_QUESTION_OPTIONS,
+        DEFAULT_DEMO_SESSION_CONFIG.questionCount,
+      ),
+    }
   }, [searchParams])
 
   const isDemo = gameMode === 'demo'
@@ -29,6 +67,7 @@ export function useGameMode() {
 
   return {
     gameMode,
+    demoConfig,
     isDemo,
     isOffline,
     isOnline,

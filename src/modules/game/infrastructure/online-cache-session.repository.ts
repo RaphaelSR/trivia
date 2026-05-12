@@ -11,7 +11,7 @@ function calculateSessionDuration(createdAt: string): number {
   return Math.floor((now.getTime() - created.getTime()) / (1000 * 60))
 }
 
-export class FirebaseSessionRepository implements SessionRepository {
+export class OnlineCacheSessionRepository implements SessionRepository {
   loadActiveSession(): SessionRecord | null {
     return storageService.getJson<SessionRecord | null>(STORAGE_KEYS.onlineActiveSession, null)
   }
