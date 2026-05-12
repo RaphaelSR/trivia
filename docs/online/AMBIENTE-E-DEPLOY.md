@@ -239,7 +239,6 @@ Após criar o projeto, algumas configurações de Auth precisam ser feitas manua
 - [ ] Escrever e rodar migrations no projeto dev
 - [ ] Habilitar Anonymous sign-ins no projeto dev
 - [ ] Instalar SDK: `npm install @supabase/supabase-js`
-- [ ] Remover Firebase: `npm uninstall firebase`, deletar `src/lib/firebase.ts`
 - [ ] Implementar `src/modules/game/infrastructure/supabase/client.ts`
 - [ ] Testar conexão básica (read de qualquer tabela)
 

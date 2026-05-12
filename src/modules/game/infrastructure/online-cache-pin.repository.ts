@@ -3,7 +3,7 @@ import { storageService } from '../../../shared/services/storage.service'
 import type { GameMode } from '../../../shared/types/game'
 import type { PinRepository } from './pin.repository'
 
-export class FirebasePinRepository implements PinRepository {
+export class OnlineCachePinRepository implements PinRepository {
   loadPin(mode: GameMode): string {
     return storageService.get(STORAGE_KEYS.pinByMode(mode)) ?? ''
   }

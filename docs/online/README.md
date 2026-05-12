@@ -6,7 +6,8 @@ Indice da documentacao oficial do modo `online`.
 - O modulo `online` ainda esta em planejamento e evolucao tecnica.
 - O repositorio principal ja possui adapters dedicados para sessao e PIN.
 - Os documentos desta pasta descrevem a direcao desejada, nao uma entrega completa ja disponivel na UI.
-- A decisao final de infraestrutura remota ainda precisa ser alinhada entre os adapters atuais nomeados como Firebase e os rascunhos desta pasta, que hoje descrevem uma proposta orientada a Supabase.
+- Supabase e a decisao oficial de infraestrutura remota para o proximo ciclo.
+- O adapter online atual e apenas um cache local isolado ate a chegada do `SupabaseSessionRepository`.
 
 ## Documentos
 - [ARQUITETURA-ONLINE.md](./ARQUITETURA-ONLINE.md): modelo de dados, queries e principios de persistencia

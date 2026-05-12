@@ -3,7 +3,7 @@
 ## Modos de jogo
 - `demo`: inicia com dados de exemplo prontos para demonstração e aceita presets de times, jogadores por time e quantidade de perguntas.
 - `offline`: inicia vazio e persiste a sessão localmente.
-- `online`: usa o mesmo fluxo de jogo, mas com repositório separado para sessão e PIN, preparado para backend/Firebase.
+- `online`: usa o mesmo fluxo de jogo, mas com repositório separado para sessão e PIN, preparado para Supabase.
 
 ## Sessao
 - Uma sessão contém: metadados, tema, times, participantes, board, turno ativo e histórico de mímica.

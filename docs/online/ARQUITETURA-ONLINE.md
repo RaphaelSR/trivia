@@ -335,7 +335,7 @@ src/modules/game/infrastructure/
 - **Domain layer** (`src/modules/game/domain/`) — zero alterações.
 - **Application hooks** (`src/modules/game/application/`) — mínimas adaptações para async/realtime.
 - **Modo offline** — continua funcionando via `LocalSessionRepository`.
-- **Firebase SDK** — pode ser removido (`src/lib/firebase.ts` + `package.json`).
+- **Cache online atual** — deve ser substituído por `SupabaseSessionRepository` sem alterar a UI.
 
 ---
 
@@ -345,10 +345,10 @@ src/modules/game/infrastructure/
 2. Rodar as migrations das seções 3.1 a 3.7.
 3. Habilitar Auth com Email + Login Anônimo no painel.
 4. Instalar SDK: `npm install @supabase/supabase-js`
-5. Remover Firebase: `src/lib/firebase.ts`, entrada no `package.json`.
-6. Implementar `supabase/client.ts` com as env vars.
-7. Implementar `game.service.ts` e `championship.service.ts`.
-8. Reimplementar `SupabaseSessionRepository` sobre os novos serviços.
+5. Implementar `supabase/client.ts` com as env vars.
+6. Implementar `SupabaseSessionRepository` sobre os novos serviços.
+7. Trocar o factory para usar Supabase no modo `online`.
+8. Implementar `game.service.ts` e `championship.service.ts`.
 9. Implementar o fluxo de claim (escolher formato do token para o usuário final).
 10. Configurar Row Level Security no painel do Supabase.
 

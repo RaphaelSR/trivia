@@ -325,7 +325,7 @@ export function SessionManager({ isOpen, onClose, onLoadSession, onNewSession, o
                   ? 'Dados de teste pré-configurados, sem persistência'
                   : gameMode === 'offline'
                   ? 'Dados salvos localmente, não sincronizados com a nuvem'
-                  : 'Dados sincronizados com Firebase em tempo real'
+                  : 'Cache local isolado enquanto a sincronização Supabase não é ativada'
                 }
               </p>
             </div>

@@ -119,7 +119,7 @@ Deno.serve(async (req) => {
 |---|---|
 | Invocações | 500.000 / mês |
 | Duração por execução | 150 segundos |
-| Memória | 150 MB |
+| Memória | 256 MB |
 
 Para um grupo de amigos jogando trivia, esses limites nunca serão atingidos.
 
@@ -200,11 +200,10 @@ Se o projeto crescer e precisar de uma API com muitos endpoints, lógica complex
 > Objetivo: app React lendo e escrevendo no Supabase em modo online.
 
 1. `npm install @supabase/supabase-js`
-2. `npm uninstall firebase` + deletar `src/lib/firebase.ts`
-3. Criar variáveis de ambiente (`.env.local`)
-4. Criar `src/modules/game/infrastructure/supabase/client.ts`
-5. Implementar `SupabaseSessionRepository` (substitui `FirebaseSessionRepository`)
-6. Testar: criar um jogo no app → ver aparecer no Table Editor
+2. Criar variáveis de ambiente (`.env.local`)
+3. Criar `src/modules/game/infrastructure/supabase/client.ts`
+4. Implementar `SupabaseSessionRepository` (substitui o cache online local)
+5. Testar: criar um jogo no app → ver aparecer no Table Editor
 
 **Resultado:** modo online salvando dados reais. Leaderboard básico funcionando.
 

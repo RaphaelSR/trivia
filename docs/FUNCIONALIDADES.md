@@ -72,7 +72,8 @@ Mapa funcional do projeto com foco no que existe hoje, no que esta em migracao e
 - `em migracao`: consolidacao visual para um dashboard mais coeso
 
 ## Modo online
-- `interno`: repositories dedicados para sessao e PIN
+- `interno`: repositories dedicados para sessao e PIN, hoje com cache local isolado
+- `planejado`: Supabase como backend oficial do modo online
 - `planejado`: sincronizacao remota completa
 - `planejado`: autenticacao opcional, join code, campeonatos e historico cross-session
 - `planejado`: leaderboards agregados por campeonato e conta
