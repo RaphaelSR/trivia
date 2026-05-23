@@ -4,6 +4,7 @@ import { renderHook, act } from '@testing-library/react'
 import { TriviaSessionProvider } from '@/modules/trivia/providers/TriviaSessionProvider'
 import { useTriviaSession } from '@/modules/trivia/hooks/useTriviaSession'
 import { useGameMode } from '@/hooks/useGameMode'
+import { DEFAULT_DEMO_SESSION_CONFIG } from '@/shared/constants/game'
 
 jest.mock('@/hooks/useGameMode')
 jest.mock('react-router-dom', () => ({
@@ -24,6 +25,7 @@ describe('TriviaSessionProvider - Mimica Scoring', () => {
     localStorage.clear()
     mockUseGameMode.mockReturnValue({
       gameMode: 'demo',
+      demoConfig: DEFAULT_DEMO_SESSION_CONFIG,
       isDemo: true,
       isOffline: false,
       isOnline: false,
@@ -297,4 +299,3 @@ describe('TriviaSessionProvider - Mimica Scoring', () => {
     expect(team?.score).toBe(75)
   })
 })
-

@@ -6,6 +6,7 @@ module.exports = {
     '^@/(.*)$': '<rootDir>/src/$1',
     '\\.(css|less|scss|sass)$': 'identity-obj-proxy',
   },
+  setupFilesAfterEnv: ['<rootDir>/src/__tests__/setup.js'],
   transform: {
     '^.+\\.tsx?$': [require.resolve('ts-jest'), {
       tsconfig: {
@@ -24,6 +25,7 @@ module.exports = {
     'src/**/*.{ts,tsx}',
     '!src/**/*.d.ts',
     '!src/main.tsx',
+    '!src/app/providers/AppProviders.tsx',
     '!src/vite-env.d.ts',
   ],
   coverageDirectory: 'coverage',
