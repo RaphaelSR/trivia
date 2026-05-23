@@ -188,42 +188,23 @@ describe("drawUniqueFilms", () => {
     });
 
     it("com allowMultiplePerPerson=true, deve permitir múltiplos filmes da mesma pessoa", () => {
-      const results = drawUniqueFilms(films, participantsMap, 6, true);
+      const samePersonFilms = [
+        createFilm("Filme unico A", "João A", "same-person-1"),
+        createFilm("Filme unico B", "João A", "same-person-2"),
+        createFilm("Filme unico C", "João A", "same-person-3")
+      ];
+      const results = drawUniqueFilms(samePersonFilms, participantsMap, 3, true);
 
-      expect(results.length).toBe(6);
+      expect(results.length).toBe(3);
 
       const titles = results.map((r) => r.film.name.toLowerCase().trim());
       const uniqueTitles = new Set(titles);
-      expect(uniqueTitles.size).toBe(6);
+      expect(uniqueTitles.size).toBe(3);
 
       const personNames = results.map((r) =>
         r.participantName.toLowerCase().trim()
       );
-      const personCounts = new Map<string, number>();
-      personNames.forEach((name) => {
-        personCounts.set(name, (personCounts.get(name) || 0) + 1);
-      });
-
-      const hasMultiple = Array.from(personCounts.values()).some(
-        (count) => count > 1
-      );
-
-      if (!hasMultiple) {
-        const results2 = drawUniqueFilms(films, participantsMap, 10, true);
-        const personNames2 = results2.map((r) =>
-          r.participantName.toLowerCase().trim()
-        );
-        const personCounts2 = new Map<string, number>();
-        personNames2.forEach((name) => {
-          personCounts2.set(name, (personCounts2.get(name) || 0) + 1);
-        });
-        const hasMultiple2 = Array.from(personCounts2.values()).some(
-          (count) => count > 1
-        );
-        expect(hasMultiple2).toBe(true);
-      } else {
-        expect(hasMultiple).toBe(true);
-      }
+      expect(new Set(personNames)).toEqual(new Set(["joão a"]));
     });
 
     it("com allowMultiplePerPerson=true e maxFilms alto, deve garantir múltiplos filmes por pessoa", () => {
