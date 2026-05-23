@@ -48,6 +48,7 @@ import { ControlTopbar } from '../ui/ControlTopbar'
 import { EmptyStatePanel } from '../ui/EmptyStatePanel'
 import { SidebarNavGroup } from '../ui/SidebarNavGroup'
 import { SidebarNavItem } from '../ui/SidebarNavItem'
+import { BrazilBackground } from '@/shared/components/BrazilBackground'
 import { EasterBackground } from '@/shared/components/EasterBackground'
 import { useControlDashboardState } from '../hooks/useControlDashboardState'
 import { useTeamManagement } from '../hooks/useTeamManagement'
@@ -789,6 +790,7 @@ export function ControlDashboard() {
 
   return (
     <>
+    {themeMode === 'brazil' && <BrazilBackground />}
     {themeMode === 'easter' && <EasterBackground />}
     <ControlShell
       sidebarCollapsed={sidebarCollapsed}

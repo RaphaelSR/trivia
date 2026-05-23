@@ -45,7 +45,7 @@ export function OfflineOnboardingModal({
   const { setTheme } = useThemeMode();
   const [currentStep, setCurrentStep] = useState(1);
   const [config, setConfig] = useState<OnboardingConfig>({
-    theme: "dark",
+    theme: "brazil",
     pin: "",
     sessionTitle: "Nova Sessão Local",
     sessionDate: new Date().toISOString().split('T')[0],
@@ -174,7 +174,7 @@ export function OfflineOnboardingModal({
     // Reset do estado quando fechar
     setCurrentStep(1);
     setConfig({
-      theme: "dark",
+      theme: "brazil",
       pin: "",
       sessionTitle: "Nova Sessão Local",
       sessionDate: new Date().toISOString().split('T')[0],

@@ -1,12 +1,17 @@
 import { Film } from 'lucide-react'
 import { ModeSelector } from '../../../components/ui/ModeSelector'
 import { GameLayout } from '../../../shared/components/GameLayout'
+import { BrazilBackground } from '../../../shared/components/BrazilBackground'
 import { EasterBackground } from '../../../shared/components/EasterBackground'
+import { useThemeMode } from '../../../app/providers/useThemeMode'
 
 export function LandingPage() {
+  const { theme } = useThemeMode()
+
   return (
     <GameLayout className="relative flex items-center justify-center">
-      <EasterBackground />
+      {theme === 'brazil' && <BrazilBackground />}
+      {theme === 'easter' && <EasterBackground />}
       <section className="relative z-10 flex w-full max-w-3xl flex-col items-center gap-10 py-8 sm:py-16 lg:py-24">
         {/* Header */}
         <div className="flex flex-col items-center gap-4 text-center">
