@@ -3,6 +3,7 @@ import { createSessionRepository } from '../modules/game/infrastructure/reposito
 import type { SessionHistoryMetadata, SessionRecord } from '../modules/game/infrastructure/session.repository'
 import { MAX_SESSION_HISTORY } from '../shared/constants/game'
 import { useGameMode } from './useGameMode'
+import { useAuth } from '../modules/auth/hooks/useAuth'
 import type { TriviaSession } from '../modules/trivia/types'
 
 export interface OfflineSessionMetadata extends SessionHistoryMetadata {}
@@ -14,7 +15,11 @@ export interface OfflineSessionData extends SessionRecord {}
  */
 export function useOfflineSession() {
   const { gameMode } = useGameMode()
-  const sessionRepository = useMemo(() => createSessionRepository(gameMode), [gameMode])
+  const { user } = useAuth()
+  const sessionRepository = useMemo(
+    () => createSessionRepository(gameMode, Boolean(user)),
+    [gameMode, user],
+  )
   const [currentSession, setCurrentSession] = useState<OfflineSessionData | null>(null)
   const [sessionHistory, setSessionHistory] = useState<OfflineSessionMetadata[]>([])
 

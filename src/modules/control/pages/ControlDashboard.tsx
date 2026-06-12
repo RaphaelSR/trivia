@@ -59,6 +59,10 @@ import { TurnOrderPreview } from '../components/TurnOrderPreview'
 import { createTeamId, createParticipantId } from '../utils/teamUtils'
 import { buildParticipantScoreBreakdown, buildTeamScoreboard } from '../utils/scoreboardUtils'
 import type { OnboardingConfig } from '../types/control.types'
+import { useAuth } from '@/modules/auth/hooks/useAuth'
+import { isSupabaseConfigured } from '@/shared/services/supabase.client'
+import type { SupabaseSessionRepository } from '@/modules/game/infrastructure/supabase-session.repository'
+import { createSessionRepository } from '@/modules/game/infrastructure/repository.factory'
 // PIN será gerenciado pelo hook usePinManagement
 
 export function ControlDashboard() {
@@ -83,6 +87,7 @@ export function ControlDashboard() {
   } = useTriviaSession()
   const { theme: themeMode, setTheme } = useThemeMode()
   const { gameMode, getModeDisplayName } = useGameMode()
+  const { user } = useAuth()
   const { verifyPin, saveCustomPin, clearCustomPin, hasCustomPin } = usePinManagement()
   const { saveSession, loadSession, getSessionStatus } = useOfflineSession()
   const { films: customFilms, addFilm: addCustomFilm, updateFilm: updateCustomFilm, removeFilm: removeCustomFilm } = useCustomFilms()
@@ -272,16 +277,35 @@ export function ControlDashboard() {
     }
   }, [gameMode, orderedTeams.length, showOnboardingSuggestion, setShowOnboardingSuggestion])
 
-  // Salva sessão automaticamente quando há mudanças (apenas no modo offline)
+  // Salva sessão automaticamente quando há mudanças (modo offline e online; demo fica fora)
   useEffect(() => {
-    if (gameMode === 'offline' && orderedTeams.length > 0) {
+    if ((gameMode === 'offline' || gameMode === 'online') && orderedTeams.length > 0) {
       const timer = setTimeout(() => {
         saveSession(session, session.title);
       }, 1000); // Debounce de 1 segundo
-      
+
       return () => clearTimeout(timer);
     }
   }, [session, gameMode, orderedTeams.length, saveSession])
+
+  // Hidratação cross-device: restaura sessão ativa da nuvem quando o usuário
+  // autentica no modo online e o snapshot na nuvem é mais novo que o cache local.
+  useEffect(() => {
+    if (gameMode !== 'online' || !user || !isSupabaseConfigured()) return
+
+    const repository = createSessionRepository('online', true)
+    if (!('hydrateFromCloud' in repository)) return
+
+    const supabaseRepo = repository as SupabaseSessionRepository
+
+    void supabaseRepo.hydrateFromCloud().then((record) => {
+      if (record) {
+        restoreSession(record.session)
+      }
+    })
+    // Runs once per authenticated user in online mode
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user?.id, gameMode])
 
   // Reseta flag de notificação quando o board muda (perguntas resetadas ou respondidas)
   useEffect(() => {
