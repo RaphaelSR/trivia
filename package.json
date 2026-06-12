@@ -13,6 +13,7 @@
     "test:coverage": "jest --coverage"
   },
   "dependencies": {
+    "@supabase/supabase-js": "^2.108.1",
     "@tanstack/react-query": "^5.89.0",
     "clsx": "^2.1.1",
     "lucide-react": "^0.544.0",

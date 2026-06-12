@@ -1,17 +1,48 @@
-import { Film } from 'lucide-react'
+import { Film, LogIn } from 'lucide-react'
+import { useState } from 'react'
 import { ModeSelector } from '../../../components/ui/ModeSelector'
 import { GameLayout } from '../../../shared/components/GameLayout'
 import { BrazilBackground } from '../../../shared/components/BrazilBackground'
 import { EasterBackground } from '../../../shared/components/EasterBackground'
 import { useThemeMode } from '../../../app/providers/useThemeMode'
+import { isSupabaseConfigured } from '../../../shared/services/supabase.client'
+import { AuthPanel } from '../../auth/components/AuthPanel'
+import { useAuth } from '../../auth/hooks/useAuth'
 
 export function LandingPage() {
   const { theme } = useThemeMode()
+  const supabaseEnabled = isSupabaseConfigured()
+  const { user } = useAuth()
+  const [authOpen, setAuthOpen] = useState(false)
 
   return (
     <GameLayout className="relative flex items-center justify-center">
       {theme === 'brazil' && <BrazilBackground />}
       {theme === 'easter' && <EasterBackground />}
+
+      {/* Botão "Entrar" — visível apenas quando Supabase está configurado */}
+      {supabaseEnabled && (
+        <div className="absolute right-4 top-4 z-20">
+          <button
+            onClick={() => setAuthOpen((v) => !v)}
+            className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-3 py-1.5 text-xs font-medium text-[var(--color-muted)] backdrop-blur transition-colors hover:border-white/20 hover:text-[var(--color-text)]"
+          >
+            <LogIn className="h-3.5 w-3.5" />
+            {user ? (user.user_metadata as Record<string, string> | undefined)?.display_name ?? 'Conta' : 'Entrar'}
+          </button>
+        </div>
+      )}
+
+      {/* Modal de autenticação */}
+      {supabaseEnabled && authOpen && (
+        <div
+          className="fixed inset-0 z-30 flex items-center justify-center bg-black/40 backdrop-blur-sm"
+          onClick={(e) => { if (e.target === e.currentTarget) setAuthOpen(false) }}
+        >
+          <AuthPanel onClose={() => setAuthOpen(false)} />
+        </div>
+      )}
+
       <section className="relative z-10 flex w-full max-w-3xl flex-col items-center gap-10 py-8 sm:py-16 lg:py-24">
         {/* Header */}
         <div className="flex flex-col items-center gap-4 text-center">
