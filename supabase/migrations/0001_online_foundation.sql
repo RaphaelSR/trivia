@@ -27,6 +27,7 @@ alter table public.profiles enable row level security;
 -- "using" controla SELECT/UPDATE/DELETE; "with check" controla INSERT/UPDATE.
 
 -- SELECT: só o próprio dono lê seu perfil
+drop policy if exists "profiles_select_own" on public.profiles;
 create policy "profiles_select_own"
   on public.profiles
   for select
@@ -36,12 +37,14 @@ create policy "profiles_select_own"
 
 -- INSERT: só o próprio usuário pode inserir (o trigger usa security definer, então
 -- ele possui permissão elevada; esta policy cobre inserções diretas via client).
+drop policy if exists "profiles_insert_own" on public.profiles;
 create policy "profiles_insert_own"
   on public.profiles
   for insert
   with check (auth.uid() = id);
 
 -- UPDATE: só o dono atualiza o próprio perfil
+drop policy if exists "profiles_update_own" on public.profiles;
 create policy "profiles_update_own"
   on public.profiles
   for update
@@ -49,6 +52,7 @@ create policy "profiles_update_own"
   with check (auth.uid() = id);
 
 -- DELETE: só o dono pode deletar o próprio perfil
+drop policy if exists "profiles_delete_own" on public.profiles;
 create policy "profiles_delete_own"
   on public.profiles
   for delete
@@ -79,6 +83,7 @@ end;
 $$;
 
 -- Trigger: executa após cada insert na tabela de usuários do Supabase Auth
+drop trigger if exists on_auth_user_created on auth.users;
 create trigger on_auth_user_created
   after insert on auth.users
   for each row
@@ -113,6 +118,7 @@ create index if not exists game_history_user_finished_idx
 alter table public.game_history enable row level security;
 
 -- Policy: o usuário só vê seu próprio histórico
+drop policy if exists "game_history_select_own" on public.game_history;
 create policy "game_history_select_own"
   on public.game_history
   for select
@@ -120,6 +126,7 @@ create policy "game_history_select_own"
 
 -- Policy: o usuário só insere no próprio histórico
 -- with check garante que user_id no payload = uid da sessão
+drop policy if exists "game_history_insert_own" on public.game_history;
 create policy "game_history_insert_own"
   on public.game_history
   for insert
@@ -127,6 +134,7 @@ create policy "game_history_insert_own"
 
 -- Policy: o usuário pode atualizar apenas seus próprios registros
 -- (raro — mas necessário para eventual edição de título etc.)
+drop policy if exists "game_history_update_own" on public.game_history;
 create policy "game_history_update_own"
   on public.game_history
   for update
@@ -134,6 +142,7 @@ create policy "game_history_update_own"
   with check (auth.uid() = user_id);
 
 -- Policy: o usuário pode deletar apenas seus próprios registros
+drop policy if exists "game_history_delete_own" on public.game_history;
 create policy "game_history_delete_own"
   on public.game_history
   for delete
