@@ -184,7 +184,7 @@ export function resolveTurnIndex(
   return turnSequence.indexOf(activeParticipantId)
 }
 
-function groupCompleteRounds(
+export function groupCompleteRounds(
   turnSequence: string[],
   teams: TriviaTeam[],
   participants: TriviaParticipant[],
@@ -257,7 +257,7 @@ function mapEntries(
   })
 }
 
-function rotateAwayFromTeam(
+export function rotateAwayFromTeam(
   sequence: string[],
   participants: TriviaParticipant[],
   previousTeamId?: string,
