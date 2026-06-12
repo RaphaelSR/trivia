@@ -1,0 +1,16 @@
+---
+description: UI boundary rules
+globs:
+  - "src/components/**/*.tsx"
+  - "src/modules/**/ui/**/*.tsx"
+  - "src/modules/**/components/**/*.tsx"
+  - "src/modules/control/pages/**/*.tsx"
+alwaysApply: false
+---
+
+# UI Boundaries
+
+- Do not import Supabase clients, repositories, or storage services in UI components.
+- Do not add direct `localStorage` access to UI components.
+- UI should call application hooks or receive callbacks from containers.
+- Loading and error states from async persistence must be represented by hook state, not hidden inside render-time side effects.

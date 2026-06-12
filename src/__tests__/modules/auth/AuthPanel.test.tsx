@@ -12,6 +12,12 @@ jest.mock('@/modules/auth/hooks/useAuth', () => ({
   useAuth: jest.fn(),
 }))
 
+// Previne que AuthPanel tente acessar Supabase nestes testes
+jest.mock('@/modules/auth/services/history.service', () => ({
+  listGameHistory: jest.fn().mockResolvedValue([]),
+  saveGameToHistory: jest.fn().mockResolvedValue(null),
+}))
+
 import { useAuth } from '@/modules/auth/hooks/useAuth'
 
 const mockUseAuth = useAuth as jest.Mock

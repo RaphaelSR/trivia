@@ -1,0 +1,16 @@
+---
+description: Project architecture boundaries for Trivia
+globs:
+  - "src/**/*.ts"
+  - "src/**/*.tsx"
+alwaysApply: true
+---
+
+# Project Architecture
+
+- Keep business rules in `src/modules/game/domain`.
+- Keep persistence and external SDK access in `src/modules/game/infrastructure`.
+- Keep React composition in `src/modules/game/application` or feature hooks.
+- UI components must receive data and callbacks; they must not import repositories, storage services, Supabase clients, or browser persistence directly.
+- Prefer mapping external data into existing domain types instead of leaking transport/database rows through the app.
+- Preserve the public shape of `TriviaSession` unless a migration plan and tests are included.

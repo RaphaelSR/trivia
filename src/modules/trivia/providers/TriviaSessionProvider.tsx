@@ -6,6 +6,8 @@ import { useSessionInitialization } from '../../game/application/useSessionIniti
 import { useTurnManagement } from '../../game/application/useTurnManagement'
 import type { TriviaSession } from '../types'
 import { TriviaSessionContext } from '../context/TriviaSessionContext'
+import { useAuth } from '../../auth/hooks/useAuth'
+import { useGameHistorySync } from '../../auth/hooks/useGameHistorySync'
 
 type TriviaSessionProviderProps = {
   children: ReactNode
@@ -42,6 +44,9 @@ export function TriviaSessionProvider({ children }: TriviaSessionProviderProps) 
   } = useBoardOperations(setSession)
 
   const { awardPoints, awardMimicaPoints } = useScoreOperations(setSession)
+
+  const { user } = useAuth()
+  useGameHistorySync({ session, gameMode, user })
 
   const restoreSession = useCallback((sessionToRestore: TriviaSession) => {
     setSession(sessionToRestore)
