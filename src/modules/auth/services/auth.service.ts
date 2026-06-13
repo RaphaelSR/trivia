@@ -110,6 +110,32 @@ export async function getSession(): Promise<Session | null> {
 }
 
 /**
+ * Re-autentica o usuário atual com a senha fornecida.
+ * Usa signInWithPassword com o e-mail da sessão ativa para confirmar identidade antes de
+ * ações destrutivas (ex.: delete de partida).
+ * Retorna false (no-op) quando Supabase não está configurado ou não há sessão.
+ * Nunca lança exceção.
+ */
+export async function verifyPassword(password: string): Promise<boolean> {
+  if (!isSupabaseConfigured()) return false
+
+  const client = getSupabaseClient()!
+  try {
+    const { data: { session: authSession } } = await client.auth.getSession()
+    if (!authSession?.user?.email) return false
+
+    const { error } = await client.auth.signInWithPassword({
+      email: authSession.user.email,
+      password,
+    })
+
+    return error == null
+  } catch {
+    return false
+  }
+}
+
+/**
  * Assina mudanças de estado de autenticação.
  * Retorna uma função de cancelamento. No-op quando Supabase não está configurado.
  */

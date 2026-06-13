@@ -367,6 +367,52 @@ export async function listMyInvitedContacts(): Promise<InvitedContact[]> {
 }
 
 // ---------------------------------------------------------------------------
+// deleteNormalizedGame
+// ---------------------------------------------------------------------------
+
+const UUID_RE_DELETE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+
+/**
+ * Exclui permanentemente uma partida pelo ID.
+ * Requer que o usuário esteja logado (RLS owner-only).
+ * O ON DELETE CASCADE remove times/participantes/filmes/perguntas/score_events/snapshot.
+ * Retorna { error: null } em caso de sucesso.
+ * No-op/erro-safe quando sem config ou sem login. Nunca lança.
+ */
+export async function deleteNormalizedGame(gameId: string): Promise<{ error: string | null }> {
+  if (!UUID_RE_DELETE.test(gameId)) {
+    return { error: 'ID de partida inválido.' }
+  }
+
+  if (!isSupabaseConfigured()) {
+    return { error: 'Funcionalidade indisponível neste ambiente.' }
+  }
+
+  const client = getSupabaseClient()!
+
+  try {
+    const { data: { session: authSession } } = await client.auth.getSession()
+    if (!authSession?.user) {
+      return { error: 'Faça login para excluir partidas.' }
+    }
+
+    const { error } = await client
+      .from('games')
+      .delete()
+      .eq('id', gameId)
+
+    if (error) {
+      console.warn('[deleteNormalizedGame] Falha ao excluir partida:', error)
+      return { error: 'Não foi possível excluir a partida. Tente novamente.' }
+    }
+
+    return { error: null }
+  } catch {
+    return { error: 'Não foi possível excluir a partida. Tente novamente.' }
+  }
+}
+
+// ---------------------------------------------------------------------------
 // linkMyParticipations — chama RPC no login para auto-vincular por e-mail
 // ---------------------------------------------------------------------------
 
