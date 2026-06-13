@@ -62,6 +62,7 @@ import type { OnboardingConfig } from '../types/control.types'
 import { useAuth } from '@/modules/auth/hooks/useAuth'
 import { isSupabaseConfigured } from '@/shared/services/supabase.client'
 import { useCloudSync } from '@/modules/game/application/useCloudSync'
+import { AuthPanel } from '@/modules/auth/components/AuthPanel'
 // PIN será gerenciado pelo hook usePinManagement
 
 export function ControlDashboard() {
@@ -164,6 +165,7 @@ export function ControlDashboard() {
   const [timerOverrides, setTimerOverrides] = useState<Record<number, number>>({})
   const [questionRevealed, setQuestionRevealed] = useState(false)
   const [turnPreviewOpen, setTurnPreviewOpen] = useState(false)
+  const [accountOpen, setAccountOpen] = useState(false)
 
   const getTimerForPoints = (points: number) => {
     if (timerOverrides[points] !== undefined) return timerOverrides[points]
@@ -828,6 +830,7 @@ export function ControlDashboard() {
             toast.info('Contexto principal reativado')
           }}
           onToggleSidebar={() => setMobileSidebarOpen(true)}
+          onOpenAccount={isSupabaseConfigured() ? () => setAccountOpen(true) : undefined}
         />
       }
       statusStrip={
@@ -1548,6 +1551,16 @@ export function ControlDashboard() {
           description={confirmActionConfig.description}
           variant={confirmActionConfig.variant}
         />
+      )}
+
+      {/* Overlay da conta — mesmo padrão da LandingPage */}
+      {isSupabaseConfigured() && accountOpen && (
+        <div
+          className="fixed inset-0 z-30 flex items-center justify-center bg-black/40 backdrop-blur-sm"
+          onClick={(e) => { if (e.target === e.currentTarget) setAccountOpen(false) }}
+        >
+          <AuthPanel onClose={() => setAccountOpen(false)} />
+        </div>
       )}
     </ControlShell>
     </>
