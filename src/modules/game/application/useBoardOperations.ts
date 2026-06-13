@@ -37,7 +37,9 @@ export function useBoardOperations(setSession: Dispatch<SetStateAction<TriviaSes
 
   const addFilmColumn = useCallback((displayName = 'Novo Filme') => {
     const metadata = getFilmMetadata(displayName)
-    const columnId = `${slugify(displayName)}-${Date.now()}`
+    // Sufixo aleatório além do timestamp: imports em massa criam várias colunas
+    // no mesmo milissegundo, então `Date.now()` sozinho geraria ids colidentes.
+    const columnId = `${slugify(displayName)}-${Date.now()}-${Math.random().toString(16).slice(2)}`
     const newColumn: TriviaColumn = {
       id: columnId,
       filmId: metadata.id,
@@ -59,7 +61,10 @@ export function useBoardOperations(setSession: Dispatch<SetStateAction<TriviaSes
   }, [setSession])
 
   const addQuestionTile = useCallback((columnId: string, defaults: Partial<TriviaQuestionTile> = {}) => {
-    const tileId = `${columnId}-tile-${Date.now()}`
+    // Sufixo aleatório é OBRIGATÓRIO: o import em massa adiciona vários tiles
+    // no mesmo milissegundo; `${columnId}-tile-${Date.now()}` sozinho colidiria
+    // e responder uma carta travaria todas as do filme (ids iguais).
+    const tileId = `${columnId}-tile-${Date.now()}-${Math.random().toString(16).slice(2)}`
 
     setSession((prev) => {
       const nextBoard = prev.board.map((column) => {

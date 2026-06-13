@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useState, type ReactNode } from 'react'
 import { useGameMode } from '../../../hooks/useGameMode'
 import { useBoardOperations } from '../../game/application/useBoardOperations'
+import { dedupeTileIds } from '../../game/domain/board.utils'
 import { useScoreOperations } from '../../game/application/useScoreOperations'
 import { useSessionInitialization } from '../../game/application/useSessionInitialization'
 import { useTurnManagement } from '../../game/application/useTurnManagement'
@@ -49,7 +50,9 @@ export function TriviaSessionProvider({ children }: TriviaSessionProviderProps) 
   useGameHistorySync({ session, gameMode, user })
 
   const restoreSession = useCallback((sessionToRestore: TriviaSession) => {
-    setSession(sessionToRestore)
+    // Também cura ids duplicados quando a sessão vem da nuvem (cross-device),
+    // não só no load local — a cópia na nuvem pode ter sido salva antes do fix.
+    setSession(dedupeTileIds(sessionToRestore))
   }, [])
 
   const value = useMemo(() => ({
