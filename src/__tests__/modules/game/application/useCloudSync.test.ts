@@ -113,6 +113,29 @@ describe('useCloudSync — PUSH', () => {
     expect(mockPushSnapshot).toHaveBeenCalledWith(updatedSession, { title: updatedTitle })
   })
 
+  it('faz flushNow imediato no primeiro push da ativacao (upload inicial sem esperar debounce)', async () => {
+    await act(async () => {
+      renderHook((props) => useCloudSync(props), { initialProps: defaultProps })
+      await Promise.resolve()
+    })
+
+    // Primeiro push de uma ativacao com times → flush imediato (nao fica preso em local-only)
+    expect(mockFlushNow).toHaveBeenCalled()
+  })
+
+  it('nao faz flush imediato quando a sessao nao tem times', async () => {
+    const sessionWithoutTeams = makeSession({ teams: [] })
+    await act(async () => {
+      renderHook((props) => useCloudSync(props), {
+        initialProps: { ...defaultProps, session: sessionWithoutTeams },
+      })
+      await Promise.resolve()
+    })
+
+    expect(mockPushSnapshot).not.toHaveBeenCalled()
+    expect(mockFlushNow).not.toHaveBeenCalled()
+  })
+
   it('NÃO chama pushSnapshot quando session não tem teams', () => {
     const sessionWithoutTeams = makeSession({ teams: [] })
 
