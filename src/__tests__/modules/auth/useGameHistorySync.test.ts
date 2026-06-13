@@ -3,11 +3,11 @@
  *
  * Cenários cobertos:
  *  1. Salva exatamente 1 vez na transição para terminado (modo online, logado, supabase configurado)
- *  2. No-op para modo demo
- *  3. No-op para modo offline
- *  4. No-op quando usuário não está logado
- *  5. Não salva duas vezes para a mesma sessão (proteção de duplo-salvamento)
- *  6. Reseta o tracking quando a sessão muda (novo sessionId)
+ *  2. No-op para modo demo (nunca salva)
+ *  3. Salva no modo offline quando logado (novo comportamento)
+ *  4. No-op no modo offline quando deslogado
+ *  5. No-op quando usuário não está logado
+ *  6. Não salva duas vezes para a mesma sessão (proteção de duplo-salvamento)
  *  7. NÃO salva ao montar com sessão já terminada (anti-restore-duplo)
  */
 
@@ -174,8 +174,8 @@ describe('useGameHistorySync — salva no fim do jogo (modo online, logado)', ()
   })
 })
 
-describe('useGameHistorySync — no-op para modos demo e offline', () => {
-  it('não salva no modo demo', () => {
+describe('useGameHistorySync — no-op para modo demo (nunca salva)', () => {
+  it('não salva no modo demo mesmo logado', () => {
     const finishedSession = makeSession()
 
     renderHook(() =>
@@ -189,7 +189,84 @@ describe('useGameHistorySync — no-op para modos demo e offline', () => {
     expect(mockSaveNormalizedGame).not.toHaveBeenCalled()
   })
 
-  it('não salva no modo offline', () => {
+  it('não salva no modo demo mesmo com sessão em transição', () => {
+    const inProgressSession = makeSession({
+      board: [
+        {
+          id: 'col-1',
+          filmId: 'f1',
+          film: 'Film 1',
+          tiles: [makeTile('answered'), makeTile('available')],
+        },
+      ],
+    })
+    const finishedSession = makeSession()
+
+    const { rerender } = renderHook(
+      ({ session }) => useGameHistorySync({ session, gameMode: 'demo', user: fakeUser }),
+      { initialProps: { session: inProgressSession } },
+    )
+
+    rerender({ session: finishedSession })
+
+    expect(mockSaveNormalizedGame).not.toHaveBeenCalled()
+  })
+})
+
+describe('useGameHistorySync — salva no modo offline quando logado', () => {
+  it('salva na transição para terminado no modo offline+logado', () => {
+    const inProgressSession = makeSession({
+      board: [
+        {
+          id: 'col-1',
+          filmId: 'f1',
+          film: 'Film 1',
+          tiles: [makeTile('answered'), makeTile('available')],
+        },
+      ],
+    })
+    const finishedSession = makeSession()
+
+    const { rerender } = renderHook(
+      ({ session }) => useGameHistorySync({ session, gameMode: 'offline', user: fakeUser }),
+      { initialProps: { session: inProgressSession } },
+    )
+
+    expect(mockSaveNormalizedGame).not.toHaveBeenCalled()
+
+    rerender({ session: finishedSession })
+
+    expect(mockSaveNormalizedGame).toHaveBeenCalledTimes(1)
+    expect(mockSaveNormalizedGame).toHaveBeenCalledWith(
+      finishedSession,
+      expect.objectContaining({ source: 'live' }),
+    )
+  })
+
+  it('NÃO salva no modo offline quando deslogado', () => {
+    const inProgressSession = makeSession({
+      board: [
+        {
+          id: 'col-1',
+          filmId: 'f1',
+          film: 'Film 1',
+          tiles: [makeTile('answered'), makeTile('available')],
+        },
+      ],
+    })
+    const finishedSession = makeSession()
+
+    const { rerender } = renderHook(
+      ({ session }) => useGameHistorySync({ session, gameMode: 'offline', user: null }),
+      { initialProps: { session: inProgressSession } },
+    )
+
+    rerender({ session: finishedSession })
+
+    expect(mockSaveNormalizedGame).not.toHaveBeenCalled()
+  })
+
+  it('NÃO salva ao montar com sessão offline já terminada (anti-duplo-save)', () => {
     const finishedSession = makeSession()
 
     renderHook(() =>

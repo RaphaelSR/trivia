@@ -61,8 +61,7 @@ import { buildParticipantScoreBreakdown, buildTeamScoreboard } from '../utils/sc
 import type { OnboardingConfig } from '../types/control.types'
 import { useAuth } from '@/modules/auth/hooks/useAuth'
 import { isSupabaseConfigured } from '@/shared/services/supabase.client'
-import type { SupabaseSessionRepository } from '@/modules/game/infrastructure/supabase-session.repository'
-import { createSessionRepository } from '@/modules/game/infrastructure/repository.factory'
+import { useCloudSync } from '@/modules/game/application/useCloudSync'
 // PIN será gerenciado pelo hook usePinManagement
 
 export function ControlDashboard() {
@@ -89,7 +88,7 @@ export function ControlDashboard() {
   const { gameMode, getModeDisplayName } = useGameMode()
   const { user } = useAuth()
   const { verifyPin, saveCustomPin, clearCustomPin, hasCustomPin } = usePinManagement()
-  const { saveSession, loadSession, getSessionStatus } = useOfflineSession()
+  const { currentSession, saveSession, loadSession, getSessionStatus } = useOfflineSession()
   const { films: customFilms, addFilm: addCustomFilm, updateFilm: updateCustomFilm, removeFilm: removeCustomFilm } = useCustomFilms()
 
   const dashboardState = useControlDashboardState()
@@ -288,24 +287,22 @@ export function ControlDashboard() {
     }
   }, [session, gameMode, orderedTeams.length, saveSession])
 
-  // Hidratação cross-device: restaura sessão ativa da nuvem quando o usuário
-  // autentica no modo online e o snapshot na nuvem é mais novo que o cache local.
-  useEffect(() => {
-    if (gameMode !== 'online' || !user || !isSupabaseConfigured()) return
-
-    const repository = createSessionRepository('online', true)
-    if (!('hydrateFromCloud' in repository)) return
-
-    const supabaseRepo = repository as SupabaseSessionRepository
-
-    void supabaseRepo.hydrateFromCloud().then((record) => {
-      if (record) {
-        restoreSession(record.session)
-      }
-    })
-    // Runs once per authenticated user in online mode
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user?.id, gameMode])
+  // Backup na nuvem em background para o jogo local-first.
+  // Quando o usuário está logado e o Supabase está configurado:
+  //  - empurra cada mudança de sessão com debounce (2.5 s);
+  //  - ao ativar (login/mount), reconcilia com a nuvem e restaura se mais novo.
+  // Demo nunca sincroniza (enabled=false quando gameMode==='demo').
+  useCloudSync({
+    session,
+    enabled: gameMode !== 'demo' && Boolean(user) && isSupabaseConfigured(),
+    title: session.title,
+    localUpdatedAtIso: currentSession?.metadata.lastModified ?? null,
+    onRestore: (cloudSession) => {
+      // Aplica no estado React e persiste localmente para sobreviver a um reload
+      restoreSession(cloudSession)
+      saveSession(cloudSession, cloudSession.title)
+    },
+  })
 
   // Reseta flag de notificação quando o board muda (perguntas resetadas ou respondidas)
   useEffect(() => {

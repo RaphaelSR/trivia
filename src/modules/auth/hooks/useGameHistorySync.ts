@@ -1,15 +1,16 @@
 /**
  * useGameHistorySync
  *
- * Salva o histórico da partida ao fim do jogo, EXCLUSIVAMENTE no modo online
- * e apenas quando o Supabase está configurado e o usuário está logado.
+ * Salva o histórico da partida ao fim do jogo quando o Supabase está configurado
+ * e o usuário está logado — vale para modo offline E online.
  *
  * Proteções contra duplo-salvamento:
  *  - Ref `savedSessionIdRef` memoriza o sessionId já persistido nesta montagem.
  *  - Só dispara na transição não-terminado → terminado (via flag prevFinished).
  *
  * Falhas de rede são capturadas silenciosamente (console.warn).
- * Modos demo e offline: no-op completo.
+ * Modo demo: no-op completo.
+ * Deslogado ou Supabase não configurado: no-op completo.
  */
 
 import { useEffect, useRef } from 'react'
@@ -48,8 +49,8 @@ export function useGameHistorySync({
   const prevFinishedRef = useRef<boolean | null>(null)
 
   useEffect(() => {
-    // Guard: somente online + supabase configurado + usuário logado
-    if (gameMode !== 'online') return
+    // Guard: qualquer modo que não seja demo + supabase configurado + usuário logado
+    if (gameMode === 'demo') return
     if (!isSupabaseConfigured()) return
     if (!user) return
 
