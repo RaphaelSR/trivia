@@ -11,6 +11,8 @@ const RESEND_COOLDOWN_SECONDS = 30
 
 interface AuthPanelProps {
   onClose: () => void
+  /** Aba inicial ao abrir o painel (default: 'signin'). */
+  initialTab?: Tab
 }
 
 function isValidEmail(email: string): boolean {
@@ -268,10 +270,10 @@ function ConfirmationPendingPanel({ email, onClose, onResend }: ConfirmationPend
 // AuthPanel — ponto de entrada público
 // ---------------------------------------------------------------------------
 
-export function AuthPanel({ onClose }: AuthPanelProps) {
+export function AuthPanel({ onClose, initialTab = 'signin' }: AuthPanelProps) {
   const { user, loading, login, register, logout, resend } = useAuth()
 
-  const [tab, setTab] = useState<Tab>('signin')
+  const [tab, setTab] = useState<Tab>(initialTab)
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [displayName, setDisplayName] = useState('')

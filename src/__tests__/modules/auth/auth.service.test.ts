@@ -165,3 +165,40 @@ describe('auth.service — com configuração', () => {
     expect(mockUnsubscribe).toHaveBeenCalled()
   })
 })
+
+// Garantia explícita do requisito do produto: entrar, criar conta ou sair
+// NUNCA pode apagar a sessão local salva no navegador. As funções de auth só
+// falam com o Supabase Auth (token sb-*), nunca com as chaves trivia-*.
+describe('auth.service — não apaga dados locais existentes', () => {
+  const OFFLINE_KEY = 'trivia-active-session'
+  const OFFLINE_VALUE = JSON.stringify({ metadata: { id: 'jogo-importante' }, session: {} })
+
+  const mockAuth = {
+    signUp: jest.fn().mockResolvedValue({ data: { user: { id: 'u1' } }, error: null }),
+    signInWithPassword: jest.fn().mockResolvedValue({ data: { user: { id: 'u1' }, session: {} }, error: null }),
+    signOut: jest.fn().mockResolvedValue({ error: null }),
+  }
+
+  beforeEach(() => {
+    mockIsConfigured.mockReturnValue(true)
+    mockGetClient.mockReturnValue({ auth: mockAuth })
+    localStorage.setItem(OFFLINE_KEY, OFFLINE_VALUE)
+  })
+
+  afterEach(() => localStorage.removeItem(OFFLINE_KEY))
+
+  it('signIn preserva a sessão local no localStorage', async () => {
+    await signIn('a@b.com', 'password123')
+    expect(localStorage.getItem(OFFLINE_KEY)).toBe(OFFLINE_VALUE)
+  })
+
+  it('signUp preserva a sessão local no localStorage', async () => {
+    await signUp('a@b.com', 'password123', 'Nome')
+    expect(localStorage.getItem(OFFLINE_KEY)).toBe(OFFLINE_VALUE)
+  })
+
+  it('signOut preserva a sessão local no localStorage', async () => {
+    await signOut()
+    expect(localStorage.getItem(OFFLINE_KEY)).toBe(OFFLINE_VALUE)
+  })
+})

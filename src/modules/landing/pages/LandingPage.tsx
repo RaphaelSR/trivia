@@ -1,4 +1,4 @@
-import { Film, LogIn } from 'lucide-react'
+import { Film, LogIn, UserPlus, History } from 'lucide-react'
 import { useState } from 'react'
 import { ModeSelector } from '../../../components/ui/ModeSelector'
 import { GameLayout } from '../../../shared/components/GameLayout'
@@ -9,29 +9,29 @@ import { isSupabaseConfigured } from '../../../shared/services/supabase.client'
 import { AuthPanel } from '../../auth/components/AuthPanel'
 import { useAuth } from '../../auth/hooks/useAuth'
 
+type AuthTab = 'signin' | 'signup'
+
 export function LandingPage() {
   const { theme } = useThemeMode()
   const supabaseEnabled = isSupabaseConfigured()
   const { user } = useAuth()
   const [authOpen, setAuthOpen] = useState(false)
+  const [authTab, setAuthTab] = useState<AuthTab>('signin')
+
+  const displayName =
+    (user?.user_metadata as Record<string, string> | undefined)?.display_name ??
+    user?.email?.split('@')[0] ??
+    'Conta'
+
+  function openAuth(tab: AuthTab) {
+    setAuthTab(tab)
+    setAuthOpen(true)
+  }
 
   return (
     <GameLayout className="relative flex items-center justify-center">
       {theme === 'brazil' && <BrazilBackground />}
       {theme === 'easter' && <EasterBackground />}
-
-      {/* Botão "Entrar" — visível apenas quando Supabase está configurado */}
-      {supabaseEnabled && (
-        <div className="absolute right-4 top-4 z-20">
-          <button
-            onClick={() => setAuthOpen((v) => !v)}
-            className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-3 py-1.5 text-xs font-medium text-[var(--color-muted)] backdrop-blur transition-colors hover:border-white/20 hover:text-[var(--color-text)]"
-          >
-            <LogIn className="h-3.5 w-3.5" />
-            {user ? (user.user_metadata as Record<string, string> | undefined)?.display_name ?? 'Conta' : 'Entrar'}
-          </button>
-        </div>
-      )}
 
       {/* Modal de autenticação */}
       {supabaseEnabled && authOpen && (
@@ -39,7 +39,7 @@ export function LandingPage() {
           className="fixed inset-0 z-30 flex items-center justify-center bg-black/40 backdrop-blur-sm"
           onClick={(e) => { if (e.target === e.currentTarget) setAuthOpen(false) }}
         >
-          <AuthPanel onClose={() => setAuthOpen(false)} />
+          <AuthPanel initialTab={authTab} onClose={() => setAuthOpen(false)} />
         </div>
       )}
 
@@ -62,6 +62,56 @@ export function LandingPage() {
         <div className="w-full">
           <ModeSelector />
         </div>
+
+        {/* Barra de conta — visível junto dos modos quando o online está disponível.
+            Entrar/criar conta NUNCA apaga a sessão local salva neste navegador. */}
+        {supabaseEnabled && (
+          <div className="card-surface flex w-full flex-col items-start justify-between gap-4 rounded-3xl p-5 sm:flex-row sm:items-center sm:p-6">
+            {user ? (
+              <>
+                <div className="flex items-center gap-3">
+                  <span className="flex h-9 w-9 items-center justify-center rounded-full bg-[var(--color-primary)]/15 text-sm font-semibold uppercase text-[var(--color-primary)]">
+                    {displayName.charAt(0)}
+                  </span>
+                  <div>
+                    <p className="text-sm font-semibold text-[var(--color-text)]">Conectado como {displayName}</p>
+                    <p className="text-xs text-[var(--color-muted)]">Seu histórico online fica salvo na sua conta.</p>
+                  </div>
+                </div>
+                <button
+                  onClick={() => openAuth('signin')}
+                  className="inline-flex items-center gap-2 rounded-2xl border border-[var(--color-border)] bg-transparent px-4 py-2 text-sm font-semibold text-[var(--color-text)] transition-colors hover:border-[var(--color-primary)] hover:text-[var(--color-primary)]"
+                >
+                  <History className="h-4 w-4" />
+                  Minhas partidas
+                </button>
+              </>
+            ) : (
+              <>
+                <div>
+                  <p className="text-sm font-semibold text-[var(--color-text)]">Tem uma conta? Salve e recupere seu histórico online.</p>
+                  <p className="text-xs text-[var(--color-muted)]">Opcional — seus jogos locais continuam salvos neste navegador.</p>
+                </div>
+                <div className="flex flex-wrap gap-2.5">
+                  <button
+                    onClick={() => openAuth('signin')}
+                    className="inline-flex items-center gap-2 rounded-2xl border border-[var(--color-border)] bg-transparent px-4 py-2 text-sm font-semibold text-[var(--color-text)] transition-colors hover:border-[var(--color-primary)] hover:text-[var(--color-primary)]"
+                  >
+                    <LogIn className="h-4 w-4" />
+                    Entrar
+                  </button>
+                  <button
+                    onClick={() => openAuth('signup')}
+                    className="inline-flex items-center gap-2 rounded-2xl bg-[var(--color-primary)] px-4 py-2 text-sm font-semibold text-[var(--color-background)] transition-colors hover:bg-[color:color-mix(in_srgb,var(--color-primary)_88%,var(--color-background)_12%)]"
+                  >
+                    <UserPlus className="h-4 w-4" />
+                    Criar conta
+                  </button>
+                </div>
+              </>
+            )}
+          </div>
+        )}
 
         {/* Info footer */}
         <div className="flex flex-wrap items-center justify-center gap-6 text-sm text-[var(--color-muted)]">
