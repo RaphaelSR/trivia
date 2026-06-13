@@ -17,6 +17,17 @@ jest.mock('@/modules/auth/services/normalized-history.service', () => ({
   listNormalizedGames: jest.fn(),
   saveNormalizedGame: jest.fn(),
   getGameDetail: jest.fn().mockReturnValue(new Promise(() => {})),
+  deleteNormalizedGame: jest.fn().mockResolvedValue({ error: null }),
+}))
+
+jest.mock('@/modules/auth/services/auth.service', () => ({
+  verifyPassword: jest.fn().mockResolvedValue(false),
+  signIn: jest.fn(),
+  signUp: jest.fn(),
+  signOut: jest.fn(),
+  getSession: jest.fn(),
+  onAuthStateChange: jest.fn().mockReturnValue(() => {}),
+  resendConfirmation: jest.fn(),
 }))
 
 jest.mock('@/modules/auth/components/GameDetailView', () => ({
@@ -24,6 +35,16 @@ jest.mock('@/modules/auth/components/GameDetailView', () => ({
     <div>
       <button onClick={onBack}>Voltar</button>
       <span>GameDetailView</span>
+    </div>
+  ),
+}))
+
+jest.mock('@/modules/auth/components/DeleteGameDialog', () => ({
+  DeleteGameDialog: ({ onClose, onSuccess, gameTitle }: { onClose: () => void; onSuccess: () => void; gameTitle: string }) => (
+    <div data-testid="delete-game-dialog">
+      <span>{gameTitle}</span>
+      <button onClick={onClose}>Cancelar</button>
+      <button onClick={onSuccess}>Excluir</button>
     </div>
   ),
 }))

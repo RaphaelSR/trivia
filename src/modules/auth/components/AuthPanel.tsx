@@ -1,11 +1,12 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
-import { LogOut, X } from 'lucide-react'
+import { LogOut, Trash2, X } from 'lucide-react'
 import type { User } from '@supabase/supabase-js'
 import { useAuth } from '../hooks/useAuth'
 import { listNormalizedGames } from '../services/normalized-history.service'
 import type { NormalizedGameSummary } from '../services/normalized-history.service'
 import { ImportLocalSessions } from './ImportLocalSessions'
 import { GameDetailView } from './GameDetailView'
+import { DeleteGameDialog } from './DeleteGameDialog'
 
 type Tab = 'signin' | 'signup'
 
@@ -59,6 +60,7 @@ function LoggedInPanel({ user, loading, onLogout, onClose }: LoggedInPanelProps)
   const [historyLoading, setHistoryLoading] = useState(true)
   const [historyError, setHistoryError] = useState(false)
   const [selectedGameId, setSelectedGameId] = useState<string | null>(null)
+  const [deleteTarget, setDeleteTarget] = useState<{ id: string; title: string } | null>(null)
 
   useEffect(() => {
     let cancelled = false
@@ -86,6 +88,11 @@ function LoggedInPanel({ user, loading, onLogout, onClose }: LoggedInPanelProps)
 
   const handleHistoryRefresh = useCallback((entries: NormalizedGameSummary[]) => {
     setHistory(entries)
+  }, [])
+
+  const handleDeleteSuccess = useCallback((deletedId: string) => {
+    setHistory((prev) => prev.filter((g) => g.id !== deletedId))
+    setDeleteTarget(null)
   }, [])
 
   // Detalhe da partida selecionada
@@ -161,10 +168,10 @@ function LoggedInPanel({ user, loading, onLogout, onClose }: LoggedInPanelProps)
         {!historyLoading && !historyError && history.length > 0 && (
           <ul className="flex max-h-48 flex-col gap-2 overflow-y-auto pr-1" role="list">
             {history.map((entry) => (
-              <li key={entry.id}>
+              <li key={entry.id} className="flex items-stretch gap-1">
                 <button
                   onClick={() => setSelectedGameId(entry.id)}
-                  className="w-full rounded-lg border border-white/5 bg-white/5 px-3 py-2 text-left transition-colors hover:border-white/10 hover:bg-white/8"
+                  className="min-w-0 flex-1 rounded-lg border border-white/5 bg-white/5 px-3 py-2 text-left transition-colors hover:border-white/10 hover:bg-white/8"
                   aria-label={`Ver detalhes de ${entry.title}`}
                 >
                   <div className="flex items-center gap-2">
@@ -196,11 +203,29 @@ function LoggedInPanel({ user, loading, onLogout, onClose }: LoggedInPanelProps)
                     </p>
                   )}
                 </button>
+                {/* Botão de exclusão por partida */}
+                <button
+                  onClick={() => setDeleteTarget({ id: entry.id, title: entry.title })}
+                  aria-label={`Excluir partida ${entry.title}`}
+                  className="flex shrink-0 items-center justify-center rounded-lg border border-white/5 bg-white/5 px-2 text-[var(--color-muted)] transition-colors hover:border-red-500/30 hover:bg-red-500/10 hover:text-red-400"
+                >
+                  <Trash2 className="h-3.5 w-3.5" />
+                </button>
               </li>
             ))}
           </ul>
         )}
       </section>
+
+      {/* Diálogo de exclusão com confirmação de senha */}
+      {deleteTarget && (
+        <DeleteGameDialog
+          gameId={deleteTarget.id}
+          gameTitle={deleteTarget.title}
+          onClose={() => setDeleteTarget(null)}
+          onSuccess={() => handleDeleteSuccess(deleteTarget.id)}
+        />
+      )}
     </div>
   )
 }

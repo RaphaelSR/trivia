@@ -1,4 +1,4 @@
-import { Database, LogOut, Menu, MonitorPlay, Wifi, WifiOff } from 'lucide-react'
+import { Cloud, Database, HardDrive, LogOut, Menu, MonitorPlay, UserCircle } from 'lucide-react'
 import { Button } from '@/components/ui/Button'
 import type { CloudSyncStatus } from '@/modules/game/application/useCloudSync'
 import { SyncStatusIndicator } from './SyncStatusIndicator'
@@ -12,12 +12,14 @@ interface ControlTopbarProps {
   onOpenSessions: () => void
   onExit: () => void
   onToggleSidebar: () => void
+  /** Quando definido, exibe o botão de conta ao lado do Database. */
+  onOpenAccount?: () => void
 }
 
 const modeIcons = {
   demo: MonitorPlay,
-  offline: WifiOff,
-  online: Wifi,
+  offline: HardDrive,
+  online: Cloud,
 }
 
 const modeBgClasses = {
@@ -26,7 +28,7 @@ const modeBgClasses = {
   online: 'bg-[var(--color-primary)]/15 text-[var(--color-primary)] border-[var(--color-primary)]/30',
 }
 
-export function ControlTopbar({ title, modeLabel, mode, syncStatus, onOpenSessions, onExit, onToggleSidebar }: ControlTopbarProps) {
+export function ControlTopbar({ title, modeLabel, mode, syncStatus, onOpenSessions, onExit, onToggleSidebar, onOpenAccount }: ControlTopbarProps) {
   const ModeIcon = modeIcons[mode]
 
   return (
@@ -36,7 +38,7 @@ export function ControlTopbar({ title, modeLabel, mode, syncStatus, onOpenSessio
       </Button>
 
       <div className="flex min-w-0 flex-1 items-center gap-2">
-        <ModeIcon size={14} className="shrink-0 text-[var(--color-primary)]" />
+        <ModeIcon size={14} data-testid={`mode-icon-${mode}`} className="shrink-0 text-[var(--color-primary)]" />
         <span className="truncate text-sm font-semibold text-[var(--color-text)]">{title}</span>
         <span className={`hidden shrink-0 rounded-full border px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider sm:inline-flex ${modeBgClasses[mode]}`}>
           {modeLabel}
@@ -49,6 +51,11 @@ export function ControlTopbar({ title, modeLabel, mode, syncStatus, onOpenSessio
       ) : null}
 
       <div className="flex shrink-0 items-center gap-1.5">
+        {onOpenAccount !== undefined ? (
+          <Button variant="ghost" size="icon" aria-label="Minha conta" onClick={onOpenAccount}>
+            <UserCircle size={15} />
+          </Button>
+        ) : null}
         <Button variant="ghost" size="icon" aria-label="Gerenciar sessões" onClick={onOpenSessions}>
           <Database size={15} />
         </Button>
