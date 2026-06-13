@@ -445,14 +445,14 @@ describe('useCloudSync — forceSync', () => {
     mockFlushNow.mockClear()
 
     await act(async () => {
-      result.current.forceSync()
+      await result.current.forceSync()
     })
 
     expect(mockPushSnapshot).toHaveBeenCalledWith(defaultProps.session, { title: defaultProps.title })
     expect(mockFlushNow).toHaveBeenCalledTimes(1)
   })
 
-  it('é no-op quando enabled=false', async () => {
+  it('é no-op quando enabled=false e retorna "disabled"', async () => {
     const { result } = renderHook(
       (props) => useCloudSync(props),
       { initialProps: { ...defaultProps, enabled: false } },
@@ -461,12 +461,72 @@ describe('useCloudSync — forceSync', () => {
     mockPushSnapshot.mockClear()
     mockFlushNow.mockClear()
 
+    let syncResult: string | undefined
     await act(async () => {
-      result.current.forceSync()
+      syncResult = await result.current.forceSync()
     })
 
+    expect(syncResult).toBe('disabled')
     expect(mockPushSnapshot).not.toHaveBeenCalled()
     expect(mockFlushNow).not.toHaveBeenCalled()
+  })
+
+  it('retorna "already-synced" quando o status já era synced e sem pending antes', async () => {
+    mockGetStatus.mockReturnValue('synced')
+    mockHasPendingSync.mockReturnValue(false)
+
+    const { result } = renderHook(
+      (props) => useCloudSync(props),
+      { initialProps: defaultProps },
+    )
+
+    let syncResult: string | undefined
+    await act(async () => {
+      syncResult = await result.current.forceSync()
+    })
+
+    expect(syncResult).toBe('already-synced')
+  })
+
+  it('retorna "synced" quando estava pending/idle antes e vira synced após flush', async () => {
+    // Before: pending state
+    mockGetStatus.mockReturnValue('pending')
+    mockHasPendingSync.mockReturnValue(true)
+
+    const { result } = renderHook(
+      (props) => useCloudSync(props),
+      { initialProps: defaultProps },
+    )
+
+    // After flush: synced
+    mockGetStatus.mockReturnValue('synced')
+
+    let syncResult: string | undefined
+    await act(async () => {
+      syncResult = await result.current.forceSync()
+    })
+
+    expect(syncResult).toBe('synced')
+  })
+
+  it('retorna "pending" quando após flush o status continua pending', async () => {
+    mockGetStatus.mockReturnValue('idle')
+    mockHasPendingSync.mockReturnValue(false)
+
+    const { result } = renderHook(
+      (props) => useCloudSync(props),
+      { initialProps: defaultProps },
+    )
+
+    // After flush: still pending (network failure)
+    mockGetStatus.mockReturnValue('pending')
+
+    let syncResult: string | undefined
+    await act(async () => {
+      syncResult = await result.current.forceSync()
+    })
+
+    expect(syncResult).toBe('pending')
   })
 
   it('usa a sessão mais recente após re-render com nova sessão', async () => {
@@ -486,7 +546,7 @@ describe('useCloudSync — forceSync', () => {
     mockFlushNow.mockClear()
 
     await act(async () => {
-      result.current.forceSync()
+      await result.current.forceSync()
     })
 
     expect(mockPushSnapshot).toHaveBeenCalledWith(newSession, { title: newTitle })
