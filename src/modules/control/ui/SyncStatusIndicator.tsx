@@ -13,7 +13,7 @@ import type { CloudSyncStatus } from '@/modules/game/application/useCloudSync'
 interface SyncStatusIndicatorProps {
   status: CloudSyncStatus
   /** When provided and status !== 'syncing', the pill becomes a clickable button. */
-  onForceSync?: () => void
+  onForceSync?: () => void | Promise<unknown>
 }
 
 interface StatusConfig {
@@ -74,7 +74,7 @@ export function SyncStatusIndicator({ status, onForceSync }: SyncStatusIndicator
         aria-atomic="true"
         title="Sincronizar agora"
         aria-label="Sincronizar agora"
-        onClick={onForceSync}
+        onClick={() => { void onForceSync() }}
         className={sharedClassName}
       >
         {config.icon}

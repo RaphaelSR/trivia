@@ -307,6 +307,26 @@ export function ControlDashboard() {
     },
   })
 
+  // Handler de force sync: chama forceSync() e exibe toast contextual em pt-BR.
+  const handleForceSync = async () => {
+    const result = await forceSync()
+    switch (result) {
+      case 'already-synced':
+        toast.success('Sua partida já está sincronizada com a sua conta.')
+        break
+      case 'synced':
+        toast.success('Partida sincronizada com a sua conta.')
+        break
+      case 'pending':
+        toast.error('Não foi possível sincronizar agora. Vamos tentar de novo automaticamente.')
+        break
+      case 'disabled':
+        toast('Entre na sua conta para sincronizar esta partida.')
+        setAccountOpen(true)
+        break
+    }
+  }
+
   // Reseta flag de notificação quando o board muda (perguntas resetadas ou respondidas)
   useEffect(() => {
     // Se o jogo não está mais finalizado mas já foi notificado, reseta a flag
@@ -825,7 +845,7 @@ export function ControlDashboard() {
           modeLabel={getModeDisplayName(gameMode)}
           backendLabel={backendLabel}
           syncStatus={gameMode !== 'demo' ? syncStatus : undefined}
-          onForceSync={syncEnabled ? forceSync : undefined}
+          onForceSync={gameMode !== 'demo' ? handleForceSync : undefined}
           onOpenSessions={handleOpenSessions}
           onExit={() => {
             setActivePanel('board')

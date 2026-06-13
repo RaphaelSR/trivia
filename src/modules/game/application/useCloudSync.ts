@@ -53,13 +53,22 @@ export interface UseCloudSyncOptions {
   localUpdatedAtIso: string | null
 }
 
+/**
+ * Result returned by forceSync():
+ * - 'already-synced' : the session was already fully synced before the call
+ * - 'synced'         : the flush succeeded and the session is now synced
+ * - 'pending'        : the flush was attempted but the session is still pending
+ * - 'disabled'       : sync is not enabled (not logged in / Supabase unconfigured)
+ */
+export type ForceSyncResult = 'already-synced' | 'synced' | 'pending' | 'disabled'
+
 export function useCloudSync({
   session,
   enabled,
   title,
   onRestore,
   localUpdatedAtIso,
-}: UseCloudSyncOptions): { status: CloudSyncStatus; forceSync: () => void } {
+}: UseCloudSyncOptions): { status: CloudSyncStatus; forceSync: () => Promise<ForceSyncResult> } {
   // Stable instance for the lifetime of the component
   const syncRef = useRef(createCloudSessionSync())
 
@@ -87,11 +96,23 @@ export function useCloudSync({
 
   // forceSync: manual escape-hatch — pushes the latest snapshot immediately.
   // Stable via useCallback([]) — latestRef and syncRef are stable refs.
-  const forceSync = useCallback(() => {
+  // Returns a ForceSyncResult so callers can show contextual feedback.
+  const forceSync = useCallback(async (): Promise<ForceSyncResult> => {
     const { enabled: latestEnabled, session: latestSession, title: latestTitle } = latestRef.current
-    if (!latestEnabled) return
+    if (!latestEnabled) return 'disabled'
+
+    // Capture pre-flush state: was it already cleanly synced?
+    const wasSynced =
+      syncRef.current.getStatus() === 'synced' && !syncRef.current.hasPendingSync()
+
     syncRef.current.pushSnapshot(latestSession, { title: latestTitle })
-    void syncRef.current.flushNow()
+    await syncRef.current.flushNow()
+
+    const after = syncRef.current.getStatus()
+    if (after === 'synced') {
+      return wasSynced ? 'already-synced' : 'synced'
+    }
+    return 'pending'
   }, [])
 
   // Dispose on unmount
