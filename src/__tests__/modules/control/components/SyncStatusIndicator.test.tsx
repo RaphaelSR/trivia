@@ -7,6 +7,7 @@
 
 import '@testing-library/jest-dom'
 import { render, screen } from '@testing-library/react'
+import userEvent from '@testing-library/user-event'
 import { SyncStatusIndicator } from '@/modules/control/ui/SyncStatusIndicator'
 import type { CloudSyncStatus } from '@/modules/game/application/useCloudSync'
 
@@ -43,5 +44,47 @@ describe('SyncStatusIndicator', () => {
       const { unmount } = render(<SyncStatusIndicator status={status} />)
       unmount()
     }
+  })
+})
+
+describe('SyncStatusIndicator — forceSync', () => {
+  it('com onForceSync e status !== syncing: renderiza como button com aria-label "Sincronizar agora"', () => {
+    render(<SyncStatusIndicator status="synced" onForceSync={jest.fn()} />)
+    const btn = screen.getByRole('button', { name: 'Sincronizar agora' })
+    expect(btn).toBeInTheDocument()
+  })
+
+  it('clicar no button dispara onForceSync', async () => {
+    const onForceSync = jest.fn()
+    render(<SyncStatusIndicator status="synced" onForceSync={onForceSync} />)
+    const btn = screen.getByRole('button', { name: 'Sincronizar agora' })
+    await userEvent.click(btn)
+    expect(onForceSync).toHaveBeenCalledTimes(1)
+  })
+
+  it('com onForceSync e status pending: renderiza como button clicável', () => {
+    render(<SyncStatusIndicator status="pending" onForceSync={jest.fn()} />)
+    expect(screen.getByRole('button', { name: 'Sincronizar agora' })).toBeInTheDocument()
+  })
+
+  it('com onForceSync e status local-only: renderiza como button clicável', () => {
+    render(<SyncStatusIndicator status="local-only" onForceSync={jest.fn()} />)
+    expect(screen.getByRole('button', { name: 'Sincronizar agora' })).toBeInTheDocument()
+  })
+
+  it('com onForceSync e status syncing: NÃO renderiza como button (syncing em progresso)', () => {
+    render(<SyncStatusIndicator status="syncing" onForceSync={jest.fn()} />)
+    expect(screen.queryByRole('button')).not.toBeInTheDocument()
+  })
+
+  it('sem onForceSync: NÃO renderiza como button (qualquer status)', () => {
+    render(<SyncStatusIndicator status="synced" />)
+    expect(screen.queryByRole('button')).not.toBeInTheDocument()
+  })
+
+  it('mantém aria-live="polite" quando renderiza como button', () => {
+    render(<SyncStatusIndicator status="synced" onForceSync={jest.fn()} />)
+    const btn = screen.getByRole('button', { name: 'Sincronizar agora' })
+    expect(btn).toHaveAttribute('aria-live', 'polite')
   })
 })

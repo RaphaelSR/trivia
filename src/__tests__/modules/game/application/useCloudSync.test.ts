@@ -431,3 +431,80 @@ describe('useCloudSync — status de UI', () => {
     expect(result.current.status).toBe('local-only')
   })
 })
+
+// ── Suite 6: forceSync ────────────────────────────────────────────────────────
+
+describe('useCloudSync — forceSync', () => {
+  it('chama pushSnapshot e flushNow com a sessão atual quando enabled=true', async () => {
+    const { result } = renderHook(
+      (props) => useCloudSync(props),
+      { initialProps: defaultProps },
+    )
+
+    mockPushSnapshot.mockClear()
+    mockFlushNow.mockClear()
+
+    await act(async () => {
+      result.current.forceSync()
+    })
+
+    expect(mockPushSnapshot).toHaveBeenCalledWith(defaultProps.session, { title: defaultProps.title })
+    expect(mockFlushNow).toHaveBeenCalledTimes(1)
+  })
+
+  it('é no-op quando enabled=false', async () => {
+    const { result } = renderHook(
+      (props) => useCloudSync(props),
+      { initialProps: { ...defaultProps, enabled: false } },
+    )
+
+    mockPushSnapshot.mockClear()
+    mockFlushNow.mockClear()
+
+    await act(async () => {
+      result.current.forceSync()
+    })
+
+    expect(mockPushSnapshot).not.toHaveBeenCalled()
+    expect(mockFlushNow).not.toHaveBeenCalled()
+  })
+
+  it('usa a sessão mais recente após re-render com nova sessão', async () => {
+    const { result, rerender } = renderHook(
+      (props) => useCloudSync(props),
+      { initialProps: defaultProps },
+    )
+
+    const newSession = makeSession({ id: 'sess-2', title: 'Sessão Nova' })
+    const newTitle = 'Sessão Nova'
+
+    await act(async () => {
+      rerender({ ...defaultProps, session: newSession, title: newTitle })
+    })
+
+    mockPushSnapshot.mockClear()
+    mockFlushNow.mockClear()
+
+    await act(async () => {
+      result.current.forceSync()
+    })
+
+    expect(mockPushSnapshot).toHaveBeenCalledWith(newSession, { title: newTitle })
+    expect(mockFlushNow).toHaveBeenCalledTimes(1)
+  })
+
+  it('forceSync é uma função estável (mesma referência entre re-renders)', async () => {
+    const { result, rerender } = renderHook(
+      (props) => useCloudSync(props),
+      { initialProps: defaultProps },
+    )
+
+    const firstRef = result.current.forceSync
+
+    await act(async () => {
+      rerender({ ...defaultProps, session: makeSession({ title: 'Outro' }) })
+    })
+
+    expect(result.current.forceSync).toBe(firstRef)
+  })
+})
