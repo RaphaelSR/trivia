@@ -292,7 +292,7 @@ export function ControlDashboard() {
   //  - empurra cada mudança de sessão com debounce (2.5 s);
   //  - ao ativar (login/mount), reconcilia com a nuvem e restaura se mais novo.
   // Demo nunca sincroniza (enabled=false quando gameMode==='demo').
-  useCloudSync({
+  const { status: syncStatus } = useCloudSync({
     session,
     enabled: gameMode !== 'demo' && Boolean(user) && isSupabaseConfigured(),
     title: session.title,
@@ -821,6 +821,7 @@ export function ControlDashboard() {
           mode={gameMode}
           modeLabel={getModeDisplayName(gameMode)}
           backendLabel={backendLabel}
+          syncStatus={gameMode !== 'demo' ? syncStatus : undefined}
           onOpenSessions={handleOpenSessions}
           onExit={() => {
             setActivePanel('board')

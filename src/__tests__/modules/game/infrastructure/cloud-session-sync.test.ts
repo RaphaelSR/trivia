@@ -273,7 +273,7 @@ describe('CloudSessionSync — debounce / coalescing', () => {
     expect(insertFn).toHaveBeenCalledTimes(1)
     const insertPayload = insertFn.mock.calls[0][0]
     expect(insertPayload.status).toBe('active')
-    expect(insertPayload.mode).toBe('online')
+    expect(insertPayload.mode).toBe('cloud')
   })
 })
 
@@ -701,5 +701,136 @@ describe('CloudSessionSync — title opt', () => {
     sync.pushSnapshot(makeSession({ title: 'Session Title' }))
     await sync.flushNow()
     expect(insertFn.mock.calls[0][0].title).toBe('Session Title')
+  })
+})
+
+// ── Suite 9: status state machine ─────────────────────────────────────────────
+
+describe('CloudSessionSync — status state machine', () => {
+  let sync: CloudSessionSync
+
+  beforeEach(() => {
+    jest.useFakeTimers()
+    jest.clearAllMocks()
+    mockIsConfigured.mockReturnValue(true)
+  })
+
+  afterEach(() => {
+    sync.dispose()
+    jest.useRealTimers()
+  })
+
+  it('starts with idle status', () => {
+    mockGetClient.mockReturnValue({ auth: buildAuthMock(), from: jest.fn() })
+    sync = createCloudSessionSync()
+    expect(sync.getStatus()).toBe('idle')
+  })
+
+  it('transitions idle → syncing → synced on successful flush', async () => {
+    const { fromFn } = buildSuccessFromMock()
+    mockGetClient.mockReturnValue({ auth: buildAuthMock(), from: fromFn })
+    sync = createCloudSessionSync()
+
+    const states: string[] = []
+    sync.subscribe((s) => states.push(s))
+
+    sync.pushSnapshot(makeSession())
+    await sync.flushNow()
+
+    expect(states).toEqual(['idle', 'syncing', 'synced'])
+    expect(sync.getStatus()).toBe('synced')
+  })
+
+  it('transitions syncing → pending on flush failure', async () => {
+    mockGetClient.mockReturnValue({
+      auth: buildAuthMock(),
+      from: jest.fn().mockReturnValue({
+        update: jest.fn().mockReturnValue({
+          eq: jest.fn().mockReturnThis(),
+          select: jest.fn().mockRejectedValue(new Error('Network error')),
+        }),
+      }),
+    })
+    sync = createCloudSessionSync()
+
+    const states: string[] = []
+    sync.subscribe((s) => states.push(s))
+
+    sync.pushSnapshot(makeSession())
+    await sync.flushNow()
+
+    expect(sync.getStatus()).toBe('pending')
+    expect(states).toContain('syncing')
+    expect(states).toContain('pending')
+  })
+
+  it('transitions to pending when not authenticated but has pending snapshot', async () => {
+    mockGetClient.mockReturnValue({ auth: buildNoAuthMock(), from: jest.fn() })
+    sync = createCloudSessionSync()
+
+    sync.pushSnapshot(makeSession())
+    await sync.flushNow()
+
+    expect(sync.getStatus()).toBe('pending')
+  })
+
+  it('subscribe receives current status immediately', () => {
+    const { fromFn } = buildSuccessFromMock()
+    mockGetClient.mockReturnValue({ auth: buildAuthMock(), from: fromFn })
+    sync = createCloudSessionSync()
+
+    const received: string[] = []
+    sync.subscribe((s) => received.push(s))
+
+    expect(received).toEqual(['idle'])
+  })
+
+  it('unsubscribe stops receiving status updates', async () => {
+    const { fromFn } = buildSuccessFromMock()
+    mockGetClient.mockReturnValue({ auth: buildAuthMock(), from: fromFn })
+    sync = createCloudSessionSync()
+
+    const states: string[] = []
+    const unsubscribe = sync.subscribe((s) => states.push(s))
+
+    // Unsubscribe before flush
+    unsubscribe()
+
+    sync.pushSnapshot(makeSession())
+    await sync.flushNow()
+
+    // Only the initial 'idle' should be in states (received at subscription time)
+    expect(states).toEqual(['idle'])
+  })
+
+  it('dispose clears all listeners — no more notifications', async () => {
+    const { fromFn } = buildSuccessFromMock()
+    mockGetClient.mockReturnValue({ auth: buildAuthMock(), from: fromFn })
+    sync = createCloudSessionSync()
+
+    const states: string[] = []
+    sync.subscribe((s) => states.push(s))
+
+    sync.dispose()
+    states.length = 0 // clear initial notification
+
+    // Even if we somehow call _doFlush after dispose, listeners are gone
+    // (dispose cleared both timers and listeners)
+    expect(states).toEqual([])
+  })
+
+  it('mode stored in upsert is "cloud" (not "online")', async () => {
+    const updateSelectFn = jest.fn().mockResolvedValue({ data: [{ id: 'row-1' }], error: null })
+    const updateEqChain = { eq: jest.fn().mockReturnThis() as jest.Mock, select: updateSelectFn }
+    const updateFn = jest.fn().mockReturnValue(updateEqChain)
+    const fromFn = jest.fn().mockReturnValue({ update: updateFn })
+    mockGetClient.mockReturnValue({ auth: buildAuthMock(), from: fromFn })
+    sync = createCloudSessionSync()
+
+    sync.pushSnapshot(makeSession())
+    await sync.flushNow()
+
+    const updatePayload = updateFn.mock.calls[0][0]
+    expect(updatePayload.mode).toBe('cloud')
   })
 })

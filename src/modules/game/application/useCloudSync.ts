@@ -17,9 +17,18 @@
  * - Cleans up (dispose) on unmount.
  */
 
-import { useEffect, useRef } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { createCloudSessionSync } from '../infrastructure/cloud-session-sync'
 import type { TriviaSession } from '../../trivia/types'
+
+/**
+ * UI-facing sync status, derived from the service's internal SyncStatus.
+ * - 'local-only' : cloud sync is disabled (not logged in / Supabase unconfigured)
+ * - 'syncing'    : a flush is in progress
+ * - 'synced'     : last flush succeeded, nothing pending
+ * - 'pending'    : flush failed or auth missing; data is saved locally pending retry
+ */
+export type CloudSyncStatus = 'local-only' | 'syncing' | 'synced' | 'pending'
 
 export interface UseCloudSyncOptions {
   /** Session to back up. */
@@ -50,9 +59,12 @@ export function useCloudSync({
   title,
   onRestore,
   localUpdatedAtIso,
-}: UseCloudSyncOptions): void {
+}: UseCloudSyncOptions): { status: CloudSyncStatus } {
   // Stable instance for the lifetime of the component
   const syncRef = useRef(createCloudSessionSync())
+
+  // Observable sync status for UI
+  const [status, setStatus] = useState<CloudSyncStatus>('local-only')
 
   // Track whether we've already run the initial reconcile for the current
   // enabled=true activation, to avoid re-running on every re-render.
@@ -119,4 +131,31 @@ export function useCloudSync({
     // content changes only; the title is just metadata captured at push time.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [enabled, session])
+
+  // Subscribe to service status and map to UI status
+  useEffect(() => {
+    if (!enabled) {
+      setStatus('local-only')
+      return
+    }
+
+    const unsubscribe = syncRef.current.subscribe((serviceStatus) => {
+      // Map service SyncStatus → CloudSyncStatus
+      // 'idle' before first push = 'local-only' (nothing synced yet)
+      if (serviceStatus === 'idle') {
+        setStatus('local-only')
+      } else if (serviceStatus === 'syncing') {
+        setStatus('syncing')
+      } else if (serviceStatus === 'synced') {
+        setStatus('synced')
+      } else {
+        // 'pending'
+        setStatus('pending')
+      }
+    })
+
+    return unsubscribe
+  }, [enabled])
+
+  return { status }
 }

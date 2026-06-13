@@ -19,6 +19,15 @@ const mockFlushNow = jest.fn().mockResolvedValue(undefined)
 const mockReconcile = jest.fn()
 const mockDispose = jest.fn()
 const mockHasPendingSync = jest.fn().mockReturnValue(false)
+const mockGetStatus = jest.fn().mockReturnValue('idle')
+// subscribe: stores the listener so tests can trigger status changes
+let _capturedListener: ((s: string) => void) | null = null
+const mockSubscribe = jest.fn((listener: (s: string) => void) => {
+  _capturedListener = listener
+  // Immediately call with current status (matching real behavior)
+  listener(mockGetStatus())
+  return jest.fn() // unsubscribe noop
+})
 
 jest.mock('@/modules/game/infrastructure/cloud-session-sync', () => ({
   createCloudSessionSync: jest.fn(() => ({
@@ -28,6 +37,8 @@ jest.mock('@/modules/game/infrastructure/cloud-session-sync', () => ({
     dispose: mockDispose,
     hasPendingSync: mockHasPendingSync,
     pullActiveSnapshot: jest.fn().mockResolvedValue(null),
+    getStatus: mockGetStatus,
+    subscribe: mockSubscribe,
   })),
 }))
 
@@ -71,6 +82,14 @@ beforeEach(() => {
   jest.clearAllMocks()
   mockFlushNow.mockResolvedValue(undefined)
   mockReconcile.mockResolvedValue({ action: 'none' })
+  mockGetStatus.mockReturnValue('idle')
+  _capturedListener = null
+  // Re-wire subscribe mock (clearAllMocks resets it)
+  mockSubscribe.mockImplementation((listener: (s: string) => void) => {
+    _capturedListener = listener
+    listener(mockGetStatus())
+    return jest.fn()
+  })
 })
 
 // ── Suite 1: PUSH ─────────────────────────────────────────────────────────────
@@ -297,5 +316,95 @@ describe('useCloudSync — dispose no unmount', () => {
     unmount()
 
     expect(mockDispose).toHaveBeenCalledTimes(1)
+  })
+})
+
+// ── Suite 5: status retornado ─────────────────────────────────────────────────
+
+describe('useCloudSync — status de UI', () => {
+  it('retorna local-only quando disabled=false', () => {
+    const { result } = renderHook(
+      (props) => useCloudSync(props),
+      { initialProps: { ...defaultProps, enabled: false } },
+    )
+
+    expect(result.current.status).toBe('local-only')
+  })
+
+  it('retorna local-only para status idle (nenhum push ainda)', () => {
+    mockGetStatus.mockReturnValue('idle')
+
+    const { result } = renderHook(
+      (props) => useCloudSync(props),
+      { initialProps: defaultProps },
+    )
+
+    expect(result.current.status).toBe('local-only')
+  })
+
+  it('retorna syncing quando serviço emite syncing', async () => {
+    mockGetStatus.mockReturnValue('idle')
+
+    const { result } = renderHook(
+      (props) => useCloudSync(props),
+      { initialProps: defaultProps },
+    )
+
+    // Simulate service transitioning to syncing
+    await act(async () => {
+      _capturedListener?.('syncing')
+    })
+
+    expect(result.current.status).toBe('syncing')
+  })
+
+  it('retorna synced quando serviço emite synced', async () => {
+    mockGetStatus.mockReturnValue('idle')
+
+    const { result } = renderHook(
+      (props) => useCloudSync(props),
+      { initialProps: defaultProps },
+    )
+
+    await act(async () => {
+      _capturedListener?.('synced')
+    })
+
+    expect(result.current.status).toBe('synced')
+  })
+
+  it('retorna pending quando serviço emite pending', async () => {
+    mockGetStatus.mockReturnValue('idle')
+
+    const { result } = renderHook(
+      (props) => useCloudSync(props),
+      { initialProps: defaultProps },
+    )
+
+    await act(async () => {
+      _capturedListener?.('pending')
+    })
+
+    expect(result.current.status).toBe('pending')
+  })
+
+  it('volta para local-only quando enabled muda de true para false', async () => {
+    const { result, rerender } = renderHook(
+      (props) => useCloudSync(props),
+      { initialProps: defaultProps },
+    )
+
+    // Simulate synced state
+    await act(async () => {
+      _capturedListener?.('synced')
+    })
+    expect(result.current.status).toBe('synced')
+
+    // Disable sync
+    await act(async () => {
+      rerender({ ...defaultProps, enabled: false })
+    })
+
+    expect(result.current.status).toBe('local-only')
   })
 })

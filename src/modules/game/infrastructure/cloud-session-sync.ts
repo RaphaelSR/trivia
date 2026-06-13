@@ -33,6 +33,11 @@ interface PendingRecord {
   dirty: boolean
 }
 
+/** Observable sync status for UI indicators. */
+export type SyncStatus = 'idle' | 'syncing' | 'synced' | 'pending'
+
+export type SyncStatusListener = (status: SyncStatus) => void
+
 // ── Public API ────────────────────────────────────────────────────────────────
 
 export interface CloudSessionSync {
@@ -76,8 +81,23 @@ export interface CloudSessionSync {
   hasPendingSync(): boolean
 
   /**
-   * Removes window event listeners and clears internal timers.  Call when the
-   * service instance is no longer needed to prevent memory leaks.
+   * Returns the current observable sync status.
+   * - 'idle'    : no push has been attempted yet
+   * - 'syncing' : a flush is in progress
+   * - 'synced'  : last flush succeeded, nothing pending
+   * - 'pending' : flush failed or auth missing; data preserved locally
+   */
+  getStatus(): SyncStatus
+
+  /**
+   * Subscribes to sync status changes.  Returns an unsubscribe function.
+   * The listener is called immediately with the current status on subscription.
+   */
+  subscribe(listener: SyncStatusListener): () => void
+
+  /**
+   * Removes window event listeners, clears internal timers, and removes all
+   * status listeners.  Call when the service instance is no longer needed.
    */
   dispose(): void
 }
@@ -92,6 +112,12 @@ class CloudSessionSyncImpl implements CloudSessionSync {
 
   /** Debounce timer handle. */
   private timer: ReturnType<typeof setTimeout> | null = null
+
+  /** Observable sync status. */
+  private _status: SyncStatus = 'idle'
+
+  /** Registered status listeners. */
+  private _listeners: Set<SyncStatusListener> = new Set()
 
   constructor() {
     if (typeof window !== 'undefined') {
@@ -174,6 +200,19 @@ class CloudSessionSyncImpl implements CloudSessionSync {
     return this.pending !== null
   }
 
+  getStatus(): SyncStatus {
+    return this._status
+  }
+
+  subscribe(listener: SyncStatusListener): () => void {
+    this._listeners.add(listener)
+    // Immediately notify with current status
+    listener(this._status)
+    return () => {
+      this._listeners.delete(listener)
+    }
+  }
+
   dispose(): void {
     if (typeof window !== 'undefined') {
       window.removeEventListener('online', this._handleOnline)
@@ -184,13 +223,26 @@ class CloudSessionSyncImpl implements CloudSessionSync {
       clearTimeout(this.timer)
       this.timer = null
     }
+    this._listeners.clear()
   }
 
   // ── Private helpers ─────────────────────────────────────────────────────────
 
+  private _setStatus(status: SyncStatus): void {
+    if (this._status === status) return
+    this._status = status
+    for (const listener of this._listeners) {
+      listener(status)
+    }
+  }
+
   private async _doFlush(): Promise<void> {
     if (!this.pending) return
-    if (!isSupabaseConfigured()) return
+    if (!isSupabaseConfigured()) {
+      // No config — if there's a pending snapshot, mark it as pending UI state
+      if (this.pending) this._setStatus('pending')
+      return
+    }
 
     const client = getSupabaseClient()!
     const {
@@ -199,8 +251,11 @@ class CloudSessionSyncImpl implements CloudSessionSync {
 
     if (!authSession?.user) {
       // Not logged in — keep pending so we retry once the user signs in.
+      if (this.pending) this._setStatus('pending')
       return
     }
+
+    this._setStatus('syncing')
 
     const record = this.pending
     const userId = authSession.user.id
@@ -213,7 +268,7 @@ class CloudSessionSyncImpl implements CloudSessionSync {
         .from('online_sessions')
         .update({
           title: record.title,
-          mode: 'online',
+          mode: 'cloud',
           session: record.session,
         })
         .eq('user_id', userId)
@@ -228,7 +283,7 @@ class CloudSessionSyncImpl implements CloudSessionSync {
           user_id: userId,
           status: 'active',
           title: record.title,
-          mode: 'online',
+          mode: 'cloud',
           session: record.session,
         })
         if (insertError) throw insertError
@@ -238,6 +293,7 @@ class CloudSessionSyncImpl implements CloudSessionSync {
       if (this.pending === record) {
         this.pending = null
       }
+      this._setStatus('synced')
     } catch (err) {
       console.warn('[CloudSessionSync] Cloud flush failed; will retry on next push or online event:', err)
       // Mark dirty so hasPendingSync() stays true and callers can show
@@ -245,6 +301,7 @@ class CloudSessionSyncImpl implements CloudSessionSync {
       if (this.pending === record) {
         this.pending = { ...record, dirty: true }
       }
+      this._setStatus('pending')
     }
   }
 
