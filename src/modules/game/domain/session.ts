@@ -3,7 +3,7 @@ import type { TriviaColumn, TriviaParticipant, TriviaSession, TriviaTeam } from 
 import { createEmptySession } from '../../trivia/utils/createEmptySession'
 import { createLocalSession } from '../../trivia/utils/createLocalSession'
 import { buildTurnSequence, resolveTurnIndex } from './turn-order'
-import { countTotalTiles } from './board.utils'
+import { countTotalTiles, dedupeTileIds } from './board.utils'
 
 export function createSessionForMode(gameMode: GameMode, demoConfig?: DemoSessionConfig): TriviaSession {
   switch (gameMode) {
@@ -48,12 +48,16 @@ export function restorePersistedSession(session: TriviaSession | null, gameMode:
     return createSessionForMode(gameMode)
   }
 
+  // Cura sessões com tiles de id duplicado (bug do import em massa) antes de
+  // entrar no estado — assim um F5 conserta a partida sem perder nada.
+  const healed = dedupeTileIds(session)
+
   return {
-    ...session,
-    activeTurnIndex: session.activeTurnIndex ?? resolveTurnIndex(
+    ...healed,
+    activeTurnIndex: healed.activeTurnIndex ?? resolveTurnIndex(
       undefined,
-      session.activeParticipantId,
-      session.turnSequence,
+      healed.activeParticipantId,
+      healed.turnSequence,
     ),
   }
 }

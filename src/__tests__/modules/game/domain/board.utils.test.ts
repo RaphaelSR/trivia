@@ -1,4 +1,4 @@
-import { countAnsweredTiles, countTotalTiles, getAvailableTiles, isGameFinished } from '@/modules/game/domain/board.utils'
+import { countAnsweredTiles, countTotalTiles, dedupeTileIds, getAvailableTiles, isGameFinished } from '@/modules/game/domain/board.utils'
 import type { TriviaColumn } from '@/modules/trivia/types'
 
 const board: TriviaColumn[] = [
@@ -41,5 +41,56 @@ describe('board.utils', () => {
         })),
       ),
     ).toBe(true)
+  })
+
+  describe('dedupeTileIds', () => {
+    it('is a no-op (same reference) when all tile ids are already unique', () => {
+      const session = { board }
+      expect(dedupeTileIds(session)).toBe(session)
+    })
+
+    it('reassigns duplicate tile ids, keeping the first occurrence and never colliding', () => {
+      // Reproduz o bug do import em massa: três cartas do mesmo filme com id idêntico.
+      const dupBoard: TriviaColumn[] = [
+        {
+          id: 'col-x',
+          filmId: 'film-x',
+          film: 'Film X',
+          tiles: [
+            { id: 'dup', film: 'Film X', points: 10, state: 'available', question: 'Q1', answer: 'A1' },
+            { id: 'dup', film: 'Film X', points: 20, state: 'available', question: 'Q2', answer: 'A2' },
+            { id: 'dup', film: 'Film X', points: 30, state: 'available', question: 'Q3', answer: 'A3' },
+          ],
+        },
+      ]
+      const result = dedupeTileIds({ board: dupBoard })
+      const ids = result.board[0].tiles.map((tile) => tile.id)
+
+      expect(new Set(ids).size).toBe(3) // todos únicos agora
+      expect(ids[0]).toBe('dup') // primeira ocorrência preservada
+      // conteúdo e estado intactos
+      expect(result.board[0].tiles.map((t) => t.question)).toEqual(['Q1', 'Q2', 'Q3'])
+      expect(result.board[0].tiles.map((t) => t.answer)).toEqual(['A1', 'A2', 'A3'])
+    })
+
+    it('dedupes ids shared across different columns too', () => {
+      const crossBoard: TriviaColumn[] = [
+        {
+          id: 'col-a',
+          filmId: 'f-a',
+          film: 'A',
+          tiles: [{ id: 'shared', film: 'A', points: 10, state: 'available', question: 'Qa', answer: 'Aa' }],
+        },
+        {
+          id: 'col-b',
+          filmId: 'f-b',
+          film: 'B',
+          tiles: [{ id: 'shared', film: 'B', points: 10, state: 'available', question: 'Qb', answer: 'Ab' }],
+        },
+      ]
+      const result = dedupeTileIds({ board: crossBoard })
+      expect(result.board[0].tiles[0].id).toBe('shared')
+      expect(result.board[1].tiles[0].id).not.toBe('shared')
+    })
   })
 })
