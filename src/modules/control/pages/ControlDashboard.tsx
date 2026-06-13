@@ -1471,6 +1471,7 @@ export function ControlDashboard() {
           setSessionManagerOpen(false)
           setActivePanel('board')
         }}
+        onOpenAccount={isSupabaseConfigured() ? () => setAccountOpen(true) : undefined}
         onLoadSession={handleLoadSession}
         onNewSession={() => {
           // Mostra modal de confirmação antes de limpar tudo

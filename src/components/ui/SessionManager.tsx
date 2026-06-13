@@ -14,6 +14,9 @@ import {
 } from "lucide-react";
 import { useOfflineSession } from "../../hooks/useOfflineSession";
 import { useGameMode } from "../../hooks/useGameMode";
+import { useAuth } from "../../modules/auth/hooks/useAuth";
+import { isSupabaseConfigured } from "../../shared/services/supabase.client";
+import { CircleUser, LogIn } from "lucide-react";
 
 interface SessionManagerProps {
   isOpen: boolean;
@@ -21,10 +24,18 @@ interface SessionManagerProps {
   onLoadSession?: (sessionId: string) => void;
   onNewSession?: () => void;
   onResetGame?: () => void;
+  /** Abre o painel de conta (login / minhas partidas). Quando ausente, a seção de conta não é exibida. */
+  onOpenAccount?: () => void;
 }
 
-export function SessionManager({ isOpen, onClose, onLoadSession, onNewSession, onResetGame }: SessionManagerProps) {
+export function SessionManager({ isOpen, onClose, onLoadSession, onNewSession, onResetGame, onOpenAccount }: SessionManagerProps) {
   const { gameMode } = useGameMode();
+  const { user } = useAuth();
+  const supabaseEnabled = isSupabaseConfigured();
+  const accountName =
+    (user?.user_metadata as Record<string, string> | undefined)?.display_name ??
+    user?.email?.split('@')[0] ??
+    'Conta';
   const { 
     currentSession,
     sessionHistory, 
@@ -267,6 +278,40 @@ export function SessionManager({ isOpen, onClose, onLoadSession, onNewSession, o
   return (
     <Modal isOpen={isOpen} onClose={onClose} title="Gerenciar Sessões">
       <div className="p-6 space-y-6">
+        {/* Acesso à conta — login / minhas partidas (só quando o online está disponível) */}
+        {supabaseEnabled && onOpenAccount && (
+          <div className="flex flex-col gap-3 rounded-2xl border border-[var(--color-primary)]/20 bg-[var(--color-primary)]/5 p-4 sm:flex-row sm:items-center sm:justify-between">
+            {user ? (
+              <>
+                <div className="flex items-center gap-3">
+                  <span className="flex h-9 w-9 items-center justify-center rounded-full bg-[var(--color-primary)]/15 text-sm font-semibold uppercase text-[var(--color-primary)]">
+                    {accountName.charAt(0)}
+                  </span>
+                  <div className="min-w-0">
+                    <p className="truncate text-sm font-semibold text-[var(--color-text)]">Conectado como {accountName}</p>
+                    <p className="text-xs text-[var(--color-muted)]">Suas partidas ficam salvas na sua conta.</p>
+                  </div>
+                </div>
+                <Button variant="outline" onClick={() => { onClose(); onOpenAccount(); }} className="shrink-0">
+                  <CircleUser className="h-4 w-4 mr-2" />
+                  Minhas partidas
+                </Button>
+              </>
+            ) : (
+              <>
+                <div className="min-w-0">
+                  <p className="text-sm font-semibold text-[var(--color-text)]">Entre para sincronizar e gerenciar suas partidas</p>
+                  <p className="text-xs text-[var(--color-muted)]">Opcional — suas sessões locais continuam salvas neste navegador.</p>
+                </div>
+                <Button variant="primary" onClick={() => { onClose(); onOpenAccount(); }} className="shrink-0">
+                  <LogIn className="h-4 w-4 mr-2" />
+                  Entrar
+                </Button>
+              </>
+            )}
+          </div>
+        )}
+
         {/* Botões de Ação */}
         {sessionStatus.hasActiveSession && (
           <div className="flex gap-3">
@@ -321,11 +366,13 @@ export function SessionManager({ isOpen, onClose, onLoadSession, onNewSession, o
                 Modo {gameMode === 'demo' ? 'Demo' : gameMode === 'offline' ? 'Sessão Local' : 'Online'}
               </h4>
               <p className="text-xs text-[var(--color-muted)]">
-                {gameMode === 'demo' 
+                {gameMode === 'demo'
                   ? 'Dados de teste pré-configurados, sem persistência'
-                  : gameMode === 'offline'
-                  ? 'Dados salvos localmente, não sincronizados com a nuvem'
-                  : 'Cache local isolado enquanto a sincronização Supabase não é ativada'
+                  : user && supabaseEnabled
+                  ? 'Salvo neste navegador e sincronizado com a sua conta.'
+                  : supabaseEnabled
+                  ? 'Salvo neste navegador. Entre na sua conta para sincronizar.'
+                  : 'Dados salvos localmente neste navegador.'
                 }
               </p>
             </div>
