@@ -93,11 +93,24 @@ export function controlDashboardReducer(
   action: ControlDashboardAction,
 ): ControlDashboardState {
   switch (action.type) {
-    case 'patch':
+    case 'patch': {
+      // Bail-out: se nenhum valor do payload muda de fato, devolve o MESMO
+      // objeto de estado. Sem isso, dispatches redundantes (ex.: efeitos com
+      // setters instáveis nas dependências) criam um objeto novo a cada
+      // render e alimentam um loop infinito de re-renders ("Maximum update
+      // depth exceeded") nos modos demo/online.
+      const payload = action.payload
+      const hasChange = (Object.keys(payload) as Array<keyof ControlDashboardState>).some(
+        (key) => !Object.is(state[key], payload[key]),
+      )
+      if (!hasChange) {
+        return state
+      }
       return {
         ...state,
-        ...action.payload,
+        ...payload,
       }
+    }
     default:
       return state
   }

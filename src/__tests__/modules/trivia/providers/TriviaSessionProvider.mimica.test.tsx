@@ -13,6 +13,13 @@ jest.mock('react-router-dom', () => ({
 jest.mock('@/data/questionBank', () => ({
   questionBank: {},
 }))
+// Previne que o TriviaSessionProvider tente acessar Supabase nestes testes
+jest.mock('@/modules/auth/hooks/useAuth', () => ({
+  useAuth: () => ({ user: null, loading: false, configured: false, login: jest.fn(), register: jest.fn(), logout: jest.fn() }),
+}))
+jest.mock('@/modules/auth/hooks/useGameHistorySync', () => ({
+  useGameHistorySync: () => undefined,
+}))
 
 const mockUseGameMode = useGameMode as jest.MockedFunction<typeof useGameMode>
 

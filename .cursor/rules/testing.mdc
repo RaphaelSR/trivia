@@ -1,0 +1,15 @@
+---
+description: Testing rules for Trivia changes
+globs:
+  - "src/**/*.test.ts"
+  - "src/**/*.test.tsx"
+  - "src/modules/game/**/*.ts"
+alwaysApply: false
+---
+
+# Testing
+
+- Add unit tests for pure mappers and domain helpers before relying on UI tests.
+- Repository tests should mock external clients and assert data flow, not SDK internals.
+- When changing turn, scoring, session, or persistence behavior, run focused tests for the touched domain/application/infrastructure areas.
+- Keep fixtures small but representative: include teams, participants, board tiles, answered tiles, turn state, and mímica when testing session round-trips.

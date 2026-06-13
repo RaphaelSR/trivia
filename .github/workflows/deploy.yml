@@ -38,6 +38,13 @@ jobs:
         run: npm run build
         env:
           NODE_ENV: production
+          # Supabase (modo online). São secrets do repositório; a anon key é
+          # pública por design (vai para o bundle) — a segurança vem do RLS.
+          # Se os secrets não existirem, o build passa com strings vazias e o
+          # app desativa o modo online silenciosamente (comportamento idêntico
+          # ao site sem Supabase).
+          VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
+          VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
 
       - name: Setup Pages
         uses: actions/configure-pages@v4

@@ -5,6 +5,8 @@ export type ParticipantDraft = {
   id: string
   name: string
   role: TriviaParticipant['role']
+  /** E-mail opcional para vinculação de conta (capturado apenas no modo online) */
+  email?: string
 }
 
 export type TeamDraft = {

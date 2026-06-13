@@ -1,11 +1,14 @@
 import { Database, LogOut, Menu, MonitorPlay, Wifi, WifiOff } from 'lucide-react'
 import { Button } from '@/components/ui/Button'
+import type { CloudSyncStatus } from '@/modules/game/application/useCloudSync'
+import { SyncStatusIndicator } from './SyncStatusIndicator'
 
 interface ControlTopbarProps {
   title: string
   modeLabel: string
   mode: 'demo' | 'offline' | 'online'
   backendLabel?: string
+  syncStatus?: CloudSyncStatus
   onOpenSessions: () => void
   onExit: () => void
   onToggleSidebar: () => void
@@ -23,7 +26,7 @@ const modeBgClasses = {
   online: 'bg-[var(--color-primary)]/15 text-[var(--color-primary)] border-[var(--color-primary)]/30',
 }
 
-export function ControlTopbar({ title, modeLabel, mode, onOpenSessions, onExit, onToggleSidebar }: ControlTopbarProps) {
+export function ControlTopbar({ title, modeLabel, mode, syncStatus, onOpenSessions, onExit, onToggleSidebar }: ControlTopbarProps) {
   const ModeIcon = modeIcons[mode]
 
   return (
@@ -39,6 +42,11 @@ export function ControlTopbar({ title, modeLabel, mode, onOpenSessions, onExit, 
           {modeLabel}
         </span>
       </div>
+
+      {/* Sync indicator — only shown when syncStatus is provided (non-demo modes) */}
+      {syncStatus !== undefined ? (
+        <SyncStatusIndicator status={syncStatus} />
+      ) : null}
 
       <div className="flex shrink-0 items-center gap-1.5">
         <Button variant="ghost" size="icon" aria-label="Gerenciar sessões" onClick={onOpenSessions}>

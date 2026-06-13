@@ -47,6 +47,7 @@ export function useTeamManagement(
             id: participant?.id ?? memberId,
             name: participant?.name ?? 'Participante',
             role: participant?.role ?? 'player',
+            ...(participant?.email ? { email: participant.email } : {}),
           }
         }),
       }))
@@ -93,7 +94,7 @@ export function useTeamManagement(
   const updateParticipant = (
     teamId: string,
     participantId: string,
-    updates: Partial<{ id: string; name: string; role: 'host' | 'assistant' | 'player' }>
+    updates: Partial<{ id: string; name: string; role: 'host' | 'assistant' | 'player'; email: string }>
   ) => {
     setTeamDrafts((prev) => updateParticipantDraft(prev, teamId, participantId, updates))
   }

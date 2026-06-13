@@ -59,6 +59,9 @@ import { TurnOrderPreview } from '../components/TurnOrderPreview'
 import { createTeamId, createParticipantId } from '../utils/teamUtils'
 import { buildParticipantScoreBreakdown, buildTeamScoreboard } from '../utils/scoreboardUtils'
 import type { OnboardingConfig } from '../types/control.types'
+import { useAuth } from '@/modules/auth/hooks/useAuth'
+import { isSupabaseConfigured } from '@/shared/services/supabase.client'
+import { useCloudSync } from '@/modules/game/application/useCloudSync'
 // PIN será gerenciado pelo hook usePinManagement
 
 export function ControlDashboard() {
@@ -83,8 +86,9 @@ export function ControlDashboard() {
   } = useTriviaSession()
   const { theme: themeMode, setTheme } = useThemeMode()
   const { gameMode, getModeDisplayName } = useGameMode()
+  const { user } = useAuth()
   const { verifyPin, saveCustomPin, clearCustomPin, hasCustomPin } = usePinManagement()
-  const { saveSession, loadSession, getSessionStatus } = useOfflineSession()
+  const { currentSession, saveSession, loadSession, getSessionStatus } = useOfflineSession()
   const { films: customFilms, addFilm: addCustomFilm, updateFilm: updateCustomFilm, removeFilm: removeCustomFilm } = useCustomFilms()
 
   const dashboardState = useControlDashboardState()
@@ -272,16 +276,33 @@ export function ControlDashboard() {
     }
   }, [gameMode, orderedTeams.length, showOnboardingSuggestion, setShowOnboardingSuggestion])
 
-  // Salva sessão automaticamente quando há mudanças (apenas no modo offline)
+  // Salva sessão automaticamente quando há mudanças (modo offline e online; demo fica fora)
   useEffect(() => {
-    if (gameMode === 'offline' && orderedTeams.length > 0) {
+    if ((gameMode === 'offline' || gameMode === 'online') && orderedTeams.length > 0) {
       const timer = setTimeout(() => {
         saveSession(session, session.title);
       }, 1000); // Debounce de 1 segundo
-      
+
       return () => clearTimeout(timer);
     }
   }, [session, gameMode, orderedTeams.length, saveSession])
+
+  // Backup na nuvem em background para o jogo local-first.
+  // Quando o usuário está logado e o Supabase está configurado:
+  //  - empurra cada mudança de sessão com debounce (2.5 s);
+  //  - ao ativar (login/mount), reconcilia com a nuvem e restaura se mais novo.
+  // Demo nunca sincroniza (enabled=false quando gameMode==='demo').
+  const { status: syncStatus } = useCloudSync({
+    session,
+    enabled: gameMode !== 'demo' && Boolean(user) && isSupabaseConfigured(),
+    title: session.title,
+    localUpdatedAtIso: currentSession?.metadata.lastModified ?? null,
+    onRestore: (cloudSession) => {
+      // Aplica no estado React e persiste localmente para sobreviver a um reload
+      restoreSession(cloudSession)
+      saveSession(cloudSession, cloudSession.title)
+    },
+  })
 
   // Reseta flag de notificação quando o board muda (perguntas resetadas ou respondidas)
   useEffect(() => {
@@ -800,6 +821,7 @@ export function ControlDashboard() {
           mode={gameMode}
           modeLabel={getModeDisplayName(gameMode)}
           backendLabel={backendLabel}
+          syncStatus={gameMode !== 'demo' ? syncStatus : undefined}
           onOpenSessions={handleOpenSessions}
           onExit={() => {
             setActivePanel('board')
@@ -1168,6 +1190,7 @@ export function ControlDashboard() {
           setTeamsModalOpen(false)
           setActivePanel('board')
         }}
+        gameMode={gameMode}
       />
 
       <Modal

@@ -1,0 +1,18 @@
+---
+description: Supabase implementation rules for online mode
+globs:
+  - "src/modules/game/infrastructure/supabase/**/*.ts"
+  - "src/modules/game/infrastructure/*supabase*.ts"
+  - "supabase/migrations/*.sql"
+alwaysApply: false
+---
+
+# Supabase Online
+
+- Supabase SDK imports belong only in infrastructure.
+- Use the public `anon` key in the frontend; never expose or reference `service_role` in app code.
+- Online mode must authenticate with anonymous auth before remote writes.
+- All migrations must be idempotent: use `create table if not exists`, `create index if not exists`, and guarded policy creation.
+- Enable RLS on every public online table.
+- Host-owned tables must enforce ownership through `games.host_user_id = auth.uid()`.
+- Edge Functions are out of scope for the MVP; prefer RLS and versioned SQL/RPC only when atomicity is required.
