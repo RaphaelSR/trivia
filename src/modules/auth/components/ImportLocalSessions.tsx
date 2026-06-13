@@ -111,9 +111,9 @@ function EmailForm({ record, onConfirm, onCancel, importing }: EmailFormProps) {
       <p className="text-[10px] leading-relaxed text-[var(--color-muted)]">
         Informe o e-mail de cada participante para vinculá-los à conta deles (opcional).
       </p>
-      <ul className="flex flex-col gap-2">
+      <ul className="flex flex-col divide-y divide-white/5">
         {participants.map((p) => (
-          <li key={p.id} className="flex flex-col gap-1 sm:flex-row sm:items-center sm:gap-2">
+          <li key={p.id} className="flex flex-col gap-1 py-2 first:pt-0 last:pb-0 sm:flex-row sm:items-center sm:gap-2">
             <span className="shrink-0 truncate text-[10px] font-medium text-[var(--color-muted)] sm:w-24">
               {p.name}
             </span>

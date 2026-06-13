@@ -275,7 +275,7 @@ function SessionClaimPage({ gameToken }: SessionClaimPageProps) {
                     className="shrink-0 rounded-lg bg-[var(--color-primary)] px-3 py-2 text-[11px] font-semibold text-black transition-opacity hover:opacity-90 disabled:opacity-50"
                   >
                     {claimingId === p.participantId ? (
-                      <Loader2 className="h-3 w-3 animate-spin" aria-hidden="true" />
+                      <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />
                     ) : (
                       'Sou eu'
                     )}
