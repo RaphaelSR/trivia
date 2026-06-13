@@ -8,11 +8,12 @@
  *  4. No-op quando usuário não está logado
  *  5. Não salva duas vezes para a mesma sessão (proteção de duplo-salvamento)
  *  6. Reseta o tracking quando a sessão muda (novo sessionId)
+ *  7. NÃO salva ao montar com sessão já terminada (anti-restore-duplo)
  */
 
 // Mocks devem vir ANTES dos imports
-jest.mock('@/modules/auth/services/history.service', () => ({
-  saveGameToHistory: jest.fn(),
+jest.mock('@/modules/auth/services/normalized-history.service', () => ({
+  saveNormalizedGame: jest.fn(),
 }))
 
 jest.mock('@/shared/services/supabase.client', () => ({
@@ -21,12 +22,12 @@ jest.mock('@/shared/services/supabase.client', () => ({
 
 import { renderHook } from '@testing-library/react'
 import { useGameHistorySync } from '@/modules/auth/hooks/useGameHistorySync'
-import { saveGameToHistory } from '@/modules/auth/services/history.service'
+import { saveNormalizedGame } from '@/modules/auth/services/normalized-history.service'
 import { isSupabaseConfigured } from '@/shared/services/supabase.client'
 import type { TriviaSession } from '@/modules/trivia/types'
 import type { User } from '@supabase/supabase-js'
 
-const mockSaveGameToHistory = saveGameToHistory as jest.Mock
+const mockSaveNormalizedGame = saveNormalizedGame as jest.Mock
 const mockIsSupabaseConfigured = isSupabaseConfigured as jest.Mock
 
 // Helpers ----------------------------------------------------------------
@@ -75,11 +76,11 @@ const fakeUser = { id: 'user-1', email: 'a@b.com', user_metadata: {} } as unknow
 beforeEach(() => {
   jest.clearAllMocks()
   mockIsSupabaseConfigured.mockReturnValue(true)
-  mockSaveGameToHistory.mockResolvedValue(null)
+  mockSaveNormalizedGame.mockResolvedValue(null)
 })
 
 describe('useGameHistorySync — salva no fim do jogo (modo online, logado)', () => {
-  it('chama saveGameToHistory exatamente 1 vez na transição para terminado', () => {
+  it('chama saveNormalizedGame exatamente 1 vez na transição para terminado', () => {
     const inProgressSession = makeSession({
       board: [
         {
@@ -97,21 +98,14 @@ describe('useGameHistorySync — salva no fim do jogo (modo online, logado)', ()
       { initialProps: { session: inProgressSession } },
     )
 
-    expect(mockSaveGameToHistory).not.toHaveBeenCalled()
+    expect(mockSaveNormalizedGame).not.toHaveBeenCalled()
 
     rerender({ session: finishedSession })
 
-    expect(mockSaveGameToHistory).toHaveBeenCalledTimes(1)
-    expect(mockSaveGameToHistory).toHaveBeenCalledWith(
-      'Partida Teste',
-      expect.objectContaining({
-        sessionId: 'sess-1',
-        winner: 'Time A',
-        teams: expect.arrayContaining([
-          expect.objectContaining({ name: 'Time A', score: 100 }),
-          expect.objectContaining({ name: 'Time B', score: 80 }),
-        ]),
-      }),
+    expect(mockSaveNormalizedGame).toHaveBeenCalledTimes(1)
+    expect(mockSaveNormalizedGame).toHaveBeenCalledWith(
+      finishedSession,
+      expect.objectContaining({ source: 'live' }),
     )
   })
 
@@ -126,10 +120,10 @@ describe('useGameHistorySync — salva no fim do jogo (modo online, logado)', ()
       }),
     )
 
-    expect(mockSaveGameToHistory).not.toHaveBeenCalled()
+    expect(mockSaveNormalizedGame).not.toHaveBeenCalled()
   })
 
-  it('NÃO chama saveGameToHistory quando o board ainda tem tiles disponíveis', () => {
+  it('NÃO chama saveNormalizedGame quando o board ainda tem tiles disponíveis', () => {
     const notFinishedSession = makeSession({
       board: [
         {
@@ -149,7 +143,7 @@ describe('useGameHistorySync — salva no fim do jogo (modo online, logado)', ()
       }),
     )
 
-    expect(mockSaveGameToHistory).not.toHaveBeenCalled()
+    expect(mockSaveNormalizedGame).not.toHaveBeenCalled()
   })
 
   it('não salva novamente se re-renderizar com a mesma sessão terminada (anti-duplo-salvamento)', () => {
@@ -176,7 +170,7 @@ describe('useGameHistorySync — salva no fim do jogo (modo online, logado)', ()
     rerender({ session: { ...finishedSession } })
     rerender({ session: { ...finishedSession } })
 
-    expect(mockSaveGameToHistory).toHaveBeenCalledTimes(1)
+    expect(mockSaveNormalizedGame).toHaveBeenCalledTimes(1)
   })
 })
 
@@ -192,7 +186,7 @@ describe('useGameHistorySync — no-op para modos demo e offline', () => {
       }),
     )
 
-    expect(mockSaveGameToHistory).not.toHaveBeenCalled()
+    expect(mockSaveNormalizedGame).not.toHaveBeenCalled()
   })
 
   it('não salva no modo offline', () => {
@@ -206,7 +200,7 @@ describe('useGameHistorySync — no-op para modos demo e offline', () => {
       }),
     )
 
-    expect(mockSaveGameToHistory).not.toHaveBeenCalled()
+    expect(mockSaveNormalizedGame).not.toHaveBeenCalled()
   })
 })
 
@@ -222,7 +216,7 @@ describe('useGameHistorySync — no-op quando usuário não está logado', () =>
       }),
     )
 
-    expect(mockSaveGameToHistory).not.toHaveBeenCalled()
+    expect(mockSaveNormalizedGame).not.toHaveBeenCalled()
   })
 })
 
@@ -239,6 +233,6 @@ describe('useGameHistorySync — no-op quando supabase não está configurado', 
       }),
     )
 
-    expect(mockSaveGameToHistory).not.toHaveBeenCalled()
+    expect(mockSaveNormalizedGame).not.toHaveBeenCalled()
   })
 })

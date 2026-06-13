@@ -5,27 +5,28 @@
  *  1. Exibe estado de carregamento
  *  2. Exibe lista com 2 partidas (título, data, vencedor, placar)
  *  3. Exibe mensagem de vazio quando não há partidas
- *  4. Exibe erro discreto quando listGameHistory rejeita
+ *  4. Exibe erro discreto quando listNormalizedGames rejeita
+ *  5. Exibe badge 'importado' quando source === 'import'
  */
 
 jest.mock('@/modules/auth/hooks/useAuth', () => ({
   useAuth: jest.fn(),
 }))
 
-jest.mock('@/modules/auth/services/history.service', () => ({
-  listGameHistory: jest.fn(),
-  saveGameToHistory: jest.fn(),
+jest.mock('@/modules/auth/services/normalized-history.service', () => ({
+  listNormalizedGames: jest.fn(),
+  saveNormalizedGame: jest.fn(),
 }))
 
 import '@testing-library/jest-dom'
 import { render, screen, act } from '@testing-library/react'
 import { AuthPanel } from '@/modules/auth/components/AuthPanel'
 import { useAuth } from '@/modules/auth/hooks/useAuth'
-import { listGameHistory } from '@/modules/auth/services/history.service'
-import type { GameHistoryEntry } from '@/modules/auth/services/history.service'
+import { listNormalizedGames } from '@/modules/auth/services/normalized-history.service'
+import type { NormalizedGameSummary } from '@/modules/auth/services/normalized-history.service'
 
 const mockUseAuth = useAuth as jest.Mock
-const mockListGameHistory = listGameHistory as jest.Mock
+const mockListNormalizedGames = listNormalizedGames as jest.Mock
 
 const fakeUser = {
   id: 'user-1',
@@ -42,21 +43,18 @@ const authLoggedIn = {
   logout: jest.fn().mockResolvedValue(undefined),
 }
 
-function makeEntry(overrides?: Partial<GameHistoryEntry>): GameHistoryEntry {
+function makeEntry(overrides?: Partial<NormalizedGameSummary>): NormalizedGameSummary {
   return {
     id: `entry-${Math.random()}`,
-    user_id: 'user-1',
     title: 'Jogo Teste',
-    finished_at: '2026-06-10T12:00:00Z',
-    created_at: '2026-06-10T12:00:00Z',
-    summary: {
-      scores: { 'Time A': 120, 'Time B': 90 },
-      winner: 'Time A',
-      teams: [
-        { name: 'Time A', score: 120 },
-        { name: 'Time B', score: 90 },
-      ],
-    },
+    playedAt: '2026-06-10T12:00:00Z',
+    endedAt: '2026-06-10T13:00:00Z',
+    winner: 'Time A',
+    source: 'live',
+    teams: [
+      { name: 'Time A', score: 120 },
+      { name: 'Time B', score: 90 },
+    ],
     ...overrides,
   }
 }
@@ -69,7 +67,7 @@ beforeEach(() => {
 describe('AuthPanel — seção Minhas partidas (logado)', () => {
   it('exibe "Carregando…" enquanto busca o histórico', async () => {
     // Promessa que nunca resolve durante este teste
-    mockListGameHistory.mockReturnValue(new Promise(() => {}))
+    mockListNormalizedGames.mockReturnValue(new Promise(() => {}))
 
     render(<AuthPanel onClose={jest.fn()} />)
 
@@ -81,18 +79,15 @@ describe('AuthPanel — seção Minhas partidas (logado)', () => {
     const entry2 = makeEntry({
       id: 'e2',
       title: 'Copa Trivia 2',
-      finished_at: '2026-06-11T15:00:00Z',
-      summary: {
-        scores: { 'Time X': 50, 'Time Y': 50 },
-        winner: null,
-        teams: [
-          { name: 'Time X', score: 50 },
-          { name: 'Time Y', score: 50 },
-        ],
-      },
+      playedAt: '2026-06-11T15:00:00Z',
+      winner: null,
+      teams: [
+        { name: 'Time X', score: 50 },
+        { name: 'Time Y', score: 50 },
+      ],
     })
 
-    mockListGameHistory.mockResolvedValue([entry1, entry2])
+    mockListNormalizedGames.mockResolvedValue([entry1, entry2])
 
     await act(async () => {
       render(<AuthPanel onClose={jest.fn()} />)
@@ -108,12 +103,12 @@ describe('AuthPanel — seção Minhas partidas (logado)', () => {
     // Empate na partida 2
     expect(screen.getByText('Empate')).toBeInTheDocument()
 
-    // Placar partida 1: "Time A 120 × Time B 90"
+    // Placar partida 1
     expect(screen.getByText(/Time A 120 × Time B 90/i)).toBeInTheDocument()
   })
 
   it('exibe "Nenhuma partida registrada ainda" quando histórico está vazio', async () => {
-    mockListGameHistory.mockResolvedValue([])
+    mockListNormalizedGames.mockResolvedValue([])
 
     await act(async () => {
       render(<AuthPanel onClose={jest.fn()} />)
@@ -122,13 +117,24 @@ describe('AuthPanel — seção Minhas partidas (logado)', () => {
     expect(screen.getByText(/nenhuma partida registrada ainda/i)).toBeInTheDocument()
   })
 
-  it('exibe mensagem de erro discreta quando listGameHistory rejeita', async () => {
-    mockListGameHistory.mockRejectedValue(new Error('network error'))
+  it('exibe mensagem de erro discreta quando listNormalizedGames rejeita', async () => {
+    mockListNormalizedGames.mockRejectedValue(new Error('network error'))
 
     await act(async () => {
       render(<AuthPanel onClose={jest.fn()} />)
     })
 
     expect(screen.getByText(/não foi possível carregar o histórico/i)).toBeInTheDocument()
+  })
+
+  it('exibe badge "importado" quando source === "import"', async () => {
+    const importedEntry = makeEntry({ id: 'e-import', source: 'import', title: 'Jogo Importado' })
+    mockListNormalizedGames.mockResolvedValue([importedEntry])
+
+    await act(async () => {
+      render(<AuthPanel onClose={jest.fn()} />)
+    })
+
+    expect(screen.getByText('importado')).toBeInTheDocument()
   })
 })

@@ -15,7 +15,7 @@
 import { useEffect, useRef } from 'react'
 import type { User } from '@supabase/supabase-js'
 import { isSupabaseConfigured } from '../../../shared/services/supabase.client'
-import { saveGameToHistory } from '../services/history.service'
+import { saveNormalizedGame } from '../services/normalized-history.service'
 import { isGameFinished } from '../../game/domain/board.utils'
 import type { TriviaSession } from '../../trivia/types'
 
@@ -67,35 +67,7 @@ export function useGameHistorySync({
     if (savedSessionIdRef.current === session.id) return
     savedSessionIdRef.current = session.id
 
-    // Calcula vencedor
-    const maxScore = Math.max(...session.teams.map((t) => t.score))
-    const winners = session.teams.filter((t) => t.score === maxScore)
-    const winner =
-      winners.length === 1 ? winners[0].name : null
-
-    const totalQuestions = session.board.reduce(
-      (acc, col) => acc + col.tiles.length,
-      0,
-    )
-
-    const summary = {
-      sessionId: session.id,
-      title: session.title,
-      teams: session.teams.map((t) => ({
-        id: t.id,
-        name: t.name,
-        color: t.color,
-        score: t.score,
-        members: t.members,
-      })),
-      winner,
-      totalQuestions,
-      finishedAt: new Date().toISOString(),
-      // scores é requerido pelo tipo GameSummary do history.service
-      scores: Object.fromEntries(session.teams.map((t) => [t.name, t.score])),
-    }
-
-    saveGameToHistory(session.title, summary).catch((err: unknown) => {
+    saveNormalizedGame(session, { source: 'live' }).catch((err: unknown) => {
       console.warn('[useGameHistorySync] Falha ao salvar histórico:', err)
     })
   }, [session, gameMode, user])

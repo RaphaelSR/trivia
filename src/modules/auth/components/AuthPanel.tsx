@@ -2,8 +2,8 @@ import { useState, useEffect } from 'react'
 import { LogOut, X } from 'lucide-react'
 import type { User } from '@supabase/supabase-js'
 import { useAuth } from '../hooks/useAuth'
-import { listGameHistory } from '../services/history.service'
-import type { GameHistoryEntry } from '../services/history.service'
+import { listNormalizedGames } from '../services/normalized-history.service'
+import type { NormalizedGameSummary } from '../services/normalized-history.service'
 
 type Tab = 'signin' | 'signup'
 
@@ -38,10 +38,9 @@ function formatDatePtBR(iso: string): string {
   }
 }
 
-function buildScoreLine(entry: GameHistoryEntry): string {
-  const teams = (entry.summary.teams as Array<{ name: string; score: number }> | undefined) ?? []
-  if (teams.length === 0) return ''
-  return teams.map((t) => `${t.name} ${t.score}`).join(' × ')
+function buildScoreLine(entry: NormalizedGameSummary): string {
+  if (entry.teams.length === 0) return ''
+  return entry.teams.map((t) => `${t.name} ${t.score}`).join(' × ')
 }
 
 function LoggedInPanel({ user, loading, onLogout, onClose }: LoggedInPanelProps) {
@@ -50,7 +49,7 @@ function LoggedInPanel({ user, loading, onLogout, onClose }: LoggedInPanelProps)
     user.email?.split('@')[0] ??
     'Usuário'
 
-  const [history, setHistory] = useState<GameHistoryEntry[]>([])
+  const [history, setHistory] = useState<NormalizedGameSummary[]>([])
   const [historyLoading, setHistoryLoading] = useState(true)
   const [historyError, setHistoryError] = useState(false)
 
@@ -59,7 +58,7 @@ function LoggedInPanel({ user, loading, onLogout, onClose }: LoggedInPanelProps)
     setHistoryLoading(true)
     setHistoryError(false)
 
-    listGameHistory()
+    listNormalizedGames()
       .then((entries) => {
         if (!cancelled) {
           setHistory(entries)
@@ -139,19 +138,26 @@ function LoggedInPanel({ user, loading, onLogout, onClose }: LoggedInPanelProps)
                 key={entry.id}
                 className="rounded-lg border border-white/5 bg-white/5 px-3 py-2"
               >
-                <p className="truncate text-xs font-medium text-[var(--color-text)]">
-                  {entry.title}
-                </p>
-                <div className="mt-0.5 flex flex-wrap items-center gap-x-2 gap-y-0.5">
-                  <span className="text-xs text-[var(--color-muted)]">
-                    {formatDatePtBR(entry.finished_at)}
-                  </span>
-                  {(entry.summary.winner as string | null) != null && (
-                    <span className="text-xs text-[var(--color-primary)]">
-                      {entry.summary.winner as string}
+                <div className="flex items-center gap-2">
+                  <p className="min-w-0 flex-1 truncate text-xs font-medium text-[var(--color-text)]">
+                    {entry.title}
+                  </p>
+                  {entry.source === 'import' && (
+                    <span className="shrink-0 rounded px-1.5 py-0.5 text-[10px] font-medium bg-white/10 text-[var(--color-muted)]">
+                      importado
                     </span>
                   )}
-                  {(entry.summary.winner as string | null) == null && (
+                </div>
+                <div className="mt-0.5 flex flex-wrap items-center gap-x-2 gap-y-0.5">
+                  <span className="text-xs text-[var(--color-muted)]">
+                    {formatDatePtBR(entry.playedAt ?? entry.endedAt ?? '')}
+                  </span>
+                  {entry.winner != null && (
+                    <span className="text-xs text-[var(--color-primary)]">
+                      {entry.winner}
+                    </span>
+                  )}
+                  {entry.winner == null && (
                     <span className="text-xs text-[var(--color-muted)]">Empate</span>
                   )}
                 </div>
