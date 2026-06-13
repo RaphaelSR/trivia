@@ -1,9 +1,10 @@
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, useCallback } from 'react'
 import { LogOut, X } from 'lucide-react'
 import type { User } from '@supabase/supabase-js'
 import { useAuth } from '../hooks/useAuth'
 import { listNormalizedGames } from '../services/normalized-history.service'
 import type { NormalizedGameSummary } from '../services/normalized-history.service'
+import { ImportLocalSessions } from './ImportLocalSessions'
 
 type Tab = 'signin' | 'signup'
 
@@ -81,6 +82,10 @@ function LoggedInPanel({ user, loading, onLogout, onClose }: LoggedInPanelProps)
     }
   }, [user.id])
 
+  const handleHistoryRefresh = useCallback((entries: NormalizedGameSummary[]) => {
+    setHistory(entries)
+  }, [])
+
   return (
     <div className="relative w-full max-w-sm rounded-2xl border border-white/10 bg-black/60 p-6 shadow-2xl backdrop-blur-xl">
       <button
@@ -107,6 +112,12 @@ function LoggedInPanel({ user, loading, onLogout, onClose }: LoggedInPanelProps)
           {loading ? 'Saindo…' : 'Sair'}
         </button>
       </div>
+
+      {/* Separador */}
+      <div className="my-2 h-px bg-white/10" />
+
+      {/* Seção: Importar sessões locais */}
+      <ImportLocalSessions user={user} onHistoryRefresh={handleHistoryRefresh} />
 
       {/* Separador */}
       <div className="my-2 h-px bg-white/10" />

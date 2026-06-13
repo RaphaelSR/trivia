@@ -31,6 +31,7 @@ export interface NormalizedGameParticipant {
   role: string
   team_client?: string
   profile_id?: string
+  invite_email?: string
 }
 
 export interface NormalizedGameFilm {
@@ -110,6 +111,11 @@ export interface BuildNormalizedGamePayloadOptions {
   selfProfileId?: string | null
   /** ISO string para "agora" — recebido de fora para que a função permaneça pura */
   nowIso?: string
+  /**
+   * Mapa de client_id → invite_email para preencher invite_email nos participantes.
+   * Usado no fluxo de importação de sessões locais.
+   */
+  emailsByClientId?: Record<string, string>
 }
 
 // ---------------------------------------------------------------------------
@@ -132,15 +138,20 @@ export function buildNormalizedGamePayload(
   }))
 
   // ── participants ──────────────────────────────────────────────────────────
-  const participants: NormalizedGameParticipant[] = session.participants.map((p) => ({
-    client_id: p.id,
-    display_name: p.name,
-    role: p.role,
-    team_client: p.teamId,
-    // profile_id sempre undefined no fluxo live — a RPC auto-vincula via auth.uid()
-    // quando o payload tiver profile_id === auth.uid(); por ora deixamos undefined.
-    profile_id: undefined,
-  }))
+  const participants: NormalizedGameParticipant[] = session.participants.map((p) => {
+    const inviteEmail = opts.emailsByClientId?.[p.id]
+    const isOwner = opts.selfProfileId ? p.id === opts.selfProfileId : false
+    return {
+      client_id: p.id,
+      display_name: p.name,
+      role: p.role,
+      team_client: p.teamId,
+      // profile_id: a RPC auto-vincula via auth.uid() quando selfProfileId bate com client_id.
+      // No fluxo live deixamos undefined (a RPC nunca expõe o UUID do caller via payload).
+      profile_id: isOwner && opts.selfProfileId ? opts.selfProfileId : undefined,
+      invite_email: inviteEmail || undefined,
+    }
+  })
 
   // ── films e questions ─────────────────────────────────────────────────────
   const films: NormalizedGameFilm[] = []
@@ -308,6 +319,125 @@ export async function saveNormalizedGame(
   }
 
   return data as string
+}
+
+// ---------------------------------------------------------------------------
+// linkMyParticipations — chama RPC no login para auto-vincular por e-mail
+// ---------------------------------------------------------------------------
+
+export async function linkMyParticipations(): Promise<number> {
+  if (!isSupabaseConfigured()) return 0
+
+  const client = getSupabaseClient()!
+  const {
+    data: { session: authSession },
+  } = await client.auth.getSession()
+
+  if (!authSession?.user) return 0
+
+  try {
+    const { data, error } = await client.rpc('link_my_participations')
+    if (error) {
+      console.warn('[linkMyParticipations] Falha:', error)
+      return 0
+    }
+    return (data as number | null) ?? 0
+  } catch {
+    return 0
+  }
+}
+
+// ---------------------------------------------------------------------------
+// claimParticipation — reivindica por token de claim (link de convite)
+// ---------------------------------------------------------------------------
+
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+
+export async function claimParticipation(
+  token: string,
+): Promise<{ gameId: string | null; error: string | null }> {
+  if (!UUID_RE.test(token)) {
+    return { gameId: null, error: 'Link inválido ou já utilizado.' }
+  }
+
+  if (!isSupabaseConfigured()) {
+    return { gameId: null, error: 'Funcionalidade indisponível neste ambiente.' }
+  }
+
+  const client = getSupabaseClient()!
+  const {
+    data: { session: authSession },
+  } = await client.auth.getSession()
+
+  if (!authSession?.user) {
+    return { gameId: null, error: 'Faça login para reivindicar esta participação.' }
+  }
+
+  try {
+    const { data, error } = await client.rpc('claim_participant', { p_token: token })
+    if (error) {
+      console.warn('[claimParticipation] Falha:', error)
+      return { gameId: null, error: 'Link inválido ou já utilizado.' }
+    }
+    if (!data) {
+      return { gameId: null, error: 'Link inválido ou já utilizado.' }
+    }
+    return { gameId: data as string, error: null }
+  } catch {
+    return { gameId: null, error: 'Não foi possível processar o link. Tente novamente.' }
+  }
+}
+
+// ---------------------------------------------------------------------------
+// importLocalSession — importa uma sessão local para a conta do usuário
+// ---------------------------------------------------------------------------
+
+import type { SessionRecord } from '../../game/infrastructure/session.repository'
+
+export interface ImportLocalSessionOptions {
+  /** Mapa client_id → e-mail para associar participantes à conta deles */
+  emailsByClientId?: Record<string, string>
+  /** ID do profile do usuário logado (para auto-vincular se for participante) */
+  selfProfileId?: string | null
+}
+
+export async function importLocalSession(
+  record: SessionRecord,
+  opts?: ImportLocalSessionOptions,
+): Promise<{ gameId: string | null; error: string | null }> {
+  if (!isSupabaseConfigured()) {
+    return { gameId: null, error: 'Funcionalidade indisponível neste ambiente.' }
+  }
+
+  const client = getSupabaseClient()!
+  const {
+    data: { session: authSession },
+  } = await client.auth.getSession()
+
+  if (!authSession?.user) {
+    return { gameId: null, error: 'Faça login para importar sessões.' }
+  }
+
+  const nowIso = new Date().toISOString()
+
+  // Garante que nowIso coerente com timestamps do record quando disponíveis
+  const payload = buildNormalizedGamePayload(record.session, {
+    source: 'import',
+    nowIso,
+    emailsByClientId: opts?.emailsByClientId,
+    selfProfileId: opts?.selfProfileId ?? authSession.user.id,
+  })
+
+  try {
+    const { data, error } = await client.rpc('create_game_normalized', { p: payload })
+    if (error) {
+      console.warn('[importLocalSession] Falha ao importar sessão:', error)
+      return { gameId: null, error: 'Não foi possível importar a sessão. Tente novamente.' }
+    }
+    return { gameId: data as string, error: null }
+  } catch {
+    return { gameId: null, error: 'Não foi possível importar a sessão. Tente novamente.' }
+  }
 }
 
 // ---------------------------------------------------------------------------

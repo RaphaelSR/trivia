@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from 'react'
 import type { User } from '@supabase/supabase-js'
 import { isSupabaseConfigured } from '../../../shared/services/supabase.client'
 import { getSession, onAuthStateChange, resendConfirmation, signIn, signOut, signUp } from '../services/auth.service'
+import { claimParticipation, linkMyParticipations } from '../services/normalized-history.service'
 
 export interface AuthState {
   user: User | null
@@ -15,6 +16,8 @@ export interface AuthActions {
   register: (email: string, password: string, displayName: string) => Promise<string | null>
   logout: () => Promise<void>
   resend: (email: string) => Promise<string | null>
+  /** Reivindica uma participação por token de claim. Retorna gameId ou erro. */
+  claim: (token: string) => Promise<{ gameId: string | null; error: string | null }>
 }
 
 export function useAuth(): AuthState & AuthActions {
@@ -33,6 +36,10 @@ export function useAuth(): AuthState & AuthActions {
       if (!cancelled) {
         setUser(session?.user ?? null)
         setLoading(false)
+        // fire-and-forget: auto-vincula participações pelo e-mail no carregamento inicial
+        if (session?.user) {
+          void linkMyParticipations().catch(() => undefined)
+        }
       }
     })
 
@@ -41,6 +48,10 @@ export function useAuth(): AuthState & AuthActions {
       if (!cancelled) {
         setUser(session?.user ?? null)
         setLoading(false)
+        // fire-and-forget: auto-vincula quando o estado de auth muda (login, confirmação, etc.)
+        if (session?.user) {
+          void linkMyParticipations().catch(() => undefined)
+        }
       }
     })
 
@@ -79,5 +90,12 @@ export function useAuth(): AuthState & AuthActions {
     return result.error
   }, [])
 
-  return { user, loading, configured, login, register, logout, resend }
+  const claim = useCallback(
+    async (token: string): Promise<{ gameId: string | null; error: string | null }> => {
+      return claimParticipation(token)
+    },
+    [],
+  )
+
+  return { user, loading, configured, login, register, logout, resend, claim }
 }
