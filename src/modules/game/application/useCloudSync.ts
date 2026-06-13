@@ -70,6 +70,10 @@ export function useCloudSync({
   // enabled=true activation, to avoid re-running on every re-render.
   const reconciledRef = useRef(false)
 
+  // Whether the immediate initial flush already happened for the current
+  // activation. Reset when enabled goes false so a re-login flushes again.
+  const initialFlushDoneRef = useRef(false)
+
   // Stable ref to onRestore so the effect doesn't re-run when the callback identity changes
   const onRestoreRef = useRef(onRestore)
   useEffect(() => {
@@ -84,10 +88,11 @@ export function useCloudSync({
     }
   }, [])
 
-  // Reset reconcile flag when enabled toggles off (logout / Supabase unconfigured)
+  // Reset per-activation flags when enabled toggles off (logout / unconfigured)
   useEffect(() => {
     if (!enabled) {
       reconciledRef.current = false
+      initialFlushDoneRef.current = false
     }
   }, [enabled])
 
@@ -111,7 +116,8 @@ export function useCloudSync({
           sync.pushSnapshot(session, { title })
           await sync.flushNow()
         }
-        // 'none' → no cloud record; nothing to do
+        // 'none' → sem registro na nuvem; o push effect abaixo cuida do upload
+        // inicial (com flush imediato) quando há times.
       } catch {
         // Never propagate; CloudSessionSync already handles errors internally
       }
@@ -127,6 +133,16 @@ export function useCloudSync({
     if (session.teams.length === 0) return
 
     syncRef.current.pushSnapshot(session, { title })
+
+    // Upload inicial IMEDIATO: no primeiro push de uma ativação (login com uma
+    // sessão já montada), faz flushNow em vez de esperar o debounce de 2.5s —
+    // assim não fica preso em "Salvo neste navegador" se a sessão não mudar
+    // mais, nem é starvado por mudanças frequentes. enabled é checado de forma
+    // síncrona aqui, então não há corrida com logout (diferente do reconcile async).
+    if (!initialFlushDoneRef.current) {
+      initialFlushDoneRef.current = true
+      void syncRef.current.flushNow()
+    }
     // title changes are intentionally NOT a dep here — we want to push on session
     // content changes only; the title is just metadata captured at push time.
     // eslint-disable-next-line react-hooks/exhaustive-deps
