@@ -11,6 +11,7 @@
  */
 
 import { getSupabaseClient, isSupabaseConfigured } from '../../../shared/services/supabase.client'
+import { readViteEnv } from '../../../shared/services/vite-env'
 import type { TriviaSession } from '../../trivia/types'
 
 // ---------------------------------------------------------------------------
@@ -532,6 +533,8 @@ export interface GameDetailParticipant {
   display_name: string
   team_id: string | null
   profile_id: string | null
+  /** Token de convite para participantes não-vinculados. Só visível para o dono via RLS. */
+  claim_token: string | null
 }
 
 export interface GameDetailFilm {
@@ -557,6 +560,8 @@ export interface ParticipantStat {
   team_id: string | null
   team_name: string | null
   profile_id: string | null
+  /** Token de convite (visível só ao dono via RLS; null para outros leitores). */
+  claim_token: string | null
   trivia_points: number
   mimica_points: number
   total_points: number
@@ -591,6 +596,38 @@ export interface GameDetail {
   questions: GameDetailQuestion[]
   ranking: ParticipantStat[]
   timeline: TimelineEntry[]
+}
+
+// ---------------------------------------------------------------------------
+// buildClaimUrl — pura; exportada para testes
+// ---------------------------------------------------------------------------
+
+/**
+ * Monta a URL completa de um link de convite (claim) para um participante.
+ *
+ * Em ambiente de browser usa window.location.origin + BASE_URL (Vite).
+ * Em ambientes sem window (testes SSR / Node) devolve um caminho relativo.
+ *
+ * Normaliza barras duplas: BASE_URL já deve terminar com '/'; a função
+ * evita double-slash entre origin/base e o segmento 'claim'.
+ */
+export function buildClaimUrl(token: string): string {
+  const base = readViteEnv('BASE_URL') ?? '/'
+  // Garante que base termina com exatamente uma barra
+  const normalizedBase = base.endsWith('/') ? base : `${base}/`
+
+  const path = `${normalizedBase}claim?token=${token}`
+
+  const origin =
+    typeof window !== 'undefined' ? (window.location?.origin ?? '') : ''
+
+  if (origin) {
+    // Remove barra dupla na junção origin + path quando path já começa com //
+    return `${origin}${path.startsWith('/') ? path : `/${path}`}`
+  }
+
+  // Fallback para ambientes sem window (testes, SSR)
+  return path
 }
 
 // ---------------------------------------------------------------------------
@@ -640,6 +677,7 @@ interface GameDetailRow {
     display_name: string
     team_id: string | null
     profile_id: string | null
+    claim_token: string | null
   }> | null
   game_films: Array<{
     id: string
@@ -675,7 +713,7 @@ export async function getGameDetail(gameId: string): Promise<GameDetail | null> 
       .select(
         `id,title,played_at,started_at,ended_at,source,winner_team_id,
          game_teams!game_teams_game_id_fkey(id,client_id,name,color,final_score),
-         game_participants(id,client_id,display_name,team_id,profile_id),
+         game_participants(id,client_id,display_name,team_id,profile_id,claim_token),
          game_films(id,client_id,name,order),
          game_questions(id,client_id,film_id,points,question,answer,state),
          score_events(id,type,question_id,mode,turn_number,round_number,actor_participant_id,voided,void_reason,occurred_at,score_event_recipients(id,event_id,team_id,participant_id,points))`,
@@ -706,6 +744,7 @@ export async function getGameDetail(gameId: string): Promise<GameDetail | null> 
       display_name: p.display_name,
       team_id: p.team_id,
       profile_id: p.profile_id,
+      claim_token: p.claim_token,
     }))
 
     const films: GameDetailFilm[] = (row.game_films ?? []).map((f) => ({
@@ -763,6 +802,7 @@ export async function getGameDetail(gameId: string): Promise<GameDetail | null> 
           team_id: p.team_id,
           team_name: team?.name ?? null,
           profile_id: p.profile_id,
+          claim_token: p.claim_token,
           trivia_points: trivia,
           mimica_points: mimica,
           total_points: trivia + mimica,

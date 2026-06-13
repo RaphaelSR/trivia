@@ -1,19 +1,23 @@
 /**
- * Testes para GameDetailView
+ * Testes para GameDetailView + InviteShare integrado
  *
  * Cenários:
  *  1. Estado de loading
  *  2. Estado de erro
  *  3. Render ok com ranking, badge "vinculado", badge "importado"
  *  4. Botão Voltar chama onBack
+ *  5. InviteShare: participante não-vinculado com token mostra botões de convite
+ *  6. InviteShare: participante vinculado mostra selo "vinculado" e não tem botões de convite
+ *  7. InviteShare: copiar link chama clipboard e exibe feedback "Copiado ✓"
  */
 
 jest.mock('@/modules/auth/services/normalized-history.service', () => ({
   getGameDetail: jest.fn(),
+  buildClaimUrl: jest.fn((token: string) => `https://example.com/claim?token=${token}`),
 }))
 
 import '@testing-library/jest-dom'
-import { render, screen, fireEvent, act } from '@testing-library/react'
+import { render, screen, fireEvent, act, waitFor } from '@testing-library/react'
 import { GameDetailView } from '@/modules/auth/components/GameDetailView'
 import { getGameDetail } from '@/modules/auth/services/normalized-history.service'
 import type { GameDetail } from '@/modules/auth/services/normalized-history.service'
@@ -39,8 +43,8 @@ function makeDetail(overrides?: Partial<GameDetail>): GameDetail {
       { id: 'team-b', client_id: 'cb', name: 'Time B', color: '#00f', final_score: 80 },
     ],
     participants: [
-      { id: 'p1', client_id: 'c1', display_name: 'Alice', team_id: 'team-a', profile_id: 'profile-uuid' },
-      { id: 'p2', client_id: 'c2', display_name: 'Bob', team_id: 'team-b', profile_id: null },
+      { id: 'p1', client_id: 'c1', display_name: 'Alice', team_id: 'team-a', profile_id: 'profile-uuid', claim_token: null },
+      { id: 'p2', client_id: 'c2', display_name: 'Bob', team_id: 'team-b', profile_id: null, claim_token: 'token-bob-uuid' },
     ],
     films: [
       { id: 'film-1', client_id: 'f1', name: 'Filme 1', order: 0 },
@@ -49,8 +53,8 @@ function makeDetail(overrides?: Partial<GameDetail>): GameDetail {
       { id: 'q1', client_id: 'q1c', film_id: 'film-1', points: 10, question: 'P1?', answer: 'R1', state: 'answered' },
     ],
     ranking: [
-      { participant_id: 'p1', display_name: 'Alice', team_id: 'team-a', team_name: 'Time A', profile_id: 'profile-uuid', trivia_points: 30, mimica_points: 0, total_points: 30 },
-      { participant_id: 'p2', display_name: 'Bob', team_id: 'team-b', team_name: 'Time B', profile_id: null, trivia_points: 0, mimica_points: 20, total_points: 20 },
+      { participant_id: 'p1', display_name: 'Alice', team_id: 'team-a', team_name: 'Time A', profile_id: 'profile-uuid', claim_token: null, trivia_points: 30, mimica_points: 0, total_points: 30 },
+      { participant_id: 'p2', display_name: 'Bob', team_id: 'team-b', team_name: 'Time B', profile_id: null, claim_token: 'token-bob-uuid', trivia_points: 0, mimica_points: 20, total_points: 20 },
     ],
     timeline: [
       {
@@ -139,7 +143,8 @@ describe('GameDetailView — render ok', () => {
     await act(async () => {
       render(<GameDetailView gameId="game-1" onBack={jest.fn()} />)
     })
-    expect(screen.getByText('vinculado')).toBeInTheDocument()
+    // "vinculado" pode aparecer mais de uma vez (ranking + seção de convites)
+    expect(screen.getAllByText('vinculado').length).toBeGreaterThan(0)
   })
 
   it('exibe badge "importado" quando source === "import"', async () => {
@@ -158,5 +163,109 @@ describe('GameDetailView — render ok', () => {
     })
     fireEvent.click(screen.getByLabelText(/voltar/i))
     expect(onBack).toHaveBeenCalled()
+  })
+})
+
+// ---------------------------------------------------------------------------
+// InviteShare — integrado no GameDetailView
+// ---------------------------------------------------------------------------
+
+describe('GameDetailView — InviteShare (convites)', () => {
+  beforeEach(() => {
+    jest.clearAllMocks()
+  })
+
+  it('exibe botões de convite para participante não-vinculado com claim_token', async () => {
+    mockGetGameDetail.mockResolvedValue(makeDetail())
+    await act(async () => {
+      render(<GameDetailView gameId="game-1" onBack={jest.fn()} />)
+    })
+
+    // Bob é não-vinculado e tem claim_token — deve mostrar botões
+    expect(screen.getByLabelText(/convidar bob/i)).toBeInTheDocument()
+    expect(screen.getByLabelText(/copiar link de convite para bob/i)).toBeInTheDocument()
+    expect(screen.getByLabelText(/compartilhar convite de bob pelo whatsapp/i)).toBeInTheDocument()
+    expect(screen.getByLabelText(/compartilhar convite de bob por e-mail/i)).toBeInTheDocument()
+    expect(screen.getByLabelText(/mostrar qr code para bob/i)).toBeInTheDocument()
+  })
+
+  it('WhatsApp href contém a URL correta', async () => {
+    mockGetGameDetail.mockResolvedValue(makeDetail())
+    await act(async () => {
+      render(<GameDetailView gameId="game-1" onBack={jest.fn()} />)
+    })
+
+    const waLink = screen.getByLabelText(/compartilhar convite de bob pelo whatsapp/i)
+    const href = waLink.getAttribute('href') ?? ''
+    expect(href).toContain('wa.me')
+    expect(href).toContain('token-bob-uuid')
+  })
+
+  it('E-mail href contém mailto e a URL correta', async () => {
+    mockGetGameDetail.mockResolvedValue(makeDetail())
+    await act(async () => {
+      render(<GameDetailView gameId="game-1" onBack={jest.fn()} />)
+    })
+
+    const mailLink = screen.getByLabelText(/compartilhar convite de bob por e-mail/i)
+    const href = mailLink.getAttribute('href') ?? ''
+    expect(href).toContain('mailto:')
+    expect(href).toContain('token-bob-uuid')
+  })
+
+  it('participante vinculado (Alice) não mostra botões de convite', async () => {
+    mockGetGameDetail.mockResolvedValue(makeDetail())
+    await act(async () => {
+      render(<GameDetailView gameId="game-1" onBack={jest.fn()} />)
+    })
+
+    // Alice está vinculada — não deve ter botão "Convidar Alice"
+    expect(screen.queryByLabelText(/convidar alice/i)).not.toBeInTheDocument()
+    expect(screen.queryByLabelText(/copiar link de convite para alice/i)).not.toBeInTheDocument()
+  })
+
+  it('copiar link chama navigator.clipboard e exibe feedback "Copiado"', async () => {
+    const writeText = jest.fn().mockResolvedValue(undefined)
+    Object.defineProperty(navigator, 'clipboard', {
+      value: { writeText },
+      writable: true,
+      configurable: true,
+    })
+
+    mockGetGameDetail.mockResolvedValue(makeDetail())
+    await act(async () => {
+      render(<GameDetailView gameId="game-1" onBack={jest.fn()} />)
+    })
+
+    const copyBtn = screen.getByLabelText(/copiar link de convite para bob/i)
+    await act(async () => {
+      fireEvent.click(copyBtn)
+    })
+
+    expect(writeText).toHaveBeenCalledWith(
+      expect.stringContaining('token-bob-uuid'),
+    )
+
+    await waitFor(() => {
+      expect(screen.getByText(/copiado/i)).toBeInTheDocument()
+    })
+  })
+
+  it('participante sem token não mostra bloco de convite', async () => {
+    // Simula leitura por não-dono: todos com claim_token null
+    mockGetGameDetail.mockResolvedValue(
+      makeDetail({
+        participants: [
+          { id: 'p1', client_id: 'c1', display_name: 'Alice', team_id: 'team-a', profile_id: 'profile-uuid', claim_token: null },
+          { id: 'p2', client_id: 'c2', display_name: 'Bob', team_id: 'team-b', profile_id: null, claim_token: null },
+        ],
+      }),
+    )
+    await act(async () => {
+      render(<GameDetailView gameId="game-1" onBack={jest.fn()} />)
+    })
+
+    // Seção de convites não deve aparecer
+    expect(screen.queryByText(/convidar participantes/i)).not.toBeInTheDocument()
   })
 })

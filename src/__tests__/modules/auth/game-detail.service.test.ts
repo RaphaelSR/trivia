@@ -117,9 +117,9 @@ const FAKE_ROW = {
     { id: TEAM_B_ID, client_id: 'client-b', name: 'Time B', color: '#00f', final_score: 80 },
   ],
   game_participants: [
-    { id: PART_1_ID, client_id: 'p1', display_name: 'Alice', team_id: TEAM_A_ID, profile_id: 'profile-uuid-alice' },
-    { id: PART_2_ID, client_id: 'p2', display_name: 'Bob', team_id: TEAM_B_ID, profile_id: null },
-    { id: PART_3_ID, client_id: 'p3', display_name: 'Carol', team_id: TEAM_B_ID, profile_id: null },
+    { id: PART_1_ID, client_id: 'p1', display_name: 'Alice', team_id: TEAM_A_ID, profile_id: 'profile-uuid-alice', claim_token: null },
+    { id: PART_2_ID, client_id: 'p2', display_name: 'Bob', team_id: TEAM_B_ID, profile_id: null, claim_token: 'token-bob-uuid' },
+    { id: PART_3_ID, client_id: 'p3', display_name: 'Carol', team_id: TEAM_B_ID, profile_id: null, claim_token: null },
   ],
   game_films: [
     { id: 'film-1', client_id: 'f1', name: 'Filme 1', order: 0 },
@@ -285,5 +285,28 @@ describe('getGameDetail — com sessão ativa', () => {
     expect(result!.films).toHaveLength(1)
     expect(result!.questions).toHaveLength(2)
     expect(result!.participants).toHaveLength(3)
+  })
+
+  it('inclui claim_token e profile_id nos participantes', async () => {
+    const qm = buildSingleQueryMock({ data: FAKE_ROW, error: null })
+    mockGetClient.mockReturnValue({
+      auth: { getSession: jest.fn().mockResolvedValue({ data: { session: fakeAuthSession } }) },
+      from: jest.fn().mockReturnValue(qm),
+    })
+
+    const result = await getGameDetail(GAME_ID)
+    expect(result).not.toBeNull()
+
+    const alice = result!.participants.find((p) => p.display_name === 'Alice')!
+    expect(alice.profile_id).toBe('profile-uuid-alice')
+    expect(alice.claim_token).toBeNull()
+
+    const bob = result!.participants.find((p) => p.display_name === 'Bob')!
+    expect(bob.profile_id).toBeNull()
+    expect(bob.claim_token).toBe('token-bob-uuid')
+
+    // claim_token também aparece no ranking
+    const bobRanking = result!.ranking.find((r) => r.display_name === 'Bob')!
+    expect(bobRanking.claim_token).toBe('token-bob-uuid')
   })
 })

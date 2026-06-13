@@ -15,6 +15,7 @@ import { useState, useEffect } from 'react'
 import { ArrowLeft, Trophy, Clock, Upload, UserCheck } from 'lucide-react'
 import { getGameDetail } from '../services/normalized-history.service'
 import type { GameDetail, TimelineEntry } from '../services/normalized-history.service'
+import { InviteShare } from './InviteShare'
 
 // ---------------------------------------------------------------------------
 // Props
@@ -248,6 +249,20 @@ export function GameDetailView({ gameId, onBack }: GameDetailViewProps) {
                           mímica {stat.mimica_points}
                         </span>
                       </div>
+                    </li>
+                  ))}
+                </ul>
+              </section>
+            )}
+
+            {/* ── Convites por participante ────────────────────────────── */}
+            {detail.participants.some((p) => p.profile_id === null && p.claim_token !== null) && (
+              <section aria-label="Links de convite por participante">
+                <SectionTitle>Convidar participantes</SectionTitle>
+                <ul className="flex flex-col gap-2" role="list">
+                  {detail.participants.map((p) => (
+                    <li key={p.id}>
+                      <InviteShare participant={p} />
                     </li>
                   ))}
                 </ul>
