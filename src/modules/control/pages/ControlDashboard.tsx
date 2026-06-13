@@ -1192,6 +1192,7 @@ export function ControlDashboard() {
           setTeamsModalOpen(false)
           setActivePanel('board')
         }}
+        gameMode={gameMode}
       />
 
       <Modal

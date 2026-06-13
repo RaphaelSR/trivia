@@ -513,3 +513,318 @@ interface NormalizedGamesRow {
   winner_team_id: string | null
   game_teams: GameTeamRow[] | null
 }
+
+// ---------------------------------------------------------------------------
+// Tipos para getGameDetail
+// ---------------------------------------------------------------------------
+
+export interface GameDetailTeam {
+  id: string
+  client_id: string
+  name: string
+  color: string | null
+  final_score: number
+}
+
+export interface GameDetailParticipant {
+  id: string
+  client_id: string
+  display_name: string
+  team_id: string | null
+  profile_id: string | null
+}
+
+export interface GameDetailFilm {
+  id: string
+  client_id: string
+  name: string
+  order: number
+}
+
+export interface GameDetailQuestion {
+  id: string
+  client_id: string
+  film_id: string
+  points: number
+  question: string | null
+  answer: string | null
+  state: string
+}
+
+export interface ParticipantStat {
+  participant_id: string
+  display_name: string
+  team_id: string | null
+  team_name: string | null
+  profile_id: string | null
+  trivia_points: number
+  mimica_points: number
+  total_points: number
+}
+
+export interface TimelineEntry {
+  event_id: string
+  type: 'trivia' | 'mimica'
+  occurred_at: string
+  actor_participant_id: string | null
+  actor_name: string | null
+  team_id: string | null
+  team_name: string | null
+  points: number
+  question_id: string | null
+  question_text: string | null
+  voided: boolean
+}
+
+export interface GameDetail {
+  id: string
+  title: string
+  played_at: string | null
+  started_at: string | null
+  ended_at: string | null
+  source: string
+  winner_team_id: string | null
+  winner_team_name: string | null
+  teams: GameDetailTeam[]
+  participants: GameDetailParticipant[]
+  films: GameDetailFilm[]
+  questions: GameDetailQuestion[]
+  ranking: ParticipantStat[]
+  timeline: TimelineEntry[]
+}
+
+// ---------------------------------------------------------------------------
+// getGameDetail
+// ---------------------------------------------------------------------------
+
+interface ScoreEventRecipientRow {
+  id: string
+  event_id: string
+  team_id: string
+  participant_id: string | null
+  points: number
+}
+
+interface ScoreEventRow {
+  id: string
+  type: 'trivia' | 'mimica'
+  question_id: string | null
+  mode: string | null
+  turn_number: number | null
+  round_number: number | null
+  actor_participant_id: string | null
+  voided: boolean
+  void_reason: string | null
+  occurred_at: string
+  score_event_recipients: ScoreEventRecipientRow[]
+}
+
+interface GameDetailRow {
+  id: string
+  title: string
+  played_at: string | null
+  started_at: string | null
+  ended_at: string | null
+  source: string
+  winner_team_id: string | null
+  game_teams: Array<{
+    id: string
+    client_id: string
+    name: string
+    color: string | null
+    final_score: number
+  }> | null
+  game_participants: Array<{
+    id: string
+    client_id: string
+    display_name: string
+    team_id: string | null
+    profile_id: string | null
+  }> | null
+  game_films: Array<{
+    id: string
+    client_id: string
+    name: string
+    order: number
+  }> | null
+  game_questions: Array<{
+    id: string
+    client_id: string
+    film_id: string
+    points: number
+    question: string | null
+    answer: string | null
+    state: string
+  }> | null
+  score_events: ScoreEventRow[] | null
+}
+
+export async function getGameDetail(gameId: string): Promise<GameDetail | null> {
+  if (!isSupabaseConfigured()) return null
+
+  const client = getSupabaseClient()!
+  const {
+    data: { session: authSession },
+  } = await client.auth.getSession()
+
+  if (!authSession?.user) return null
+
+  try {
+    const { data, error } = await client
+      .from('games')
+      .select(
+        `id,title,played_at,started_at,ended_at,source,winner_team_id,
+         game_teams!game_teams_game_id_fkey(id,client_id,name,color,final_score),
+         game_participants(id,client_id,display_name,team_id,profile_id),
+         game_films(id,client_id,name,order),
+         game_questions(id,client_id,film_id,points,question,answer,state),
+         score_events(id,type,question_id,mode,turn_number,round_number,actor_participant_id,voided,void_reason,occurred_at,score_event_recipients(id,event_id,team_id,participant_id,points))`,
+      )
+      .eq('id', gameId)
+      .single()
+
+    if (error) {
+      console.warn('[getGameDetail] Falha ao buscar partida:', error)
+      return null
+    }
+
+    if (!data) return null
+
+    const row = data as GameDetailRow
+
+    const teams: GameDetailTeam[] = (row.game_teams ?? []).map((t) => ({
+      id: t.id,
+      client_id: t.client_id,
+      name: t.name,
+      color: t.color,
+      final_score: t.final_score,
+    }))
+
+    const participants: GameDetailParticipant[] = (row.game_participants ?? []).map((p) => ({
+      id: p.id,
+      client_id: p.client_id,
+      display_name: p.display_name,
+      team_id: p.team_id,
+      profile_id: p.profile_id,
+    }))
+
+    const films: GameDetailFilm[] = (row.game_films ?? []).map((f) => ({
+      id: f.id,
+      client_id: f.client_id,
+      name: f.name,
+      order: f.order,
+    }))
+
+    const questions: GameDetailQuestion[] = (row.game_questions ?? []).map((q) => ({
+      id: q.id,
+      client_id: q.client_id,
+      film_id: q.film_id,
+      points: q.points,
+      question: q.question,
+      answer: q.answer,
+      state: q.state,
+    }))
+
+    // Build lookup maps
+    const teamById = new Map(teams.map((t) => [t.id, t]))
+    const participantById = new Map(participants.map((p) => [p.id, p]))
+    const questionById = new Map(questions.map((q) => [q.id, q]))
+
+    // Compute ranking from score_event_recipients
+    const triviaByParticipant = new Map<string, number>()
+    const mimicaByParticipant = new Map<string, number>()
+
+    for (const event of row.score_events ?? []) {
+      if (event.voided) continue
+      for (const r of event.score_event_recipients ?? []) {
+        if (r.participant_id == null) continue
+        if (event.type === 'trivia') {
+          triviaByParticipant.set(
+            r.participant_id,
+            (triviaByParticipant.get(r.participant_id) ?? 0) + r.points,
+          )
+        } else {
+          mimicaByParticipant.set(
+            r.participant_id,
+            (mimicaByParticipant.get(r.participant_id) ?? 0) + r.points,
+          )
+        }
+      }
+    }
+
+    const ranking: ParticipantStat[] = participants
+      .map((p) => {
+        const trivia = triviaByParticipant.get(p.id) ?? 0
+        const mimica = mimicaByParticipant.get(p.id) ?? 0
+        const team = p.team_id ? teamById.get(p.team_id) : null
+        return {
+          participant_id: p.id,
+          display_name: p.display_name,
+          team_id: p.team_id,
+          team_name: team?.name ?? null,
+          profile_id: p.profile_id,
+          trivia_points: trivia,
+          mimica_points: mimica,
+          total_points: trivia + mimica,
+        }
+      })
+      .sort((a, b) => b.total_points - a.total_points)
+
+    // Build timeline
+    const timeline: TimelineEntry[] = (row.score_events ?? [])
+      .map((event) => {
+        // Sum all recipients' points for this event
+        const totalPoints = (event.score_event_recipients ?? []).reduce(
+          (sum, r) => sum + r.points,
+          0,
+        )
+        const actor = event.actor_participant_id
+          ? participantById.get(event.actor_participant_id)
+          : null
+        const actorTeam = actor?.team_id ? teamById.get(actor.team_id) : null
+        // For team attribution we look at the first recipient's team
+        const firstRecipient = (event.score_event_recipients ?? [])[0]
+        const recipientTeam = firstRecipient?.team_id ? teamById.get(firstRecipient.team_id) : null
+        const resolvedTeam = actorTeam ?? recipientTeam ?? null
+
+        const question = event.question_id ? questionById.get(event.question_id) : null
+
+        return {
+          event_id: event.id,
+          type: event.type,
+          occurred_at: event.occurred_at,
+          actor_participant_id: event.actor_participant_id,
+          actor_name: actor?.display_name ?? null,
+          team_id: resolvedTeam?.id ?? null,
+          team_name: resolvedTeam?.name ?? null,
+          points: totalPoints,
+          question_id: event.question_id,
+          question_text: question?.question ?? null,
+          voided: event.voided,
+        }
+      })
+      .sort((a, b) => a.occurred_at.localeCompare(b.occurred_at))
+
+    const winnerTeam = row.winner_team_id ? teamById.get(row.winner_team_id) : null
+
+    return {
+      id: row.id,
+      title: row.title,
+      played_at: row.played_at,
+      started_at: row.started_at,
+      ended_at: row.ended_at,
+      source: row.source,
+      winner_team_id: row.winner_team_id,
+      winner_team_name: winnerTeam?.name ?? null,
+      teams,
+      participants,
+      films,
+      questions,
+      ranking,
+      timeline,
+    }
+  } catch (err) {
+    console.warn('[getGameDetail] Erro inesperado:', err)
+    return null
+  }
+}

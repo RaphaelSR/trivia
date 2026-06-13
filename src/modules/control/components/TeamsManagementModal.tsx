@@ -20,7 +20,7 @@ type TeamsManagementModalProps = {
   onUpdateParticipant: (
     teamId: string,
     participantId: string,
-    updates: Partial<{ id: string; name: string; role: TriviaParticipant['role'] }>
+    updates: Partial<{ id: string; name: string; role: TriviaParticipant['role']; email: string }>
   ) => void
   onMoveParticipant: (teamId: string, participantId: string, direction: -1 | 1) => void
   previewTeams: TriviaTeam[]
@@ -28,6 +28,8 @@ type TeamsManagementModalProps = {
   previewTurnSequence: string[]
   previewQuestionCount: number
   onSave: () => void
+  /** Modo de jogo atual — campo de e-mail só aparece quando gameMode === 'online' */
+  gameMode: string
 }
 
 /**
@@ -51,7 +53,9 @@ export function TeamsManagementModal({
   previewTurnSequence,
   previewQuestionCount,
   onSave,
+  gameMode,
 }: TeamsManagementModalProps) {
+  const isOnline = gameMode === 'online'
   const [previewOpen, setPreviewOpen] = useState(false)
   const canPreview = useMemo(
     () =>
@@ -178,6 +182,19 @@ export function TeamsManagementModal({
                         </Button>
                       </div>
                     </div>
+                    {isOnline && (
+                      <input
+                        type="email"
+                        value={member.email ?? ''}
+                        onChange={(event) => {
+                          const raw = event.target.value
+                          onUpdateParticipant(team.id, member.id, { email: raw })
+                        }}
+                        placeholder="e-mail (opcional, para vincular conta)"
+                        aria-label={`E-mail de ${member.name}`}
+                        className="w-full rounded-lg border border-[var(--color-border)] bg-[var(--color-background)] px-3 py-2 text-sm text-[var(--color-text)] placeholder:text-[var(--color-muted)]"
+                      />
+                    )}
                   </div>
                 ))}
                 <Button variant="outline" size="sm" onClick={() => onAddParticipant(team.id)}>

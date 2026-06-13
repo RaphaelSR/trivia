@@ -18,6 +18,21 @@ jest.mock('@/modules/auth/services/history.service', () => ({
   saveGameToHistory: jest.fn().mockResolvedValue(null),
 }))
 
+jest.mock('@/modules/auth/services/normalized-history.service', () => ({
+  listNormalizedGames: jest.fn().mockResolvedValue([]),
+  saveNormalizedGame: jest.fn().mockResolvedValue(null),
+  getGameDetail: jest.fn().mockReturnValue(new Promise(() => {})),
+}))
+
+jest.mock('@/modules/auth/components/GameDetailView', () => ({
+  GameDetailView: ({ onBack }: { onBack: () => void }) => (
+    <div>
+      <button onClick={onBack}>Voltar</button>
+      <span>GameDetailView</span>
+    </div>
+  ),
+}))
+
 import { useAuth } from '@/modules/auth/hooks/useAuth'
 
 const mockUseAuth = useAuth as jest.Mock

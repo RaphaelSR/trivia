@@ -56,6 +56,7 @@ export function convertDraftsToParticipants(
       id: string
       name: string
       role: TriviaParticipant['role']
+      email?: string
     }>
   }>
 ): TriviaParticipant[] {
@@ -65,6 +66,7 @@ export function convertDraftsToParticipants(
       name: member.name.trim() || 'Participante',
       role: member.role,
       teamId: team.id,
+      ...(member.email ? { email: member.email } : {}),
     }))
   )
 }

@@ -67,7 +67,18 @@ export function useGameHistorySync({
     if (savedSessionIdRef.current === session.id) return
     savedSessionIdRef.current = session.id
 
-    saveNormalizedGame(session, { source: 'live' }).catch((err: unknown) => {
+    // Monta mapa clientId → e-mail para participantes que têm e-mail preenchido
+    const emailsByClientId: Record<string, string> = {}
+    for (const participant of session.participants) {
+      if (participant.email) {
+        emailsByClientId[participant.id] = participant.email
+      }
+    }
+
+    saveNormalizedGame(session, {
+      source: 'live',
+      ...(Object.keys(emailsByClientId).length > 0 ? { emailsByClientId } : {}),
+    }).catch((err: unknown) => {
       console.warn('[useGameHistorySync] Falha ao salvar histórico:', err)
     })
   }, [session, gameMode, user])

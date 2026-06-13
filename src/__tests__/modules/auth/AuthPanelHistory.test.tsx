@@ -16,10 +16,20 @@ jest.mock('@/modules/auth/hooks/useAuth', () => ({
 jest.mock('@/modules/auth/services/normalized-history.service', () => ({
   listNormalizedGames: jest.fn(),
   saveNormalizedGame: jest.fn(),
+  getGameDetail: jest.fn().mockReturnValue(new Promise(() => {})),
+}))
+
+jest.mock('@/modules/auth/components/GameDetailView', () => ({
+  GameDetailView: ({ onBack }: { onBack: () => void }) => (
+    <div>
+      <button onClick={onBack}>Voltar</button>
+      <span>GameDetailView</span>
+    </div>
+  ),
 }))
 
 import '@testing-library/jest-dom'
-import { render, screen, act } from '@testing-library/react'
+import { render, screen, act, fireEvent } from '@testing-library/react'
 import { AuthPanel } from '@/modules/auth/components/AuthPanel'
 import { useAuth } from '@/modules/auth/hooks/useAuth'
 import { listNormalizedGames } from '@/modules/auth/services/normalized-history.service'
@@ -136,5 +146,43 @@ describe('AuthPanel — seção Minhas partidas (logado)', () => {
     })
 
     expect(screen.getByText('importado')).toBeInTheDocument()
+  })
+
+  it('clicar numa partida abre o GameDetailView', async () => {
+    const entry = makeEntry({ id: 'e1', title: 'Copa Trivia 1' })
+    mockListNormalizedGames.mockResolvedValue([entry])
+
+    await act(async () => {
+      render(<AuthPanel onClose={jest.fn()} />)
+    })
+
+    // Clica no botão de detalhes da partida
+    const btn = screen.getByRole('button', { name: /ver detalhes de copa trivia 1/i })
+    fireEvent.click(btn)
+
+    // GameDetailView é renderizado (mock)
+    expect(screen.getByText('GameDetailView')).toBeInTheDocument()
+    // A lista não aparece mais
+    expect(screen.queryByText('Copa Trivia 1')).not.toBeInTheDocument()
+  })
+
+  it('botão Voltar no GameDetailView retorna à lista', async () => {
+    const entry = makeEntry({ id: 'e1', title: 'Copa Trivia 1' })
+    mockListNormalizedGames.mockResolvedValue([entry])
+
+    await act(async () => {
+      render(<AuthPanel onClose={jest.fn()} />)
+    })
+
+    // Abre o detalhe
+    fireEvent.click(screen.getByRole('button', { name: /ver detalhes de copa trivia 1/i }))
+    expect(screen.getByText('GameDetailView')).toBeInTheDocument()
+
+    // Clica em voltar
+    fireEvent.click(screen.getByRole('button', { name: /voltar/i }))
+
+    // Lista deve reaparecer
+    expect(screen.getByText('Copa Trivia 1')).toBeInTheDocument()
+    expect(screen.queryByText('GameDetailView')).not.toBeInTheDocument()
   })
 })

@@ -5,6 +5,7 @@ import { useAuth } from '../hooks/useAuth'
 import { listNormalizedGames } from '../services/normalized-history.service'
 import type { NormalizedGameSummary } from '../services/normalized-history.service'
 import { ImportLocalSessions } from './ImportLocalSessions'
+import { GameDetailView } from './GameDetailView'
 
 type Tab = 'signin' | 'signup'
 
@@ -57,6 +58,7 @@ function LoggedInPanel({ user, loading, onLogout, onClose }: LoggedInPanelProps)
   const [history, setHistory] = useState<NormalizedGameSummary[]>([])
   const [historyLoading, setHistoryLoading] = useState(true)
   const [historyError, setHistoryError] = useState(false)
+  const [selectedGameId, setSelectedGameId] = useState<string | null>(null)
 
   useEffect(() => {
     let cancelled = false
@@ -85,6 +87,16 @@ function LoggedInPanel({ user, loading, onLogout, onClose }: LoggedInPanelProps)
   const handleHistoryRefresh = useCallback((entries: NormalizedGameSummary[]) => {
     setHistory(entries)
   }, [])
+
+  // Detalhe da partida selecionada
+  if (selectedGameId !== null) {
+    return (
+      <GameDetailView
+        gameId={selectedGameId}
+        onBack={() => setSelectedGameId(null)}
+      />
+    )
+  }
 
   return (
     <div className="relative w-full max-w-sm rounded-2xl border border-white/10 bg-black/60 p-6 shadow-2xl backdrop-blur-xl">
@@ -149,38 +161,41 @@ function LoggedInPanel({ user, loading, onLogout, onClose }: LoggedInPanelProps)
         {!historyLoading && !historyError && history.length > 0 && (
           <ul className="flex max-h-48 flex-col gap-2 overflow-y-auto pr-1" role="list">
             {history.map((entry) => (
-              <li
-                key={entry.id}
-                className="rounded-lg border border-white/5 bg-white/5 px-3 py-2"
-              >
-                <div className="flex items-center gap-2">
-                  <p className="min-w-0 flex-1 truncate text-xs font-medium text-[var(--color-text)]">
-                    {entry.title}
-                  </p>
-                  {entry.source === 'import' && (
-                    <span className="shrink-0 rounded px-1.5 py-0.5 text-[10px] font-medium bg-white/10 text-[var(--color-muted)]">
-                      importado
+              <li key={entry.id}>
+                <button
+                  onClick={() => setSelectedGameId(entry.id)}
+                  className="w-full rounded-lg border border-white/5 bg-white/5 px-3 py-2 text-left transition-colors hover:border-white/10 hover:bg-white/8"
+                  aria-label={`Ver detalhes de ${entry.title}`}
+                >
+                  <div className="flex items-center gap-2">
+                    <p className="min-w-0 flex-1 truncate text-xs font-medium text-[var(--color-text)]">
+                      {entry.title}
+                    </p>
+                    {entry.source === 'import' && (
+                      <span className="shrink-0 rounded px-1.5 py-0.5 text-[10px] font-medium bg-white/10 text-[var(--color-muted)]">
+                        importado
+                      </span>
+                    )}
+                  </div>
+                  <div className="mt-0.5 flex flex-wrap items-center gap-x-2 gap-y-0.5">
+                    <span className="text-xs text-[var(--color-muted)]">
+                      {formatDatePtBR(entry.playedAt ?? entry.endedAt ?? '')}
                     </span>
+                    {entry.winner != null && (
+                      <span className="text-xs text-[var(--color-primary)]">
+                        {entry.winner}
+                      </span>
+                    )}
+                    {entry.winner == null && (
+                      <span className="text-xs text-[var(--color-muted)]">Empate</span>
+                    )}
+                  </div>
+                  {buildScoreLine(entry) && (
+                    <p className="mt-0.5 truncate text-xs text-[var(--color-muted)]">
+                      {buildScoreLine(entry)}
+                    </p>
                   )}
-                </div>
-                <div className="mt-0.5 flex flex-wrap items-center gap-x-2 gap-y-0.5">
-                  <span className="text-xs text-[var(--color-muted)]">
-                    {formatDatePtBR(entry.playedAt ?? entry.endedAt ?? '')}
-                  </span>
-                  {entry.winner != null && (
-                    <span className="text-xs text-[var(--color-primary)]">
-                      {entry.winner}
-                    </span>
-                  )}
-                  {entry.winner == null && (
-                    <span className="text-xs text-[var(--color-muted)]">Empate</span>
-                  )}
-                </div>
-                {buildScoreLine(entry) && (
-                  <p className="mt-0.5 truncate text-xs text-[var(--color-muted)]">
-                    {buildScoreLine(entry)}
-                  </p>
-                )}
+                </button>
               </li>
             ))}
           </ul>
