@@ -323,6 +323,50 @@ export async function saveNormalizedGame(
 }
 
 // ---------------------------------------------------------------------------
+// listMyInvitedContacts — autocomplete de e-mails já convidados pelo host
+// ---------------------------------------------------------------------------
+
+export interface InvitedContact {
+  email: string
+  lastName: string
+}
+
+/**
+ * Retorna os e-mails que o usuário logado já usou como convite em partidas
+ * anteriores (via RPC list_my_invite_contacts, SECURITY INVOKER + RLS owner-only).
+ *
+ * Não-bloqueante: sempre retorna [] em caso de erro, sem config ou sem sessão.
+ * Não expõe nenhuma informação sobre outros usuários — é um espelho dos
+ * próprios convites do host, sem flag "tem conta" de terceiros.
+ */
+export async function listMyInvitedContacts(): Promise<InvitedContact[]> {
+  if (!isSupabaseConfigured()) return []
+
+  const client = getSupabaseClient()!
+  const {
+    data: { session: authSession },
+  } = await client.auth.getSession()
+
+  if (!authSession?.user) return []
+
+  try {
+    const { data, error } = await client.rpc('list_my_invite_contacts')
+    if (error) {
+      console.warn('[listMyInvitedContacts] Falha:', error)
+      return []
+    }
+    return ((data ?? []) as Array<{ invite_email: string; last_display_name: string }>).map(
+      (row) => ({
+        email: row.invite_email,
+        lastName: row.last_display_name,
+      }),
+    )
+  } catch {
+    return []
+  }
+}
+
+// ---------------------------------------------------------------------------
 // deleteNormalizedGame
 // ---------------------------------------------------------------------------
 

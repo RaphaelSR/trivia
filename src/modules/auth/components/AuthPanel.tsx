@@ -6,6 +6,7 @@ import { listNormalizedGames } from '../services/normalized-history.service'
 import type { NormalizedGameSummary } from '../services/normalized-history.service'
 import { ImportLocalSessions } from './ImportLocalSessions'
 import { GameDetailView } from './GameDetailView'
+import { isValidEmail } from '@/shared/utils/email'
 import { DeleteGameDialog } from './DeleteGameDialog'
 
 type Tab = 'signin' | 'signup'
@@ -16,10 +17,6 @@ interface AuthPanelProps {
   onClose: () => void
   /** Aba inicial ao abrir o painel (default: 'signin'). */
   initialTab?: Tab
-}
-
-function isValidEmail(email: string): boolean {
-  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)
 }
 
 // ---------------------------------------------------------------------------
