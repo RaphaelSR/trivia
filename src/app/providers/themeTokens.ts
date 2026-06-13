@@ -24,7 +24,11 @@ export const themeTokens: Record<ThemeMode, Record<string, string>> = {
     "--sidebar-text": "#111827",
     "--sidebar-muted": "#4b5563",
     "--sidebar-active-text": "#111827",
-    "--sidebar-badge-text": "#374151"
+    "--sidebar-badge-text": "#374151",
+    // CALIBRATE: solid theme — surfaces are mostly opaque, slight glass feel
+    "--surface-glass-bg": "rgba(255, 255, 255, 0.76)",
+    "--surface-glass-strong": "rgba(255, 255, 255, 0.90)",
+    "--surface-blur": "20px"
   },
   dark: {
     "--color-primary": "#818cf8",
@@ -49,7 +53,11 @@ export const themeTokens: Record<ThemeMode, Record<string, string>> = {
     "--sidebar-text": "#f8fafc",
     "--sidebar-muted": "#e2e8f0",
     "--sidebar-active-text": "#ffffff",
-    "--sidebar-badge-text": "#e2e8f0"
+    "--sidebar-badge-text": "#e2e8f0",
+    // CALIBRATE: solid dark theme — surfaces mostly opaque, subtle glass tint
+    "--surface-glass-bg": "rgba(15, 23, 42, 0.78)",
+    "--surface-glass-strong": "rgba(15, 23, 42, 0.90)",
+    "--surface-blur": "20px"
   },
   cinema: {
     "--color-primary": "#fb923c",
@@ -74,7 +82,11 @@ export const themeTokens: Record<ThemeMode, Record<string, string>> = {
     "--sidebar-text": "#fff7ed",
     "--sidebar-muted": "#ffedd5",
     "--sidebar-active-text": "#ffffff",
-    "--sidebar-badge-text": "#ffedd5"
+    "--sidebar-badge-text": "#ffedd5",
+    // CALIBRATE: solid cinema theme — dark warm tint, mostly opaque
+    "--surface-glass-bg": "rgba(28, 25, 23, 0.80)",
+    "--surface-glass-strong": "rgba(28, 25, 23, 0.92)",
+    "--surface-blur": "20px"
   },
   retro: {
     "--color-primary": "#ff0080",
@@ -99,7 +111,11 @@ export const themeTokens: Record<ThemeMode, Record<string, string>> = {
     "--sidebar-text": "#fdf4ff",
     "--sidebar-muted": "#f5d0fe",
     "--sidebar-active-text": "#ffffff",
-    "--sidebar-badge-text": "#fdf4ff"
+    "--sidebar-badge-text": "#fdf4ff",
+    // CALIBRATE: solid retro theme — deep purple tint, mostly opaque
+    "--surface-glass-bg": "rgba(26, 0, 51, 0.80)",
+    "--surface-glass-strong": "rgba(26, 0, 51, 0.92)",
+    "--surface-blur": "20px"
   },
   matrix: {
     "--color-primary": "#00ff00",
@@ -124,7 +140,11 @@ export const themeTokens: Record<ThemeMode, Record<string, string>> = {
     "--sidebar-text": "#f0fdf4",
     "--sidebar-muted": "#bbf7d0",
     "--sidebar-active-text": "#f0fdf4",
-    "--sidebar-badge-text": "#dcfce7"
+    "--sidebar-badge-text": "#dcfce7",
+    // CALIBRATE: solid matrix theme — black tint, keep very opaque for terminal feel
+    "--surface-glass-bg": "rgba(0, 0, 0, 0.82)",
+    "--surface-glass-strong": "rgba(0, 0, 0, 0.93)",
+    "--surface-blur": "20px"
   },
   brazil: {
     "--color-primary": "#009739",
@@ -149,7 +169,12 @@ export const themeTokens: Record<ThemeMode, Record<string, string>> = {
     "--sidebar-text": "#14532d",
     "--sidebar-muted": "#166534",
     "--sidebar-active-text": "#052e16",
-    "--sidebar-badge-text": "#14532d"
+    "--sidebar-badge-text": "#14532d",
+    // CALIBRATE: animated theme — lower alpha lets bandeirinhas bleed through.
+    // Increase toward 0.72 if text becomes hard to read; decrease toward 0.45 for more drama.
+    "--surface-glass-bg": "rgba(241, 248, 233, 0.58)",
+    "--surface-glass-strong": "rgba(241, 248, 233, 0.78)",
+    "--surface-blur": "22px"
   },
   easter: {
     "--color-primary": "#7c3aed",
@@ -174,7 +199,12 @@ export const themeTokens: Record<ThemeMode, Record<string, string>> = {
     "--sidebar-text": "#1e1b4b",
     "--sidebar-muted": "#6b5b95",
     "--sidebar-active-text": "#1e1b4b",
-    "--sidebar-badge-text": "#4c1d95"
+    "--sidebar-badge-text": "#4c1d95",
+    // CALIBRATE: animated theme — lower alpha lets eggs/bunnies bleed through.
+    // Increase toward 0.72 if text becomes hard to read; decrease toward 0.45 for more drama.
+    "--surface-glass-bg": "rgba(250, 245, 255, 0.56)",
+    "--surface-glass-strong": "rgba(250, 245, 255, 0.76)",
+    "--surface-blur": "22px"
   }
 }
 

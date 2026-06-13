@@ -11,7 +11,7 @@ interface ControlShellProps {
 
 export function ControlShell({ topbar, statusStrip, sidebar, children, sidebarCollapsed = false }: ControlShellProps) {
   return (
-    <div className="flex h-screen flex-col overflow-hidden bg-[var(--color-background)]">
+    <div className="flex h-screen flex-col overflow-hidden" style={{ background: 'transparent' }}>
       {topbar}
       {statusStrip}
       <div className="flex min-h-0 flex-1">
