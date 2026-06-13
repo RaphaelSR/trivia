@@ -390,6 +390,113 @@ export async function claimParticipation(
 }
 
 // ---------------------------------------------------------------------------
+// listClaimableParticipants — lista participantes disponíveis para reivindicar
+// via join_token genérico (migration 0006).
+// ---------------------------------------------------------------------------
+
+export interface ClaimableParticipant {
+  participantId: string
+  displayName: string
+  teamName: string | null
+  claimed: boolean
+}
+
+export async function listClaimableParticipants(
+  gameToken: string,
+): Promise<ClaimableParticipant[]> {
+  if (!UUID_RE.test(gameToken)) return []
+  if (!isSupabaseConfigured()) return []
+
+  const client = getSupabaseClient()!
+  const {
+    data: { session: authSession },
+  } = await client.auth.getSession()
+
+  if (!authSession?.user) return []
+
+  try {
+    const { data, error } = await client.rpc('list_claimable_participants', {
+      p_game_token: gameToken,
+    })
+    if (error) {
+      console.warn('[listClaimableParticipants] Falha:', error)
+      return []
+    }
+    return ((data ?? []) as Array<{
+      participant_id: string
+      display_name: string
+      team_name: string | null
+      claimed: boolean
+    }>).map((row) => ({
+      participantId: row.participant_id,
+      displayName: row.display_name,
+      teamName: row.team_name,
+      claimed: row.claimed,
+    }))
+  } catch {
+    return []
+  }
+}
+
+// ---------------------------------------------------------------------------
+// claimParticipantByGame — reivindica um participante específico via join_token
+// (migration 0006). Mapeia mensagens de erro para pt-BR.
+// ---------------------------------------------------------------------------
+
+const CLAIM_BY_GAME_ERRORS: Record<string, string> = {
+  INVALID_TOKEN: 'Link de convite inválido.',
+  ALREADY_CLAIMED_IN_GAME: 'Você já reivindicou um participante nesta partida.',
+  SLOT_UNAVAILABLE: 'Esse participante já foi vinculado por outra pessoa.',
+}
+
+export async function claimParticipantByGame(
+  gameToken: string,
+  participantId: string,
+): Promise<{ gameId: string | null; error: string | null }> {
+  if (!UUID_RE.test(gameToken) || !UUID_RE.test(participantId)) {
+    return { gameId: null, error: 'Link de convite inválido.' }
+  }
+
+  if (!isSupabaseConfigured()) {
+    return { gameId: null, error: 'Funcionalidade indisponível neste ambiente.' }
+  }
+
+  const client = getSupabaseClient()!
+  const {
+    data: { session: authSession },
+  } = await client.auth.getSession()
+
+  if (!authSession?.user) {
+    return { gameId: null, error: 'Faça login para reivindicar esta participação.' }
+  }
+
+  try {
+    const { data, error } = await client.rpc('claim_participant_by_game', {
+      p_game_token: gameToken,
+      p_participant_id: participantId,
+    })
+    if (error) {
+      console.warn('[claimParticipantByGame] Falha:', error)
+      const known = Object.keys(CLAIM_BY_GAME_ERRORS).find((k) =>
+        (error.message as string | undefined)?.includes(k),
+      )
+      return {
+        gameId: null,
+        error: known
+          ? CLAIM_BY_GAME_ERRORS[known]
+          : 'Não foi possível vincular. Tente novamente.',
+      }
+    }
+    if (!data) {
+      return { gameId: null, error: 'Não foi possível vincular. Tente novamente.' }
+    }
+    return { gameId: data as string, error: null }
+  } catch {
+    return { gameId: null, error: 'Não foi possível vincular. Tente novamente.' }
+  }
+}
+
+// ---------------------------------------------------------------------------
 // importLocalSession — importa uma sessão local para a conta do usuário
 // ---------------------------------------------------------------------------
 
@@ -590,6 +697,10 @@ export interface GameDetail {
   source: string
   winner_team_id: string | null
   winner_team_name: string | null
+  /** Token de convite genérico da sessão. Só presente para o dono (via RLS). */
+  joinToken: string | null
+  /** true quando o usuário autenticado é o dono do jogo (owner_user_id). */
+  isOwner: boolean
   teams: GameDetailTeam[]
   participants: GameDetailParticipant[]
   films: GameDetailFilm[]
@@ -599,8 +710,31 @@ export interface GameDetail {
 }
 
 // ---------------------------------------------------------------------------
-// buildClaimUrl — pura; exportada para testes
+// URL helpers — puros; exportados para testes
 // ---------------------------------------------------------------------------
+
+/**
+ * Retorna a base normalizada (sempre termina com '/') lida de BASE_URL.
+ * Usado internamente por buildClaimUrl e buildSessionClaimUrl.
+ */
+function getNormalizedBase(): string {
+  const base = readViteEnv('BASE_URL') ?? '/'
+  return base.endsWith('/') ? base : `${base}/`
+}
+
+/**
+ * Monta a URL absoluta (ou relativa em ambientes sem window) para um dado path.
+ */
+function buildAbsoluteUrl(path: string): string {
+  const origin =
+    typeof window !== 'undefined' ? (window.location?.origin ?? '') : ''
+
+  if (origin) {
+    return `${origin}${path.startsWith('/') ? path : `/${path}`}`
+  }
+
+  return path
+}
 
 /**
  * Monta a URL completa de um link de convite (claim) para um participante.
@@ -612,22 +746,19 @@ export interface GameDetail {
  * evita double-slash entre origin/base e o segmento 'claim'.
  */
 export function buildClaimUrl(token: string): string {
-  const base = readViteEnv('BASE_URL') ?? '/'
-  // Garante que base termina com exatamente uma barra
-  const normalizedBase = base.endsWith('/') ? base : `${base}/`
-
+  const normalizedBase = getNormalizedBase()
   const path = `${normalizedBase}claim?token=${token}`
+  return buildAbsoluteUrl(path)
+}
 
-  const origin =
-    typeof window !== 'undefined' ? (window.location?.origin ?? '') : ''
-
-  if (origin) {
-    // Remove barra dupla na junção origin + path quando path já começa com //
-    return `${origin}${path.startsWith('/') ? path : `/${path}`}`
-  }
-
-  // Fallback para ambientes sem window (testes, SSR)
-  return path
+/**
+ * Monta a URL completa do convite genérico da sessão (?game=<join_token>).
+ * Um único link por jogo — a pessoa loga e escolhe qual participante é.
+ */
+export function buildSessionClaimUrl(joinToken: string): string {
+  const normalizedBase = getNormalizedBase()
+  const path = `${normalizedBase}claim?game=${joinToken}`
+  return buildAbsoluteUrl(path)
 }
 
 // ---------------------------------------------------------------------------
@@ -664,6 +795,8 @@ interface GameDetailRow {
   ended_at: string | null
   source: string
   winner_team_id: string | null
+  join_token: string | null
+  owner_user_id: string | null
   game_teams: Array<{
     id: string
     client_id: string
@@ -711,7 +844,7 @@ export async function getGameDetail(gameId: string): Promise<GameDetail | null> 
     const { data, error } = await client
       .from('games')
       .select(
-        `id,title,played_at,started_at,ended_at,source,winner_team_id,
+        `id,title,played_at,started_at,ended_at,source,winner_team_id,join_token,owner_user_id,
          game_teams!game_teams_game_id_fkey(id,client_id,name,color,final_score),
          game_participants(id,client_id,display_name,team_id,profile_id,claim_token),
          game_films(id,client_id,name,order),
@@ -847,6 +980,8 @@ export async function getGameDetail(gameId: string): Promise<GameDetail | null> 
 
     const winnerTeam = row.winner_team_id ? teamById.get(row.winner_team_id) : null
 
+    const isOwner = row.owner_user_id != null && row.owner_user_id === authSession.user.id
+
     return {
       id: row.id,
       title: row.title,
@@ -856,6 +991,8 @@ export async function getGameDetail(gameId: string): Promise<GameDetail | null> 
       source: row.source,
       winner_team_id: row.winner_team_id,
       winner_team_name: winnerTeam?.name ?? null,
+      joinToken: isOwner ? (row.join_token ?? null) : null,
+      isOwner,
       teams,
       participants,
       films,

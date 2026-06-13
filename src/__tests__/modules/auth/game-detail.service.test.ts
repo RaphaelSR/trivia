@@ -104,6 +104,9 @@ const EVT_TRIVIA_LATE = {
   ],
 }
 
+const JOIN_TOKEN = 'join-uuid-0000-0000-0000-000000000000'
+const OWNER_USER_ID = 'user-uuid'
+
 const FAKE_ROW = {
   id: GAME_ID,
   title: 'Copa Trivia',
@@ -112,6 +115,8 @@ const FAKE_ROW = {
   ended_at: '2026-06-12T12:00:00.000Z',
   source: 'live',
   winner_team_id: TEAM_A_ID,
+  join_token: JOIN_TOKEN,
+  owner_user_id: OWNER_USER_ID,
   game_teams: [
     { id: TEAM_A_ID, client_id: 'client-a', name: 'Time A', color: '#f00', final_score: 100 },
     { id: TEAM_B_ID, client_id: 'client-b', name: 'Time B', color: '#00f', final_score: 80 },
@@ -176,7 +181,7 @@ describe('getGameDetail — usuário não logado', () => {
 })
 
 describe('getGameDetail — com sessão ativa', () => {
-  const fakeAuthSession = { user: { id: 'user-uuid' } }
+  const fakeAuthSession = { user: { id: OWNER_USER_ID } }
 
   beforeEach(() => {
     jest.clearAllMocks()
@@ -308,5 +313,46 @@ describe('getGameDetail — com sessão ativa', () => {
     // claim_token também aparece no ranking
     const bobRanking = result!.ranking.find((r) => r.display_name === 'Bob')!
     expect(bobRanking.claim_token).toBe('token-bob-uuid')
+  })
+
+  it('isOwner=true e joinToken presente quando user.id === owner_user_id', async () => {
+    const qm = buildSingleQueryMock({ data: FAKE_ROW, error: null })
+    mockGetClient.mockReturnValue({
+      auth: { getSession: jest.fn().mockResolvedValue({ data: { session: fakeAuthSession } }) },
+      from: jest.fn().mockReturnValue(qm),
+    })
+
+    const result = await getGameDetail(GAME_ID)
+    expect(result).not.toBeNull()
+    expect(result!.isOwner).toBe(true)
+    expect(result!.joinToken).toBe(JOIN_TOKEN)
+  })
+
+  it('isOwner=false e joinToken=null quando user.id !== owner_user_id', async () => {
+    const rowWithDifferentOwner = { ...FAKE_ROW, owner_user_id: 'outro-user-uuid' }
+    const qm = buildSingleQueryMock({ data: rowWithDifferentOwner, error: null })
+    mockGetClient.mockReturnValue({
+      auth: { getSession: jest.fn().mockResolvedValue({ data: { session: fakeAuthSession } }) },
+      from: jest.fn().mockReturnValue(qm),
+    })
+
+    const result = await getGameDetail(GAME_ID)
+    expect(result).not.toBeNull()
+    expect(result!.isOwner).toBe(false)
+    expect(result!.joinToken).toBeNull()
+  })
+
+  it('isOwner=false quando owner_user_id é null', async () => {
+    const rowNoOwner = { ...FAKE_ROW, owner_user_id: null }
+    const qm = buildSingleQueryMock({ data: rowNoOwner, error: null })
+    mockGetClient.mockReturnValue({
+      auth: { getSession: jest.fn().mockResolvedValue({ data: { session: fakeAuthSession } }) },
+      from: jest.fn().mockReturnValue(qm),
+    })
+
+    const result = await getGameDetail(GAME_ID)
+    expect(result).not.toBeNull()
+    expect(result!.isOwner).toBe(false)
+    expect(result!.joinToken).toBeNull()
   })
 })

@@ -14,6 +14,9 @@
 jest.mock('@/modules/auth/services/normalized-history.service', () => ({
   getGameDetail: jest.fn(),
   buildClaimUrl: jest.fn((token: string) => `https://example.com/claim?token=${token}`),
+  buildSessionClaimUrl: jest.fn(
+    (joinToken: string) => `https://example.com/claim?game=${joinToken}`,
+  ),
 }))
 
 import '@testing-library/jest-dom'
@@ -28,6 +31,8 @@ const mockGetGameDetail = getGameDetail as jest.Mock
 // Fixtures
 // ---------------------------------------------------------------------------
 
+const JOIN_TOKEN = 'join-uuid-0000-0000-0000-000000000000'
+
 function makeDetail(overrides?: Partial<GameDetail>): GameDetail {
   return {
     id: 'game-1',
@@ -38,6 +43,8 @@ function makeDetail(overrides?: Partial<GameDetail>): GameDetail {
     source: 'live',
     winner_team_id: 'team-a',
     winner_team_name: 'Time A',
+    joinToken: null,
+    isOwner: false,
     teams: [
       { id: 'team-a', client_id: 'ca', name: 'Time A', color: '#f00', final_score: 100 },
       { id: 'team-b', client_id: 'cb', name: 'Time B', color: '#00f', final_score: 80 },
@@ -267,5 +274,47 @@ describe('GameDetailView — InviteShare (convites)', () => {
 
     // Seção de convites não deve aparecer
     expect(screen.queryByText(/convidar participantes/i)).not.toBeInTheDocument()
+  })
+})
+
+// ---------------------------------------------------------------------------
+// Convite da sessão (isOwner + joinToken)
+// ---------------------------------------------------------------------------
+
+describe('GameDetailView — Convite da sessão', () => {
+  beforeEach(() => {
+    jest.clearAllMocks()
+  })
+
+  it('exibe bloco "Convite da sessão" quando isOwner=true e joinToken presente', async () => {
+    mockGetGameDetail.mockResolvedValue(
+      makeDetail({ isOwner: true, joinToken: JOIN_TOKEN }),
+    )
+    await act(async () => {
+      render(<GameDetailView gameId="game-1" onBack={jest.fn()} />)
+    })
+    // O section tem aria-label="Convite da sessão"
+    expect(screen.getByRole('region', { name: /convite da sessão/i })).toBeInTheDocument()
+    expect(screen.getByText(/compartilhe um único link com todos/i)).toBeInTheDocument()
+  })
+
+  it('NÃO exibe bloco "Convite da sessão" quando isOwner=false', async () => {
+    mockGetGameDetail.mockResolvedValue(
+      makeDetail({ isOwner: false, joinToken: JOIN_TOKEN }),
+    )
+    await act(async () => {
+      render(<GameDetailView gameId="game-1" onBack={jest.fn()} />)
+    })
+    expect(screen.queryByRole('region', { name: /convite da sessão/i })).not.toBeInTheDocument()
+  })
+
+  it('NÃO exibe bloco "Convite da sessão" quando joinToken=null mesmo com isOwner=true', async () => {
+    mockGetGameDetail.mockResolvedValue(
+      makeDetail({ isOwner: true, joinToken: null }),
+    )
+    await act(async () => {
+      render(<GameDetailView gameId="game-1" onBack={jest.fn()} />)
+    })
+    expect(screen.queryByRole('region', { name: /convite da sessão/i })).not.toBeInTheDocument()
   })
 })

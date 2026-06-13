@@ -12,10 +12,11 @@
  */
 
 import { useState, useEffect } from 'react'
-import { ArrowLeft, Trophy, Clock, Upload, UserCheck } from 'lucide-react'
-import { getGameDetail } from '../services/normalized-history.service'
+import { ArrowLeft, Trophy, Clock, Upload, UserCheck, Link2 } from 'lucide-react'
+import { getGameDetail, buildSessionClaimUrl } from '../services/normalized-history.service'
 import type { GameDetail, TimelineEntry } from '../services/normalized-history.service'
 import { InviteShare } from './InviteShare'
+import { ShareChannels } from './ShareChannels'
 
 // ---------------------------------------------------------------------------
 // Props
@@ -252,6 +253,28 @@ export function GameDetailView({ gameId, onBack }: GameDetailViewProps) {
                     </li>
                   ))}
                 </ul>
+              </section>
+            )}
+
+            {/* ── Convite genérico da sessão (só para o dono) ─────────── */}
+            {detail.isOwner && detail.joinToken && (
+              <section aria-label="Convite da sessão">
+                <SectionTitle>Convite da sessão</SectionTitle>
+                <div className="flex flex-col gap-2 rounded-xl border border-white/10 bg-white/5 px-3 py-3 backdrop-blur-sm">
+                  <div className="flex items-center gap-1.5">
+                    <Link2 className="h-3.5 w-3.5 shrink-0 text-[var(--color-muted)]" aria-hidden="true" />
+                    <span className="min-w-0 flex-1 text-xs font-medium text-[var(--color-text)]">
+                      Link único para todos
+                    </span>
+                  </div>
+                  <p className="text-[10px] text-[var(--color-muted)]">
+                    Compartilhe um único link com todos — cada um escolhe seu nome.
+                  </p>
+                  <ShareChannels
+                    url={buildSessionClaimUrl(detail.joinToken)}
+                    label="da sessão"
+                  />
+                </div>
               </section>
             )}
 

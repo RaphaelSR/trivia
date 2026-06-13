@@ -1,94 +1,33 @@
 /**
- * InviteShare — bloco de compartilhamento de link de convite por participante.
+ * ShareChannels — botões de compartilhamento reutilizáveis.
  *
- * Renderizado por participante não-vinculado (profile_id null) que possua
- * claim_token. Participantes já vinculados exibem apenas o selo "vinculado".
+ * Usado por:
+ *  - InviteShare (convite por participante, ?token=)
+ *  - GameDetailView (convite genérico da sessão, ?game=)
  *
- * Canais de compartilhamento:
- *  - Copiar link (navigator.clipboard; fallback: input readonly selecionado)
- *  - WhatsApp (wa.me/?text=...)
- *  - E-mail (mailto:?subject=...&body=...)
- *  - QR Code via api.qrserver.com (serviço externo gratuito, aceitável para
- *    links de convite não-secretos; o QR fica atrás de um toggle "Mostrar QR"
- *    para evitar requisição automática para todos os participantes).
- *
- * Gate: só renderiza botões quando claim_token !== null — para participantes
- * sem token (leitores que não são o dono do jogo) o componente não mostra nada.
+ * Props:
+ *  - url   — a URL completa a ser compartilhada / copiada
+ *  - label — texto descritivo curto (ex. "de Bob", "da sessão") para aria-labels
  */
 
 import { useState, useRef } from 'react'
-import { Copy, Check, Mail, QrCode, UserCheck, Share2 } from 'lucide-react'
-import { buildClaimUrl } from '../services/normalized-history.service'
+import { Copy, Check, Mail, QrCode } from 'lucide-react'
 
-// ---------------------------------------------------------------------------
-// Tipos
-// ---------------------------------------------------------------------------
-
-export interface InviteParticipant {
-  id: string
-  display_name: string
-  profile_id: string | null
-  claim_token: string | null
+interface ShareChannelsProps {
+  url: string
+  label: string
 }
-
-interface InviteShareProps {
-  participant: InviteParticipant
-}
-
-// ---------------------------------------------------------------------------
-// InviteShare
-// ---------------------------------------------------------------------------
-
-export function InviteShare({ participant }: InviteShareProps) {
-  const { display_name, profile_id, claim_token } = participant
-
-  // Participante já vinculado — mostra apenas o selo (sem botões)
-  if (profile_id !== null) {
-    return (
-      <div className="flex items-center gap-1.5 rounded-lg border border-white/5 bg-white/5 px-3 py-2">
-        <UserCheck className="h-3.5 w-3.5 shrink-0 text-[var(--color-primary)]" aria-hidden="true" />
-        <span className="min-w-0 flex-1 truncate text-xs text-[var(--color-text)]">
-          {display_name}
-        </span>
-        <span
-          aria-label={`${display_name} já está vinculado`}
-          className="inline-flex items-center gap-0.5 rounded px-1.5 py-0.5 text-[9px] font-medium bg-[var(--color-primary)]/15 text-[var(--color-primary)]"
-        >
-          <UserCheck className="h-2.5 w-2.5" aria-hidden="true" />
-          vinculado
-        </span>
-      </div>
-    )
-  }
-
-  // Sem token → sem convite (leitor não-dono, ou participant ainda sem token gerado)
-  if (!claim_token) {
-    return null
-  }
-
-  return <InviteBlock name={display_name} token={claim_token} />
-}
-
-// ---------------------------------------------------------------------------
-// InviteBlock — bloco com os botões de compartilhamento
-// ---------------------------------------------------------------------------
 
 function buildInviteMessage(url: string): string {
   return `Reivindique sua participação no Trivia: ${url}`
 }
 
-interface InviteBlockProps {
-  name: string
-  token: string
-}
-
-function InviteBlock({ name, token }: InviteBlockProps) {
+export function ShareChannels({ url, label }: ShareChannelsProps) {
   const [copied, setCopied] = useState(false)
   const [showFallbackInput, setShowFallbackInput] = useState(false)
   const [showQr, setShowQr] = useState(false)
   const fallbackInputRef = useRef<HTMLInputElement>(null)
 
-  const url = buildClaimUrl(token)
   const message = buildInviteMessage(url)
 
   async function handleCopy() {
@@ -109,25 +48,14 @@ function InviteBlock({ name, token }: InviteBlockProps) {
   const qrSrc = `https://api.qrserver.com/v1/create-qr-code/?size=160x160&data=${encodeURIComponent(url)}`
 
   return (
-    <div
-      className="flex flex-col gap-2 rounded-xl border border-white/10 bg-white/5 px-3 py-3 backdrop-blur-sm"
-      aria-label={`Convidar ${name}`}
-    >
-      {/* Nome + ícone */}
-      <div className="flex items-center gap-1.5">
-        <Share2 className="h-3.5 w-3.5 shrink-0 text-[var(--color-muted)]" aria-hidden="true" />
-        <span className="min-w-0 flex-1 truncate text-xs font-medium text-[var(--color-text)]">
-          Convidar {name}
-        </span>
-      </div>
-
+    <div className="flex flex-col gap-2">
       {/* Botões */}
       <div className="flex flex-wrap gap-1.5">
         {/* Copiar */}
         <button
           type="button"
           onClick={() => void handleCopy()}
-          aria-label={`Copiar link de convite para ${name}`}
+          aria-label={`Copiar link ${label}`}
           className={[
             'inline-flex items-center gap-1 rounded-lg border px-2.5 py-1 text-[11px] font-medium transition-colors',
             copied
@@ -153,7 +81,7 @@ function InviteBlock({ name, token }: InviteBlockProps) {
           href={whatsappHref}
           target="_blank"
           rel="noopener noreferrer"
-          aria-label={`Compartilhar convite de ${name} pelo WhatsApp`}
+          aria-label={`Compartilhar convite ${label} pelo WhatsApp`}
           className="inline-flex items-center gap-1 rounded-lg border border-white/10 bg-white/5 px-2.5 py-1 text-[11px] font-medium text-[var(--color-text)] transition-colors hover:bg-white/10"
         >
           <svg
@@ -169,7 +97,7 @@ function InviteBlock({ name, token }: InviteBlockProps) {
         {/* E-mail */}
         <a
           href={mailHref}
-          aria-label={`Compartilhar convite de ${name} por e-mail`}
+          aria-label={`Compartilhar convite ${label} por e-mail`}
           className="inline-flex items-center gap-1 rounded-lg border border-white/10 bg-white/5 px-2.5 py-1 text-[11px] font-medium text-[var(--color-text)] transition-colors hover:bg-white/10"
         >
           <Mail className="h-3 w-3 shrink-0" aria-hidden="true" />
@@ -180,7 +108,7 @@ function InviteBlock({ name, token }: InviteBlockProps) {
         <button
           type="button"
           onClick={() => setShowQr((v) => !v)}
-          aria-label={showQr ? 'Ocultar QR Code' : `Mostrar QR Code para ${name}`}
+          aria-label={showQr ? 'Ocultar QR Code' : `Mostrar QR Code ${label}`}
           aria-expanded={showQr}
           className="inline-flex items-center gap-1 rounded-lg border border-white/10 bg-white/5 px-2.5 py-1 text-[11px] font-medium text-[var(--color-text)] transition-colors hover:bg-white/10"
         >
@@ -203,13 +131,13 @@ function InviteBlock({ name, token }: InviteBlockProps) {
         </div>
       )}
 
-      {/* QR Code — serviço externo: api.qrserver.com (gratuito, sem autenticação).
-          O QR é gerado somente quando o usuário clica "Mostrar QR". */}
+      {/* QR Code — gerado somente quando o usuário clica "QR", evitando
+          requisições automáticas. Serviço externo: api.qrserver.com (gratuito). */}
       {showQr && (
         <div className="flex flex-col items-center gap-1 pt-1">
           <img
             src={qrSrc}
-            alt={`QR Code do convite para ${name}`}
+            alt={`QR Code do convite ${label}`}
             width={160}
             height={160}
             loading="lazy"

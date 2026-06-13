@@ -1,7 +1,7 @@
 /**
- * Testes para ClaimPage (/claim?token=...)
+ * Testes para ClaimPage (/claim?token=... e /claim?game=...)
  *
- * Cenários:
+ * Cenários existentes (?token=):
  *  1. Supabase não configurado → "Indisponível"
  *  2. Sem token → "Link inválido"
  *  3. Deslogado → mostra botão para entrar/criar conta
@@ -9,11 +9,23 @@
  *  5. Logado + claim sucesso → "Partida vinculada à sua conta!"
  *  6. Logado + claim erro → mensagem de erro
  *  7. Não chama claim duas vezes (idempotente)
+ *
+ * Novos cenários (?game=):
+ *  8. Deslogado → mostra tela de auth
+ *  9. Logado → lista participantes
+ * 10. Clicar "Sou eu" → chama claimParticipantByGame e mostra sucesso
+ * 11. Participante claimed → botão desabilitado / texto "já vinculado"
+ * 12. Erro ALREADY_CLAIMED_IN_GAME → mostra mensagem mapeada
  */
 
 jest.mock('@/shared/services/supabase.client', () => ({
   isSupabaseConfigured: jest.fn(),
   getSupabaseClient: jest.fn(),
+}))
+
+jest.mock('@/modules/auth/services/normalized-history.service', () => ({
+  listClaimableParticipants: jest.fn(),
+  claimParticipantByGame: jest.fn(),
 }))
 
 jest.mock('@/modules/auth/hooks/useAuth', () => ({
@@ -35,14 +47,20 @@ jest.mock('@/shared/services/vite-env', () => ({
 }))
 
 import '@testing-library/jest-dom'
-import { render, screen, act, waitFor } from '@testing-library/react'
+import { render, screen, act, waitFor, fireEvent } from '@testing-library/react'
 import { MemoryRouter, Route, Routes } from 'react-router-dom'
 import { isSupabaseConfigured } from '@/shared/services/supabase.client'
 import { useAuth } from '@/modules/auth/hooks/useAuth'
 import { ClaimPage } from '@/modules/auth/pages/ClaimPage'
+import {
+  listClaimableParticipants,
+  claimParticipantByGame,
+} from '@/modules/auth/services/normalized-history.service'
 
 const mockIsConfigured = isSupabaseConfigured as jest.Mock
 const mockUseAuth = useAuth as jest.Mock
+const mockListClaimable = listClaimableParticipants as jest.Mock
+const mockClaimByGame = claimParticipantByGame as jest.Mock
 
 const VALID_TOKEN = '550e8400-e29b-41d4-a716-446655440000'
 
@@ -192,5 +210,157 @@ describe('ClaimPage — claim chamado apenas uma vez', () => {
     })
 
     expect(claimMock).toHaveBeenCalledTimes(1)
+  })
+})
+
+// ── 8-12. Modo ?game= (convite genérico da sessão) ───────────────────────────
+
+const VALID_GAME_TOKEN = '550e8400-e29b-41d4-a716-446655440099'
+const VALID_PARTICIPANT_ID = '11112222-3333-4444-5555-666677778888'
+
+function renderClaimGamePage(gameToken: string) {
+  return render(
+    <MemoryRouter initialEntries={[`/claim?game=${gameToken}`]}>
+      <Routes>
+        <Route path="/claim" element={<ClaimPage />} />
+      </Routes>
+    </MemoryRouter>,
+  )
+}
+
+describe('ClaimPage — modo ?game= deslogado', () => {
+  it('exibe botão de login quando usuário não está autenticado', () => {
+    mockUseAuth.mockReturnValue({ ...defaultAuthState, user: null })
+    renderClaimGamePage(VALID_GAME_TOKEN)
+    expect(screen.getByRole('button', { name: /entrar \/ criar conta/i })).toBeInTheDocument()
+  })
+
+  it('NÃO chama listClaimableParticipants sem login', () => {
+    mockUseAuth.mockReturnValue({ ...defaultAuthState, user: null })
+    renderClaimGamePage(VALID_GAME_TOKEN)
+    expect(mockListClaimable).not.toHaveBeenCalled()
+  })
+})
+
+describe('ClaimPage — modo ?game= logado, lista participantes', () => {
+  const fakeUser = { id: 'uid-1', email: 'a@b.com' }
+  const fakeParticipants = [
+    { participantId: VALID_PARTICIPANT_ID, displayName: 'Alice', teamName: 'Time A', claimed: false },
+    { participantId: '99998888-7777-6666-5555-444433332222', displayName: 'Bob', teamName: 'Time B', claimed: true },
+  ]
+
+  beforeEach(() => {
+    mockUseAuth.mockReturnValue({ ...defaultAuthState, user: fakeUser })
+    mockListClaimable.mockResolvedValue(fakeParticipants)
+  })
+
+  it('chama listClaimableParticipants com o game token', async () => {
+    await act(async () => {
+      renderClaimGamePage(VALID_GAME_TOKEN)
+    })
+    expect(mockListClaimable).toHaveBeenCalledWith(VALID_GAME_TOKEN)
+  })
+
+  it('exibe os nomes dos participantes', async () => {
+    await act(async () => {
+      renderClaimGamePage(VALID_GAME_TOKEN)
+    })
+    await waitFor(() => {
+      expect(screen.getByText('Alice')).toBeInTheDocument()
+      expect(screen.getByText('Bob')).toBeInTheDocument()
+    })
+  })
+
+  it('participante não-claimed tem botão "Sou eu"', async () => {
+    await act(async () => {
+      renderClaimGamePage(VALID_GAME_TOKEN)
+    })
+    await waitFor(() => {
+      expect(screen.getByRole('button', { name: /sou alice/i })).toBeInTheDocument()
+    })
+  })
+
+  it('participante claimed tem texto "já vinculado" e não tem botão', async () => {
+    await act(async () => {
+      renderClaimGamePage(VALID_GAME_TOKEN)
+    })
+    await waitFor(() => {
+      expect(screen.getByText(/já vinculado/i)).toBeInTheDocument()
+      expect(screen.queryByRole('button', { name: /sou bob/i })).not.toBeInTheDocument()
+    })
+  })
+})
+
+describe('ClaimPage — modo ?game= clicar "Sou eu" com sucesso', () => {
+  const fakeUser = { id: 'uid-1', email: 'a@b.com' }
+  const fakeParticipants = [
+    { participantId: VALID_PARTICIPANT_ID, displayName: 'Alice', teamName: 'Time A', claimed: false },
+  ]
+
+  beforeEach(() => {
+    mockUseAuth.mockReturnValue({ ...defaultAuthState, user: fakeUser })
+    mockListClaimable.mockResolvedValue(fakeParticipants)
+    mockClaimByGame.mockResolvedValue({ gameId: 'game-result-uuid', error: null })
+  })
+
+  it('chama claimParticipantByGame com token e participantId corretos', async () => {
+    await act(async () => {
+      renderClaimGamePage(VALID_GAME_TOKEN)
+    })
+    await waitFor(() => screen.getByRole('button', { name: /sou alice/i }))
+
+    await act(async () => {
+      fireEvent.click(screen.getByRole('button', { name: /sou alice/i }))
+    })
+
+    expect(mockClaimByGame).toHaveBeenCalledWith(VALID_GAME_TOKEN, VALID_PARTICIPANT_ID)
+  })
+
+  it('exibe "Partida vinculada à sua conta!" após sucesso', async () => {
+    await act(async () => {
+      renderClaimGamePage(VALID_GAME_TOKEN)
+    })
+    await waitFor(() => screen.getByRole('button', { name: /sou alice/i }))
+
+    await act(async () => {
+      fireEvent.click(screen.getByRole('button', { name: /sou alice/i }))
+    })
+
+    await waitFor(() => {
+      expect(screen.getByText(/partida vinculada à sua conta/i)).toBeInTheDocument()
+    })
+  })
+})
+
+describe('ClaimPage — modo ?game= erro ALREADY_CLAIMED_IN_GAME', () => {
+  const fakeUser = { id: 'uid-1', email: 'a@b.com' }
+  const fakeParticipants = [
+    { participantId: VALID_PARTICIPANT_ID, displayName: 'Alice', teamName: 'Time A', claimed: false },
+  ]
+
+  beforeEach(() => {
+    mockUseAuth.mockReturnValue({ ...defaultAuthState, user: fakeUser })
+    mockListClaimable.mockResolvedValue(fakeParticipants)
+    mockClaimByGame.mockResolvedValue({
+      gameId: null,
+      error: 'Você já reivindicou um participante nesta partida.',
+    })
+  })
+
+  it('exibe a mensagem de erro mapeada', async () => {
+    await act(async () => {
+      renderClaimGamePage(VALID_GAME_TOKEN)
+    })
+    await waitFor(() => screen.getByRole('button', { name: /sou alice/i }))
+
+    await act(async () => {
+      fireEvent.click(screen.getByRole('button', { name: /sou alice/i }))
+    })
+
+    await waitFor(() => {
+      expect(
+        screen.getByText(/você já reivindicou um participante nesta partida/i),
+      ).toBeInTheDocument()
+    })
   })
 })
