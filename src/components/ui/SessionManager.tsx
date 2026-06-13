@@ -126,9 +126,11 @@ export function SessionManager({ isOpen, onClose, onLoadSession, onNewSession, o
             </div>
           </div>
           <div className="flex items-center gap-2">
+            {/* Reflete o salvamento LOCAL (localStorage), não a nuvem. O status de
+                sincronização com a conta fica no indicador do topo (SyncStatusIndicator). */}
             <div className={`h-2 w-2 rounded-full ${sessionStatus.isSaved ? 'bg-green-500' : 'bg-orange-500'}`} />
             <span className="text-xs text-[var(--color-muted)]">
-              {sessionStatus.isSaved ? 'Sincronizada' : 'Pendente'}
+              {sessionStatus.isSaved ? 'Salva localmente' : 'Não salva'}
             </span>
           </div>
         </div>
