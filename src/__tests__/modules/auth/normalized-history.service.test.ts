@@ -30,6 +30,7 @@ import {
   buildNormalizedGamePayload,
   saveNormalizedGame,
   listNormalizedGames,
+  listMyInvitedContacts,
 } from '@/modules/auth/services/normalized-history.service'
 import type { TriviaSession, MimicaScore } from '@/modules/trivia/types'
 
@@ -450,5 +451,86 @@ describe('listNormalizedGames — com sessão ativa', () => {
     const result = await listNormalizedGames()
     expect(result).toEqual([])
     warnSpy.mockRestore()
+  })
+})
+
+// ── listMyInvitedContacts ───────────────────────────────────────────────────
+
+describe('listMyInvitedContacts', () => {
+  const fakeUser = { id: 'uid-host', email: 'host@example.com' }
+  const fakeAuthSession = { user: fakeUser }
+
+  it('retorna [] quando não configurado', async () => {
+    mockIsConfigured.mockReturnValue(false)
+    const result = await listMyInvitedContacts()
+    expect(result).toEqual([])
+  })
+
+  it('retorna [] quando usuário não está logado', async () => {
+    mockIsConfigured.mockReturnValue(true)
+    mockGetClient.mockReturnValue({
+      auth: {
+        getSession: jest.fn().mockResolvedValue({ data: { session: null } }),
+      },
+    })
+    const result = await listMyInvitedContacts()
+    expect(result).toEqual([])
+  })
+
+  it('chama rpc list_my_invite_contacts e mapeia campos corretamente', async () => {
+    const rpcMock = jest.fn().mockResolvedValue({
+      data: [
+        { invite_email: 'alice@example.com', last_display_name: 'Alice' },
+        { invite_email: 'bob@example.com', last_display_name: 'Bob' },
+      ],
+      error: null,
+    })
+    mockIsConfigured.mockReturnValue(true)
+    mockGetClient.mockReturnValue({
+      auth: {
+        getSession: jest.fn().mockResolvedValue({ data: { session: fakeAuthSession } }),
+      },
+      rpc: rpcMock,
+    })
+
+    const result = await listMyInvitedContacts()
+    expect(rpcMock).toHaveBeenCalledWith('list_my_invite_contacts')
+    expect(result).toEqual([
+      { email: 'alice@example.com', lastName: 'Alice' },
+      { email: 'bob@example.com', lastName: 'Bob' },
+    ])
+  })
+
+  it('retorna [] e não lança quando a RPC falha', async () => {
+    const warnSpy = jest.spyOn(console, 'warn').mockImplementation(() => {})
+    const rpcMock = jest.fn().mockResolvedValue({
+      data: null,
+      error: { message: 'rpc error' },
+    })
+    mockIsConfigured.mockReturnValue(true)
+    mockGetClient.mockReturnValue({
+      auth: {
+        getSession: jest.fn().mockResolvedValue({ data: { session: fakeAuthSession } }),
+      },
+      rpc: rpcMock,
+    })
+
+    const result = await listMyInvitedContacts()
+    expect(result).toEqual([])
+    warnSpy.mockRestore()
+  })
+
+  it('retorna [] quando a RPC devolve null (sem convites anteriores)', async () => {
+    const rpcMock = jest.fn().mockResolvedValue({ data: null, error: null })
+    mockIsConfigured.mockReturnValue(true)
+    mockGetClient.mockReturnValue({
+      auth: {
+        getSession: jest.fn().mockResolvedValue({ data: { session: fakeAuthSession } }),
+      },
+      rpc: rpcMock,
+    })
+
+    const result = await listMyInvitedContacts()
+    expect(result).toEqual([])
   })
 })

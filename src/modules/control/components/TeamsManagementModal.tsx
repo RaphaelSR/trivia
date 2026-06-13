@@ -1,10 +1,15 @@
 import { ArrowDown, ArrowUp, Plus, Trash2, UserPlus } from 'lucide-react'
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { Button } from '@/components/ui/Button'
 import { Modal } from '@/components/ui/Modal'
 import type { TeamDraft } from '../types/control.types'
 import type { TriviaParticipant, TriviaTeam } from '@/modules/trivia/types'
 import { TurnOrderPreview } from './TurnOrderPreview'
+import { isValidEmail } from '@/shared/utils/email'
+import {
+  listMyInvitedContacts,
+  type InvitedContact,
+} from '@/modules/auth/services/normalized-history.service'
 
 type TeamsManagementModalProps = {
   isOpen: boolean
@@ -57,6 +62,16 @@ export function TeamsManagementModal({
 }: TeamsManagementModalProps) {
   const isOnline = gameMode === 'online'
   const [previewOpen, setPreviewOpen] = useState(false)
+  const [inviteContacts, setInviteContacts] = useState<InvitedContact[]>([])
+
+  // Carrega contatos de convites anteriores do host apenas no modo online e
+  // enquanto o modal está aberto. No-op silencioso se vazio (primeira partida).
+  useEffect(() => {
+    if (!isOnline || !isOpen) return
+    listMyInvitedContacts().then(setInviteContacts).catch(() => {
+      // nunca lança — listMyInvitedContacts já absorve erros
+    })
+  }, [isOnline, isOpen])
   const canPreview = useMemo(
     () =>
       previewQuestionCount > 0 &&
@@ -64,6 +79,17 @@ export function TeamsManagementModal({
       previewTeams.length >= 2 &&
       previewTeams.every((team) => team.members.length > 0),
     [previewQuestionCount, previewTeams, previewTurnSequence.length],
+  )
+
+  // Contagem de e-mails válidos para o rodapé não-bloqueante (só no modo online).
+  const validEmailCount = useMemo(() => {
+    if (!isOnline) return 0
+    return teamDrafts.flatMap((t) => t.members).filter((m) => isValidEmail(m.email ?? '')).length
+  }, [isOnline, teamDrafts])
+
+  const totalParticipantCount = useMemo(
+    () => teamDrafts.flatMap((t) => t.members).length,
+    [teamDrafts],
   )
 
   return (
@@ -183,17 +209,28 @@ export function TeamsManagementModal({
                       </div>
                     </div>
                     {isOnline && (
-                      <input
-                        type="email"
-                        value={member.email ?? ''}
-                        onChange={(event) => {
-                          const raw = event.target.value
-                          onUpdateParticipant(team.id, member.id, { email: raw })
-                        }}
-                        placeholder="e-mail (opcional, para vincular conta)"
-                        aria-label={`E-mail de ${member.name}`}
-                        className="w-full rounded-lg border border-[var(--color-border)] bg-[var(--color-background)] px-3 py-2 text-sm text-[var(--color-text)] placeholder:text-[var(--color-muted)]"
-                      />
+                      <div className="space-y-1">
+                        <input
+                          type="email"
+                          list="invite-contacts"
+                          value={member.email ?? ''}
+                          onChange={(event) => {
+                            const raw = event.target.value
+                            onUpdateParticipant(team.id, member.id, { email: raw })
+                          }}
+                          placeholder="e-mail (opcional, para vincular conta)"
+                          aria-label={`E-mail de ${member.name}`}
+                          className="w-full rounded-lg border border-[var(--color-border)] bg-[var(--color-background)] px-3 py-2 text-sm text-[var(--color-text)] placeholder:text-[var(--color-muted)]"
+                        />
+                        {/* Helper reativo: só mostra quando há algum texto digitado */}
+                        {(member.email ?? '') !== '' && (
+                          <p className="text-xs text-[var(--color-muted)]">
+                            {isValidEmail(member.email ?? '')
+                              ? 'Será vinculado automaticamente quando entrar com este e-mail.'
+                              : 'Verifique o e-mail — sem isto o jogador ainda joga normalmente.'}
+                          </p>
+                        )}
+                      </div>
                     )}
                   </div>
                 ))}
@@ -203,6 +240,17 @@ export function TeamsManagementModal({
               </div>
             </div>
           ))}
+          {/* datalist de autocomplete: privacy-safe (apenas e-mails que o próprio
+              host já convidou antes, via RPC SECURITY INVOKER + RLS owner-only).
+              Renderizado somente em modo online; invisível para demo/offline. */}
+          {isOnline && (
+            <datalist id="invite-contacts">
+              {inviteContacts.map((c) => (
+                <option key={c.email} value={c.email} label={c.lastName} />
+              ))}
+            </datalist>
+          )}
+
           {!teamDrafts.length ? (
             <p className="rounded-2xl border border-dashed border-[var(--color-border)] bg-[var(--color-background)] px-4 py-10 text-center text-sm text-[var(--color-muted)]">
               Nenhum time cadastrado. Adicione um novo time para começar.
@@ -235,6 +283,16 @@ export function TeamsManagementModal({
             ) : null}
           </div>
         </div>
+        {/* Rodapé não-bloqueante: aparece apenas em modo online com ≥1 e-mail válido.
+            Informa ao host quantos jogadores serão vinculados, sem bloquear salvar. */}
+        {isOnline && validEmailCount > 0 && (
+          <p className="mt-3 text-xs text-[var(--color-muted)]">
+            {validEmailCount} de {totalParticipantCount} jogador
+            {totalParticipantCount !== 1 ? 'es' : ''} ser
+            {validEmailCount !== 1 ? 'ão vinculados' : 'á vinculado'} por e-mail. O jogo funciona
+            com ou sem isso.
+          </p>
+        )}
         <div className="mt-4 flex justify-end gap-3">
           <Button variant="secondary" disabled={!canSave} onClick={onSave}>
             Salvar alterações
