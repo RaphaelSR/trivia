@@ -7,7 +7,7 @@
  * Only rendered when gameMode !== 'demo' (enforced by the caller).
  */
 
-import { Check, Cloud, CloudOff, Loader2 } from 'lucide-react'
+import { CheckCheck, CloudUpload, HardDrive, RefreshCw } from 'lucide-react'
 import type { CloudSyncStatus } from '@/modules/game/application/useCloudSync'
 
 interface SyncStatusIndicatorProps {
@@ -17,6 +17,8 @@ interface SyncStatusIndicatorProps {
 interface StatusConfig {
   icon: React.ReactNode
   text: string
+  /** Tooltip nativo (title) que explica o estado — responde "o que isso significa?". */
+  title: string
   className: string
 }
 
@@ -24,27 +26,34 @@ function getConfig(status: CloudSyncStatus): StatusConfig {
   switch (status) {
     case 'syncing':
       return {
-        icon: <Loader2 size={12} className="animate-spin shrink-0" />,
+        icon: <RefreshCw size={12} className="animate-spin shrink-0" />,
         text: 'Salvando…',
-        className: 'text-[var(--color-primary)]',
+        title: 'Salvando as alterações na sua conta…',
+        className: 'text-[var(--color-muted)]',
       }
     case 'synced':
       return {
-        icon: <Check size={12} className="shrink-0" />,
+        // Check duplo verde = "tudo salvo na nuvem", inequivocamente positivo.
+        icon: <CheckCheck size={12} className="shrink-0" />,
         text: 'Salvo na sua conta',
-        className: 'text-[var(--color-primary)]',
+        title: 'Tudo salvo na sua conta e disponível em qualquer dispositivo.',
+        className: 'text-emerald-400',
       }
     case 'pending':
       return {
-        icon: <CloudOff size={12} className="shrink-0" />,
+        // Âmbar = atenção (ainda não sincronizou), não erro. O jogo está salvo localmente.
+        icon: <CloudUpload size={12} className="shrink-0" />,
         text: 'Salvo neste navegador · sincroniza ao reconectar',
-        className: 'text-[var(--color-muted)]',
+        title: 'Salvo neste navegador. Vai sincronizar com a sua conta assim que a conexão voltar — nada se perde.',
+        className: 'text-amber-400',
       }
     case 'local-only':
     default:
       return {
-        icon: <Cloud size={12} className="shrink-0 opacity-60" />,
+        // HardDrive = "salvo no aparelho"; estado normal (deslogado), não é falha.
+        icon: <HardDrive size={12} className="shrink-0" />,
         text: 'Salvo neste navegador',
+        title: 'Salvo neste navegador. Entre na sua conta para sincronizar e ver em outros dispositivos.',
         className: 'text-[var(--color-muted)]',
       }
   }
@@ -57,6 +66,7 @@ export function SyncStatusIndicator({ status }: SyncStatusIndicatorProps) {
     <div
       aria-live="polite"
       aria-atomic="true"
+      title={config.title}
       className={`flex items-center gap-1.5 rounded-full border border-white/8 bg-black/15 px-2.5 py-1 backdrop-blur-sm ${config.className}`}
     >
       {config.icon}
