@@ -248,7 +248,7 @@ function SessionClaimPage({ gameToken }: SessionClaimPageProps) {
             {participants.map((p) => (
               <li
                 key={p.participantId}
-                className="flex items-center gap-2 rounded-lg border border-white/5 bg-white/5 px-3 py-2"
+                className="flex items-center gap-3 rounded-lg border border-white/5 bg-white/5 px-3 py-2.5"
               >
                 <div className="min-w-0 flex-1">
                   <p className="truncate text-xs font-medium text-[var(--color-text)]">
@@ -261,7 +261,7 @@ function SessionClaimPage({ gameToken }: SessionClaimPageProps) {
                 {p.claimed ? (
                   <span
                     aria-label={`${p.displayName} já vinculado`}
-                    className="inline-flex items-center gap-0.5 rounded px-1.5 py-0.5 text-[9px] font-medium bg-[var(--color-primary)]/15 text-[var(--color-primary)]"
+                    className="inline-flex shrink-0 items-center gap-0.5 rounded px-1.5 py-1 text-[9px] font-medium bg-[var(--color-primary)]/15 text-[var(--color-primary)]"
                   >
                     <UserCheck className="h-2.5 w-2.5" aria-hidden="true" />
                     já vinculado
@@ -272,7 +272,7 @@ function SessionClaimPage({ gameToken }: SessionClaimPageProps) {
                     onClick={() => void handleClaim(p.participantId)}
                     disabled={claimingId !== null}
                     aria-label={`Sou ${p.displayName}`}
-                    className="shrink-0 rounded-lg bg-[var(--color-primary)] px-2.5 py-1 text-[11px] font-semibold text-black transition-opacity hover:opacity-90 disabled:opacity-50"
+                    className="shrink-0 rounded-lg bg-[var(--color-primary)] px-3 py-2 text-[11px] font-semibold text-black transition-opacity hover:opacity-90 disabled:opacity-50"
                   >
                     {claimingId === p.participantId ? (
                       <Loader2 className="h-3 w-3 animate-spin" aria-hidden="true" />

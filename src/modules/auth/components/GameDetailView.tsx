@@ -113,7 +113,7 @@ export function GameDetailView({ gameId, onBack }: GameDetailViewProps) {
         <button
           onClick={onBack}
           aria-label="Voltar"
-          className="shrink-0 text-[var(--color-muted)] transition-colors hover:text-[var(--color-text)]"
+          className="shrink-0 p-1 -ml-1 text-[var(--color-muted)] transition-colors hover:text-[var(--color-text)]"
         >
           <ArrowLeft className="h-4 w-4" />
         </button>
@@ -123,7 +123,7 @@ export function GameDetailView({ gameId, onBack }: GameDetailViewProps) {
       </div>
 
       {/* Content */}
-      <div className="flex max-h-[70vh] flex-col gap-4 overflow-y-auto p-4">
+      <div className="flex max-h-[75vh] flex-col gap-4 overflow-y-auto p-4 sm:max-h-[70vh]">
         {loading && (
           <p className="text-xs text-[var(--color-muted)]" aria-live="polite">
             Carregando detalhes…
@@ -227,9 +227,9 @@ export function GameDetailView({ gameId, onBack }: GameDetailViewProps) {
                         {stat.profile_id && (
                           <span
                             aria-label="Participante vinculado"
-                            className="inline-flex items-center gap-0.5 rounded px-1 py-0.5 text-[9px] font-medium bg-[var(--color-primary)]/15 text-[var(--color-primary)]"
+                            className="inline-flex shrink-0 items-center gap-0.5 rounded px-1 py-0.5 text-[9px] font-medium bg-[var(--color-primary)]/15 text-[var(--color-primary)]"
                           >
-                            <UserCheck className="h-2.5 w-2.5" />
+                            <UserCheck className="h-2.5 w-2.5" aria-hidden="true" />
                             vinculado
                           </span>
                         )}
@@ -237,7 +237,7 @@ export function GameDetailView({ gameId, onBack }: GameDetailViewProps) {
                           {stat.total_points} pts
                         </span>
                       </div>
-                      <div className="mt-0.5 flex gap-3 pl-6">
+                      <div className="mt-0.5 flex flex-wrap gap-x-3 gap-y-0.5 pl-6">
                         {stat.team_name && (
                           <span className="text-[10px] text-[var(--color-muted)]">
                             {stat.team_name}
@@ -366,11 +366,13 @@ export function GameDetailView({ gameId, onBack }: GameDetailViewProps) {
             {detail.timeline.length > 0 && (
               <section aria-label="Timeline de eventos">
                 <SectionTitle>Timeline</SectionTitle>
-                <ul className="flex flex-col gap-1" role="list">
-                  {detail.timeline.map((entry) => (
-                    <TimelineRow key={entry.event_id} entry={entry} />
-                  ))}
-                </ul>
+                <div className="overflow-x-auto">
+                  <ul className="flex min-w-0 flex-col gap-1" role="list">
+                    {detail.timeline.map((entry) => (
+                      <TimelineRow key={entry.event_id} entry={entry} />
+                    ))}
+                  </ul>
+                </div>
               </section>
             )}
           </>

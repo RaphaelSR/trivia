@@ -111,10 +111,10 @@ function EmailForm({ record, onConfirm, onCancel, importing }: EmailFormProps) {
       <p className="text-[10px] leading-relaxed text-[var(--color-muted)]">
         Informe o e-mail de cada participante para vinculá-los à conta deles (opcional).
       </p>
-      <ul className="flex flex-col gap-1.5">
+      <ul className="flex flex-col gap-2">
         {participants.map((p) => (
-          <li key={p.id} className="flex items-center gap-2">
-            <span className="w-24 shrink-0 truncate text-[10px] text-[var(--color-muted)]">
+          <li key={p.id} className="flex flex-col gap-1 sm:flex-row sm:items-center sm:gap-2">
+            <span className="shrink-0 truncate text-[10px] font-medium text-[var(--color-muted)] sm:w-24">
               {p.name}
             </span>
             <input
@@ -122,7 +122,7 @@ function EmailForm({ record, onConfirm, onCancel, importing }: EmailFormProps) {
               placeholder="email@opcional.com"
               value={emails[p.id] ?? ''}
               onChange={(e) => handleChange(p.id, e.target.value)}
-              className="min-w-0 flex-1 rounded border border-white/10 bg-white/5 px-2 py-1 text-[10px] text-[var(--color-text)] placeholder-[var(--color-muted)] outline-none focus:border-[var(--color-primary)]/40"
+              className="min-w-0 flex-1 rounded border border-white/10 bg-white/5 px-2 py-1.5 text-[10px] text-[var(--color-text)] placeholder-[var(--color-muted)] outline-none focus:border-[var(--color-primary)]/40"
             />
           </li>
         ))}
@@ -131,7 +131,7 @@ function EmailForm({ record, onConfirm, onCancel, importing }: EmailFormProps) {
         <button
           type="submit"
           disabled={importing}
-          className="flex flex-1 items-center justify-center gap-1.5 rounded-lg bg-[var(--color-primary)] py-1.5 text-[11px] font-semibold text-black transition-opacity hover:opacity-90 disabled:opacity-50"
+          className="flex flex-1 items-center justify-center gap-1.5 rounded-lg bg-[var(--color-primary)] py-2 text-[11px] font-semibold text-black transition-opacity hover:opacity-90 disabled:opacity-50"
         >
           {importing && <Loader2 className="h-3 w-3 animate-spin" />}
           {importing ? 'Importando…' : 'Confirmar importação'}
@@ -140,7 +140,7 @@ function EmailForm({ record, onConfirm, onCancel, importing }: EmailFormProps) {
           type="button"
           onClick={onCancel}
           disabled={importing}
-          className="rounded-lg border border-white/10 bg-white/5 px-3 py-1.5 text-[11px] text-[var(--color-muted)] transition-colors hover:text-[var(--color-text)] disabled:opacity-50"
+          className="rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-[11px] text-[var(--color-muted)] transition-colors hover:text-[var(--color-text)] disabled:opacity-50"
         >
           Cancelar
         </button>
@@ -282,7 +282,7 @@ function ImportLocalSessionsInner({ user, onHistoryRefresh }: ImportLocalSession
                         <button
                           onClick={() => setFormOpenId(record.metadata.id)}
                           disabled={isImporting}
-                          className="shrink-0 inline-flex items-center gap-1 rounded-lg border border-white/10 bg-white/5 px-2 py-1 text-[10px] text-[var(--color-muted)] transition-colors hover:border-[var(--color-primary)]/40 hover:text-[var(--color-primary)] disabled:opacity-50"
+                          className="shrink-0 inline-flex items-center gap-1 rounded-lg border border-white/10 bg-white/5 px-2.5 py-1.5 text-[10px] text-[var(--color-muted)] transition-colors hover:border-[var(--color-primary)]/40 hover:text-[var(--color-primary)] disabled:opacity-50"
                           aria-label={`Importar sessão ${record.metadata.name}`}
                         >
                           <Upload className="h-3 w-3" />

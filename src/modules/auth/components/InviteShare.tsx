@@ -197,7 +197,7 @@ function InviteBlock({ name, token }: InviteBlockProps) {
             readOnly
             value={url}
             aria-label="URL do convite (selecione e copie)"
-            className="min-w-0 flex-1 rounded-lg border border-white/10 bg-black/40 px-2 py-1 text-[10px] font-mono text-[var(--color-muted)] outline-none"
+            className="min-w-0 flex-1 rounded-lg border border-white/10 bg-black/40 px-2 py-1.5 text-[10px] font-mono text-[var(--color-muted)] outline-none"
             onFocus={(e) => e.target.select()}
           />
         </div>
@@ -213,7 +213,7 @@ function InviteBlock({ name, token }: InviteBlockProps) {
             width={160}
             height={160}
             loading="lazy"
-            className="rounded-lg border border-white/10 bg-white p-1"
+            className="max-w-full rounded-lg border border-white/10 bg-white p-1"
           />
           <p className="text-[9px] text-[var(--color-muted)]">
             Aponte a câmera para escanear
