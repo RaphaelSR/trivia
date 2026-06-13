@@ -9,6 +9,7 @@ interface ControlTopbarProps {
   mode: 'demo' | 'offline' | 'online'
   backendLabel?: string
   syncStatus?: CloudSyncStatus
+  onForceSync?: () => void
   onOpenSessions: () => void
   onExit: () => void
   onToggleSidebar: () => void
@@ -28,7 +29,7 @@ const modeBgClasses = {
   online: 'bg-[var(--color-primary)]/15 text-[var(--color-primary)] border-[var(--color-primary)]/30',
 }
 
-export function ControlTopbar({ title, modeLabel, mode, syncStatus, onOpenSessions, onExit, onToggleSidebar, onOpenAccount }: ControlTopbarProps) {
+export function ControlTopbar({ title, modeLabel, mode, syncStatus, onForceSync, onOpenSessions, onExit, onToggleSidebar, onOpenAccount }: ControlTopbarProps) {
   const ModeIcon = modeIcons[mode]
 
   return (
@@ -47,7 +48,7 @@ export function ControlTopbar({ title, modeLabel, mode, syncStatus, onOpenSessio
 
       {/* Sync indicator — only shown when syncStatus is provided (non-demo modes) */}
       {syncStatus !== undefined ? (
-        <SyncStatusIndicator status={syncStatus} />
+        <SyncStatusIndicator status={syncStatus} onForceSync={onForceSync} />
       ) : null}
 
       <div className="flex shrink-0 items-center gap-1.5">

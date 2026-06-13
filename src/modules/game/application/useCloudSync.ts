@@ -17,7 +17,7 @@
  * - Cleans up (dispose) on unmount.
  */
 
-import { useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { createCloudSessionSync } from '../infrastructure/cloud-session-sync'
 import type { TriviaSession } from '../../trivia/types'
 
@@ -59,7 +59,7 @@ export function useCloudSync({
   title,
   onRestore,
   localUpdatedAtIso,
-}: UseCloudSyncOptions): { status: CloudSyncStatus } {
+}: UseCloudSyncOptions): { status: CloudSyncStatus; forceSync: () => void } {
   // Stable instance for the lifetime of the component
   const syncRef = useRef(createCloudSessionSync())
 
@@ -79,6 +79,20 @@ export function useCloudSync({
   useEffect(() => {
     onRestoreRef.current = onRestore
   }, [onRestore])
+
+  // Latest session+title+enabled ref — updated every render (sync-with-render
+  // pattern) so that forceSync always reads current values with zero deps.
+  const latestRef = useRef({ session, title, enabled })
+  latestRef.current = { session, title, enabled }
+
+  // forceSync: manual escape-hatch — pushes the latest snapshot immediately.
+  // Stable via useCallback([]) — latestRef and syncRef are stable refs.
+  const forceSync = useCallback(() => {
+    const { enabled: latestEnabled, session: latestSession, title: latestTitle } = latestRef.current
+    if (!latestEnabled) return
+    syncRef.current.pushSnapshot(latestSession, { title: latestTitle })
+    void syncRef.current.flushNow()
+  }, [])
 
   // Dispose on unmount
   useEffect(() => {
@@ -173,5 +187,5 @@ export function useCloudSync({
     return unsubscribe
   }, [enabled])
 
-  return { status }
+  return { status, forceSync }
 }
