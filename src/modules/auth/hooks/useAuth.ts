@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from 'react'
 import type { User } from '@supabase/supabase-js'
 import { isSupabaseConfigured } from '../../../shared/services/supabase.client'
-import { getSession, onAuthStateChange, signIn, signOut, signUp } from '../services/auth.service'
+import { getSession, onAuthStateChange, resendConfirmation, signIn, signOut, signUp } from '../services/auth.service'
 
 export interface AuthState {
   user: User | null
@@ -14,6 +14,7 @@ export interface AuthActions {
   login: (email: string, password: string) => Promise<string | null>
   register: (email: string, password: string, displayName: string) => Promise<string | null>
   logout: () => Promise<void>
+  resend: (email: string) => Promise<string | null>
 }
 
 export function useAuth(): AuthState & AuthActions {
@@ -73,5 +74,10 @@ export function useAuth(): AuthState & AuthActions {
     setLoading(false)
   }, [])
 
-  return { user, loading, configured, login, register, logout }
+  const resend = useCallback(async (email: string): Promise<string | null> => {
+    const result = await resendConfirmation(email)
+    return result.error
+  }, [])
+
+  return { user, loading, configured, login, register, logout, resend }
 }

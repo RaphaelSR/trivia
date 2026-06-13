@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { LogOut, X } from 'lucide-react'
 import type { User } from '@supabase/supabase-js'
 import { useAuth } from '../hooks/useAuth'
@@ -6,6 +6,8 @@ import { listNormalizedGames } from '../services/normalized-history.service'
 import type { NormalizedGameSummary } from '../services/normalized-history.service'
 
 type Tab = 'signin' | 'signup'
+
+const RESEND_COOLDOWN_SECONDS = 30
 
 interface AuthPanelProps {
   onClose: () => void
@@ -179,15 +181,103 @@ function LoggedInPanel({ user, loading, onLogout, onClose }: LoggedInPanelProps)
 // AuthPanel — ponto de entrada público
 // ---------------------------------------------------------------------------
 
+// ---------------------------------------------------------------------------
+// ConfirmationPendingPanel — exibido após signup sem sessão imediata
+// ---------------------------------------------------------------------------
+
+interface ConfirmationPendingPanelProps {
+  email: string
+  onClose: () => void
+  onResend: (email: string) => Promise<string | null>
+}
+
+function ConfirmationPendingPanel({ email, onClose, onResend }: ConfirmationPendingPanelProps) {
+  const [cooldown, setCooldown] = useState(0)
+  const [resendError, setResendError] = useState<string | null>(null)
+  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null)
+
+  // Cleanup on unmount
+  useEffect(() => {
+    return () => {
+      if (intervalRef.current !== null) clearInterval(intervalRef.current)
+    }
+  }, [])
+
+  async function handleResend() {
+    setResendError(null)
+
+    const err = await onResend(email)
+    if (err) {
+      setResendError(err)
+      return
+    }
+
+    setCooldown(RESEND_COOLDOWN_SECONDS)
+
+    intervalRef.current = setInterval(() => {
+      setCooldown((prev) => {
+        if (prev <= 1) {
+          if (intervalRef.current !== null) clearInterval(intervalRef.current)
+          intervalRef.current = null
+          return 0
+        }
+        return prev - 1
+      })
+    }, 1000)
+  }
+
+  return (
+    <div className="relative w-full max-w-sm rounded-2xl border border-white/10 bg-black/60 p-6 shadow-2xl backdrop-blur-xl">
+      <button
+        aria-label="Fechar"
+        onClick={onClose}
+        className="absolute right-4 top-4 text-[var(--color-muted)] transition-colors hover:text-[var(--color-text)]"
+      >
+        <X className="h-4 w-4" />
+      </button>
+
+      <div className="flex flex-col gap-4 pt-2">
+        <p className="text-sm font-semibold text-[var(--color-text)]">Confirme seu e-mail</p>
+        <p className="text-xs leading-relaxed text-[var(--color-muted)]">
+          Conta criada! Enviamos um link de confirmação para{' '}
+          <span className="font-medium text-[var(--color-text)]">{email}</span>. Clique no link para
+          entrar.
+        </p>
+
+        {resendError && (
+          <p className="rounded-lg border border-red-500/20 bg-red-500/10 px-3 py-2 text-xs text-red-400">
+            {resendError}
+          </p>
+        )}
+
+        <button
+          onClick={() => void handleResend()}
+          disabled={cooldown > 0}
+          className="w-full rounded-lg border border-white/10 bg-white/5 py-2 text-sm text-[var(--color-muted)] transition-colors hover:border-white/20 hover:text-[var(--color-text)] disabled:cursor-not-allowed disabled:opacity-50"
+        >
+          {cooldown > 0
+            ? `Reenviado ✓ (aguarde ${cooldown}s)`
+            : 'Reenviar e-mail'}
+        </button>
+      </div>
+    </div>
+  )
+}
+
+// ---------------------------------------------------------------------------
+// AuthPanel — ponto de entrada público
+// ---------------------------------------------------------------------------
+
 export function AuthPanel({ onClose }: AuthPanelProps) {
-  const { user, loading, login, register, logout } = useAuth()
+  const { user, loading, login, register, logout, resend } = useAuth()
 
   const [tab, setTab] = useState<Tab>('signin')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [displayName, setDisplayName] = useState('')
   const [error, setError] = useState<string | null>(null)
-  const [successMsg, setSuccessMsg] = useState<string | null>(null)
+  // Guarda o email pendente de confirmação; null = sem confirmação pendente
+  const [pendingEmail, setPendingEmail] = useState<string | null>(null)
 
   function validate(): string | null {
     if (!isValidEmail(email)) return 'Informe um endereço de email válido.'
@@ -199,7 +289,6 @@ export function AuthPanel({ onClose }: AuthPanelProps) {
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
     setError(null)
-    setSuccessMsg(null)
 
     const validationError = validate()
     if (validationError) {
@@ -211,11 +300,13 @@ export function AuthPanel({ onClose }: AuthPanelProps) {
       const err = await login(email, password)
       if (err) setError(err)
     } else {
-      const err = await register(email, password, displayName.trim())
+      const submittedEmail = email
+      const err = await register(submittedEmail, password, displayName.trim())
       if (err) {
         setError(err)
       } else {
-        setSuccessMsg('Conta criada! Verifique seu email para confirmar o cadastro.')
+        // Signup sem sessão imediata = confirmação de e-mail pendente
+        setPendingEmail(submittedEmail)
         setEmail('')
         setPassword('')
         setDisplayName('')
@@ -231,12 +322,24 @@ export function AuthPanel({ onClose }: AuthPanelProps) {
   function switchTab(next: Tab) {
     setTab(next)
     setError(null)
-    setSuccessMsg(null)
+    setPendingEmail(null)
   }
 
-  // Painel quando o usuário já está logado
+  // Se a sessão apareceu (usuário voltou do link de confirmação),
+  // o painel de confirmação pendente é descartado automaticamente.
   if (user) {
     return <LoggedInPanel user={user} loading={loading} onLogout={handleLogout} onClose={onClose} />
+  }
+
+  // Confirmação de e-mail pendente
+  if (pendingEmail !== null) {
+    return (
+      <ConfirmationPendingPanel
+        email={pendingEmail}
+        onClose={onClose}
+        onResend={resend}
+      />
+    )
   }
 
   // Painel de login / cadastro
@@ -310,12 +413,6 @@ export function AuthPanel({ onClose }: AuthPanelProps) {
         {error && (
           <p className="rounded-lg border border-red-500/20 bg-red-500/10 px-3 py-2 text-xs text-red-400">
             {error}
-          </p>
-        )}
-
-        {successMsg && (
-          <p className="rounded-lg border border-green-500/20 bg-green-500/10 px-3 py-2 text-xs text-green-400">
-            {successMsg}
           </p>
         )}
 

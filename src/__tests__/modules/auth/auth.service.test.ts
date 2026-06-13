@@ -9,7 +9,7 @@ jest.mock('@/shared/services/supabase.client', () => ({
 }))
 
 import { isSupabaseConfigured, getSupabaseClient } from '@/shared/services/supabase.client'
-import { signUp, signIn, signOut, getSession, onAuthStateChange } from '@/modules/auth/services/auth.service'
+import { signUp, signIn, signOut, getSession, onAuthStateChange, resendConfirmation } from '@/modules/auth/services/auth.service'
 
 const mockIsConfigured = isSupabaseConfigured as jest.Mock
 const mockGetClient = getSupabaseClient as jest.Mock
@@ -44,6 +44,11 @@ describe('auth.service — sem configuração (no-op)', () => {
     expect(typeof unsubscribe).toBe('function')
     expect(() => unsubscribe()).not.toThrow()
   })
+
+  it('resendConfirmation retorna {error: null} (no-op sem config)', async () => {
+    const result = await resendConfirmation('a@b.com')
+    expect(result).toEqual({ error: null })
+  })
 })
 
 describe('auth.service — com configuração', () => {
@@ -53,12 +58,19 @@ describe('auth.service — com configuração', () => {
     signOut: jest.fn(),
     getSession: jest.fn(),
     onAuthStateChange: jest.fn(),
+    resend: jest.fn(),
   }
 
   beforeEach(() => {
     mockIsConfigured.mockReturnValue(true)
     mockGetClient.mockReturnValue({ auth: mockAuth })
     jest.clearAllMocks()
+    // BASE_URL via process.env (stub do vite-env.jest.ts)
+    process.env.BASE_URL = '/'
+  })
+
+  afterEach(() => {
+    delete process.env.BASE_URL
   })
 
   it('signIn repassa erro genérico quando Supabase retorna erro', async () => {
@@ -91,6 +103,54 @@ describe('auth.service — com configuração', () => {
     const result = await signUp('a@b.com', 'password123', 'Test')
     expect(result.user).toBeNull()
     expect(result.error).toBe('User already registered')
+  })
+
+  it('signUp inclui emailRedirectTo com origin + BASE_URL', async () => {
+    // No jsdom, window.location.origin é 'http://localhost' por padrão
+    const expectedRedirect = window.location.origin + '/'
+    mockAuth.signUp.mockResolvedValue({ data: { user: { id: 'uid-1' } }, error: null })
+    await signUp('a@b.com', 'password123', 'Test')
+    expect(mockAuth.signUp).toHaveBeenCalledWith(
+      expect.objectContaining({
+        options: expect.objectContaining({
+          emailRedirectTo: expectedRedirect,
+        }),
+      }),
+    )
+  })
+
+  it('signUp inclui emailRedirectTo com base /trivia/ em prod', async () => {
+    process.env.BASE_URL = '/trivia/'
+    const expectedRedirect = window.location.origin + '/trivia/'
+    mockAuth.signUp.mockResolvedValue({ data: { user: { id: 'uid-1' } }, error: null })
+    await signUp('a@b.com', 'password123', 'Test')
+    expect(mockAuth.signUp).toHaveBeenCalledWith(
+      expect.objectContaining({
+        options: expect.objectContaining({
+          emailRedirectTo: expectedRedirect,
+        }),
+      }),
+    )
+  })
+
+  it('resendConfirmation retorna {error: null} em caso de sucesso', async () => {
+    const expectedRedirect = window.location.origin + '/'
+    mockAuth.resend.mockResolvedValue({ error: null })
+    const result = await resendConfirmation('a@b.com')
+    expect(result).toEqual({ error: null })
+    expect(mockAuth.resend).toHaveBeenCalledWith(
+      expect.objectContaining({
+        type: 'signup',
+        email: 'a@b.com',
+        options: expect.objectContaining({ emailRedirectTo: expectedRedirect }),
+      }),
+    )
+  })
+
+  it('resendConfirmation retorna mensagem genérica em pt-BR em caso de erro', async () => {
+    mockAuth.resend.mockResolvedValue({ error: { message: 'Email rate limit exceeded' } })
+    const result = await resendConfirmation('a@b.com')
+    expect(result.error).toBe('Não foi possível reenviar. Tente novamente em instantes.')
   })
 
   it('onAuthStateChange registra callback e retorna unsubscribe', () => {

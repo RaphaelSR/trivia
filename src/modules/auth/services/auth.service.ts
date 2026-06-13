@@ -1,9 +1,29 @@
 import type { AuthChangeEvent, Session, User } from '@supabase/supabase-js'
 import { getSupabaseClient, isSupabaseConfigured } from '../../../shared/services/supabase.client'
+import { readViteEnv } from '../../../shared/services/vite-env'
 
 export interface AuthResult {
   user: User | null
   error: string | null
+}
+
+/**
+ * Retorna a URL de redirecionamento para o email de confirmação.
+ * Usa window.location.origin + BASE_URL do Vite (lido via readViteEnv para compatibilidade com Jest).
+ * Retorna undefined em ambientes sem window (SSR/testes sem jsdom).
+ */
+function getEmailRedirectTo(): string | undefined {
+  if (typeof window === 'undefined') return undefined
+  const base = readViteEnv('BASE_URL') ?? '/'
+  return window.location.origin + base
+}
+
+/** Idioma do usuário no cadastro (preparação para i18n de e-mails). */
+function getLocale(): string {
+  if (typeof navigator !== 'undefined' && navigator.language) {
+    return navigator.language
+  }
+  return 'pt-BR'
 }
 
 /**
@@ -21,11 +41,35 @@ export async function signUp(
   const { data, error } = await client.auth.signUp({
     email,
     password,
-    options: { data: { display_name: displayName } },
+    options: {
+      // locale fica no user_metadata para internacionalização futura dos
+      // e-mails (Send Email Hook lê este campo); template atual é só pt-BR.
+      data: { display_name: displayName, locale: getLocale() },
+      emailRedirectTo: getEmailRedirectTo(),
+    },
   })
 
   if (error) return { user: null, error: error.message }
   return { user: data.user, error: null }
+}
+
+/**
+ * Reenvia o e-mail de confirmação de cadastro para o endereço informado.
+ * Retorna no-op quando Supabase não está configurado.
+ * Erros são retornados com mensagem genérica em pt-BR para não vazar detalhes.
+ */
+export async function resendConfirmation(email: string): Promise<{ error: string | null }> {
+  if (!isSupabaseConfigured()) return { error: null }
+
+  const client = getSupabaseClient()!
+  const { error } = await client.auth.resend({
+    type: 'signup',
+    email,
+    options: { emailRedirectTo: getEmailRedirectTo() },
+  })
+
+  if (error) return { error: 'Não foi possível reenviar. Tente novamente em instantes.' }
+  return { error: null }
 }
 
 /**
