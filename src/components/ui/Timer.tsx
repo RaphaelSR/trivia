@@ -1,6 +1,7 @@
 import { Pause, Play, RotateCcw } from 'lucide-react'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Button } from './Button'
+import { playSound } from '../../shared/services/audio.service'
 
 type TimerProps = {
   initialSeconds?: number
@@ -79,6 +80,17 @@ export function Timer({
   useEffect(() => {
     onTick?.(seconds)
   }, [seconds, onTick])
+
+  // T9 — sons do cronômetro (no-op se desativado nas preferências de som).
+  // Cobre perguntas E mímica (ambas usam este Timer).
+  useEffect(() => {
+    if (!running) return
+    if (seconds === 0) {
+      playSound('timeUp')
+    } else if (seconds <= 5) {
+      playSound('tick')
+    }
+  }, [seconds, running])
 
   const progress = useMemo(() => {
     return baseSeconds > 0 ? ((baseSeconds - seconds) / baseSeconds) * 100 : 100

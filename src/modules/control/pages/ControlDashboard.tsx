@@ -10,6 +10,7 @@ import {
   UserPlus,
   UsersRound,
   Theater,
+  Volume2,
 } from 'lucide-react'
 import { useEffect, useMemo, useState } from 'react'
 import { toast } from 'sonner'
@@ -65,6 +66,8 @@ import { useCloudSync, type CloudSyncConflict } from '@/modules/game/application
 import { ConflictResolutionModal } from '@/components/ui/ConflictResolutionModal'
 import { VersionHistoryModal } from '@/components/ui/VersionHistoryModal'
 import { listSessionSnapshots, type SessionSnapshot } from '@/modules/game/infrastructure/session-snapshot.service'
+import { SoundSettingsModal } from '@/components/ui/SoundSettingsModal'
+import { playSound } from '@/shared/services/audio.service'
 import { AuthPanel } from '@/modules/auth/components/AuthPanel'
 // PIN será gerenciado pelo hook usePinManagement
 
@@ -313,6 +316,9 @@ export function ControlDashboard() {
     },
     onConflict: (conflict) => setSessionConflict(conflict),
   })
+
+  // T9 — configurações de som.
+  const [soundSettingsOpen, setSoundSettingsOpen] = useState(false)
 
   // T4 — histórico de versões (snapshots na nuvem).
   const [versionsOpen, setVersionsOpen] = useState(false)
@@ -998,6 +1004,9 @@ export function ControlDashboard() {
           <Button variant="outline" size="icon" aria-label="Abrir placar" onClick={handleOpenScoreboard}>
             <ClipboardList size={16} />
           </Button>
+          <Button variant="outline" size="icon" aria-label="Sons" title="Sons" onClick={() => setSoundSettingsOpen(true)}>
+            <Volume2 size={16} />
+          </Button>
           <Button variant="ghost" size="icon" aria-label="Ajuda" onClick={handleOpenInfo}>
             <Info size={16} />
           </Button>
@@ -1091,6 +1100,7 @@ export function ControlDashboard() {
                         activeParticipant.id,
                         activeParticipant.teamId ?? activeTeam?.id ?? '',
                       )
+                      playSound('wrong')
                       const message = `${selectedTile.column.film}: pergunta anulada (sem pontuação)`
                       toast.success(message)
                       advanceTurn()
@@ -1129,6 +1139,7 @@ export function ControlDashboard() {
                       message += `${team?.name}: ${distribution.points} pontos para ${recipient}\n`
                     })
 
+                    playSound('correct')
                     toast.success(message.trim())
                     advanceTurn()
                     setSelectedIds(null)
@@ -1550,6 +1561,11 @@ export function ControlDashboard() {
         snapshots={snapshots}
         loading={snapshotsLoading}
         onRestore={handleRestoreVersion}
+      />
+
+      <SoundSettingsModal
+        isOpen={soundSettingsOpen}
+        onClose={() => setSoundSettingsOpen(false)}
       />
 
       <SessionManager
