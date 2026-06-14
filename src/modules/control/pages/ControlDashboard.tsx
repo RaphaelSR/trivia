@@ -1500,6 +1500,7 @@ export function ControlDashboard() {
           setSessionManagerOpen(false)
           setActivePanel('board')
         }}
+        cloudStatus={gameMode !== 'demo' ? syncStatus : undefined}
         onOpenAccount={isSupabaseConfigured() ? () => setAccountOpen(true) : undefined}
         onLoadSession={handleLoadSession}
         onNewSession={() => {
