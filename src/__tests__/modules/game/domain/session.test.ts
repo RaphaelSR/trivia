@@ -124,4 +124,60 @@ describe('session domain', () => {
       'b4', 'c4', 'a1', 'b5', 'c5', 'a2', 'b1', 'c6',
     ])
   })
+
+  it('preserva o participante ativo quando o índice se perde, em vez de resetar para o início (T2)', () => {
+    const teams: TriviaTeam[] = [
+      { id: 'team-a', name: 'A', color: '#000', order: 0, members: ['a1', 'a2', 'a3', 'a4'], score: 0 },
+      { id: 'team-b', name: 'B', color: '#111', order: 1, members: ['b1', 'b2', 'b3', 'b4', 'b5'], score: 0 },
+      { id: 'team-c', name: 'C', color: '#222', order: 2, members: ['c1', 'c2', 'c3', 'c4', 'c5', 'c6'], score: 0 },
+    ]
+    const participants: TriviaParticipant[] = teams.flatMap((team) =>
+      team.members.map((memberId) => ({ id: memberId, name: memberId.toUpperCase(), role: 'player', teamId: team.id })),
+    )
+    const session: TriviaSession = {
+      id: 'session-x',
+      title: 'Trivia',
+      scheduledAt: new Date().toISOString(),
+      theme: {
+        id: 'default-dark',
+        name: 'Tema Escuro',
+        palette: { background: '#000', primary: '#111', secondary: '#222', accent: '#333', surface: '#444' },
+      },
+      teams,
+      participants,
+      board: [],
+      activeTeamId: 'team-a',
+      // a2 está jogando, mas a turnSequence antiga está vazia → resolveTurnIndex = -1.
+      // Antes do fix isso resetava a vez para o índice 0 (a1).
+      activeParticipantId: 'a2',
+      activeTurnIndex: 0,
+      turnSequence: [],
+      mimicaScores: [],
+    }
+
+    const synced = syncTurnSequenceWithBoard(
+      session,
+      [
+        {
+          id: 'col-1',
+          filmId: 'film-1',
+          film: 'Film 1',
+          tiles: Array.from({ length: 10 }, (_, index) => ({
+            id: `tile-${index + 1}`,
+            film: 'Film 1',
+            points: 10,
+            state: 'available' as const,
+            question: `Q${index + 1}`,
+            answer: `A${index + 1}`,
+          })),
+        },
+      ],
+    )
+
+    // Preservou a2 (e NÃO resetou para a1, que é o índice 0 da nova sequência).
+    expect(synced.activeParticipantId).toBe('a2')
+    expect(synced.turnSequence[synced.activeTurnIndex]).toBe('a2')
+    expect(synced.activeTurnIndex).not.toBe(0)
+    expect(synced.activeTeamId).toBe('team-a')
+  })
 })

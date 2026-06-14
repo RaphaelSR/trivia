@@ -44,7 +44,7 @@ export function TriviaSessionProvider({ children }: TriviaSessionProviderProps) 
     removeQuestionTile,
   } = useBoardOperations(setSession)
 
-  const { awardPoints, awardMimicaPoints } = useScoreOperations(setSession)
+  const { awardPoints, voidQuestion, awardMimicaPoints } = useScoreOperations(setSession)
 
   const { user } = useAuth()
   useGameHistorySync({ session, gameMode, user })
@@ -74,6 +74,7 @@ export function TriviaSessionProvider({ children }: TriviaSessionProviderProps) 
     removeQuestionTile,
     updateTeamsAndParticipants,
     awardPoints,
+    voidQuestion,
     awardMimicaPoints,
     restoreSession,
   }), [
@@ -94,6 +95,7 @@ export function TriviaSessionProvider({ children }: TriviaSessionProviderProps) 
     removeQuestionTile,
     updateTeamsAndParticipants,
     awardPoints,
+    voidQuestion,
     awardMimicaPoints,
     restoreSession,
   ])

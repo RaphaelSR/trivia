@@ -568,3 +568,60 @@ describe('useCloudSync — forceSync', () => {
     expect(result.current.forceSync).toBe(firstRef)
   })
 })
+
+// ── Suite 7: RECONCILE anti-reversão (T3) ─────────────────────────────────────
+
+describe('useCloudSync — RECONCILE anti-reversão (T3)', () => {
+  const tile = (id: string, answered: boolean) => ({
+    id,
+    film: 'F',
+    points: 10,
+    state: (answered ? 'answered' : 'available') as 'answered' | 'available',
+    question: 'Q',
+    answer: 'A',
+  })
+  const boardWith = (answeredCount: number) => [
+    {
+      id: 'c1',
+      filmId: 'f1',
+      film: 'F',
+      tiles: Array.from({ length: 3 }, (_, i) => tile(`q${i}`, i < answeredCount)),
+    },
+  ]
+
+  it('NÃO adota a nuvem (mantém local) quando a nuvem tem MENOS progresso', async () => {
+    const localSession = makeSession({ board: boardWith(2) }) // 2 respondidas localmente
+    const cloudSession = makeSession({ id: 'cloud', board: boardWith(0) }) // 0 na nuvem
+    mockReconcile.mockResolvedValue({ action: 'use-cloud', cloudSession })
+    const onRestore = jest.fn()
+
+    await act(async () => {
+      renderHook((props) => useCloudSync(props), {
+        initialProps: { ...defaultProps, session: localSession, onRestore },
+      })
+      await Promise.resolve()
+      await Promise.resolve()
+    })
+
+    // Não regride: não restaura a nuvem menos completa, e sobe o local.
+    expect(onRestore).not.toHaveBeenCalled()
+    expect(mockPushSnapshot).toHaveBeenCalledWith(localSession, { title: defaultProps.title })
+  })
+
+  it('adota a nuvem quando ela tem progresso >= local', async () => {
+    const localSession = makeSession({ board: boardWith(1) })
+    const cloudSession = makeSession({ id: 'cloud', board: boardWith(2) })
+    mockReconcile.mockResolvedValue({ action: 'use-cloud', cloudSession })
+    const onRestore = jest.fn()
+
+    await act(async () => {
+      renderHook((props) => useCloudSync(props), {
+        initialProps: { ...defaultProps, session: localSession, onRestore },
+      })
+      await Promise.resolve()
+      await Promise.resolve()
+    })
+
+    expect(onRestore).toHaveBeenCalledWith(cloudSession)
+  })
+})

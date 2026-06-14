@@ -19,6 +19,7 @@ export function useTriviaSession() {
     removeQuestionTile,
     updateTeamsAndParticipants,
     awardPoints,
+    voidQuestion,
     awardMimicaPoints,
     restoreSession
   } = useTriviaSessionContext();
@@ -42,6 +43,7 @@ export function useTriviaSession() {
     removeQuestionTile,
     updateTeamsAndParticipants,
     awardPoints,
+    voidQuestion,
     awardMimicaPoints,
     restoreSession
   };

@@ -40,6 +40,11 @@ export type TriviaSessionContextValue = {
     pointsAwarded: number,
     source?: 'trivia' | 'mimica'
   ) => void;
+  voidQuestion: (
+    tileId: string,
+    participantId: string,
+    teamId: string
+  ) => void;
   awardMimicaPoints: (
     participantId: string,
     teamId: string,

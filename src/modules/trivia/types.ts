@@ -77,6 +77,41 @@ export type TriviaColumn = {
   tiles: TriviaQuestionTile[];
 };
 
+/**
+ * Tipos de ação registrados no log append-only do jogo.
+ * - 'trivia-award': acerto de pergunta com pontos.
+ * - 'trivia-void' : pergunta anulada (sem pontos), mas que consome a vez.
+ * - 'mimica-award': pontuação de mímica.
+ */
+export type GameEventType = "trivia-award" | "trivia-void" | "mimica-award";
+
+/**
+ * Registro append-only de uma ação de pontuação.
+ *
+ * Diferente de `answeredBy` (que vive dentro do tile e pode ser sobrescrito),
+ * o eventLog NUNCA é sobrescrito — cada ação vira um item novo. É a fonte de
+ * auditoria/recuperação do andamento da partida.
+ */
+export type GameEvent = {
+  id: string;
+  type: GameEventType;
+  timestamp: string;
+  /** Origem da pontuação — espelha answeredBy.source ('trivia' | 'mimica'). */
+  source: "trivia" | "mimica";
+  /** Tile da pergunta (ausente em mímica, que não tem carta). */
+  tileId?: string;
+  film?: string;
+  /** Valor da carta (pontos base). */
+  basePoints?: number;
+  /** Pontos efetivamente atribuídos (0 em anulação). */
+  pointsAwarded: number;
+  participantId?: string;
+  teamId: string;
+  /** Índice/rodada do turno no momento da ação (auditoria/reconstrução). */
+  turnNumber?: number;
+  roundNumber?: number;
+};
+
 export type TriviaSession = {
   id: string;
   title: string;
@@ -90,4 +125,9 @@ export type TriviaSession = {
   activeTurnIndex: number;
   turnSequence: string[];
   mimicaScores?: MimicaScore[];
+  /**
+   * Log append-only de ações de pontuação (acertos, anulações, mímica).
+   * Nunca sobrescrito — auditoria e recuperação do andamento da partida.
+   */
+  eventLog?: GameEvent[];
 };

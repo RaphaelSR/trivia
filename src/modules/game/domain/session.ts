@@ -70,11 +70,21 @@ export function syncTurnSequenceWithBoard(session: TriviaSession, board: TriviaC
     session.activeParticipantId,
     session.turnSequence,
   )
-  const safeTurnIndex = nextTurnSequence.length === 0
-    ? 0
-    : currentIndex === -1
-      ? 0
-      : Math.min(currentIndex, nextTurnSequence.length - 1)
+  let safeTurnIndex: number
+  if (nextTurnSequence.length === 0) {
+    safeTurnIndex = 0
+  } else if (currentIndex !== -1) {
+    // Caso normal: comportamento inalterado.
+    safeTurnIndex = Math.min(currentIndex, nextTurnSequence.length - 1)
+  } else {
+    // O índice se perdeu (-1). Em vez de RESETAR a vez para o início (bug do
+    // "ponteiro errado"), tenta preservar QUEM está jogando: reencontra o
+    // participante ativo na nova sequência. Só cai em 0 se ele não existir mais.
+    const preserved = session.activeParticipantId
+      ? nextTurnSequence.indexOf(session.activeParticipantId)
+      : -1
+    safeTurnIndex = preserved === -1 ? 0 : preserved
+  }
   const activeParticipantId = nextTurnSequence[safeTurnIndex] ?? null
   const activeTeamId =
     session.participants.find((participant) => participant.id === activeParticipantId)?.teamId ??
