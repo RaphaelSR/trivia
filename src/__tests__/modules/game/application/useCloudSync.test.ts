@@ -569,59 +569,59 @@ describe('useCloudSync — forceSync', () => {
   })
 })
 
-// ── Suite 7: RECONCILE anti-reversão (T3) ─────────────────────────────────────
+// ── Suite 7: CONFLITO local x nuvem (T7) ──────────────────────────────────────
+// A guarda de progresso (antes T3 no hook) agora vive no reconcile — o hook só
+// despacha conforme o action. Estes testes cobrem o tratamento de 'conflict'.
 
-describe('useCloudSync — RECONCILE anti-reversão (T3)', () => {
-  const tile = (id: string, answered: boolean) => ({
-    id,
-    film: 'F',
-    points: 10,
-    state: (answered ? 'answered' : 'available') as 'answered' | 'available',
-    question: 'Q',
-    answer: 'A',
-  })
-  const boardWith = (answeredCount: number) => [
-    {
-      id: 'c1',
-      filmId: 'f1',
-      film: 'F',
-      tiles: Array.from({ length: 3 }, (_, i) => tile(`q${i}`, i < answeredCount)),
-    },
-  ]
-
-  it('NÃO adota a nuvem (mantém local) quando a nuvem tem MENOS progresso', async () => {
-    const localSession = makeSession({ board: boardWith(2) }) // 2 respondidas localmente
-    const cloudSession = makeSession({ id: 'cloud', board: boardWith(0) }) // 0 na nuvem
-    mockReconcile.mockResolvedValue({ action: 'use-cloud', cloudSession })
+describe('useCloudSync — conflito (T7)', () => {
+  it('chama onConflict e NÃO restaura quando reconcile retorna action=conflict', async () => {
+    const cloudSession = makeSession({ id: 'cloud' })
+    mockReconcile.mockResolvedValue({ action: 'conflict', cloudSession, cloudUpdatedAt: new Date().toISOString() })
     const onRestore = jest.fn()
+    const onConflict = jest.fn()
 
     await act(async () => {
       renderHook((props) => useCloudSync(props), {
-        initialProps: { ...defaultProps, session: localSession, onRestore },
+        initialProps: { ...defaultProps, onRestore, onConflict },
       })
       await Promise.resolve()
       await Promise.resolve()
     })
 
-    // Não regride: não restaura a nuvem menos completa, e sobe o local.
+    expect(onConflict).toHaveBeenCalledTimes(1)
+    expect(onConflict.mock.calls[0][0]).toMatchObject({ cloudSession })
     expect(onRestore).not.toHaveBeenCalled()
-    expect(mockPushSnapshot).toHaveBeenCalledWith(localSession, { title: defaultProps.title })
   })
 
-  it('adota a nuvem quando ela tem progresso >= local', async () => {
-    const localSession = makeSession({ board: boardWith(1) })
-    const cloudSession = makeSession({ id: 'cloud', board: boardWith(2) })
-    mockReconcile.mockResolvedValue({ action: 'use-cloud', cloudSession })
+  it('sem handler de conflito, cai no fallback seguro: mantém o local (push, sem restaurar)', async () => {
+    const cloudSession = makeSession({ id: 'cloud' })
+    mockReconcile.mockResolvedValue({ action: 'conflict', cloudSession })
     const onRestore = jest.fn()
 
     await act(async () => {
+      // sem onConflict
       renderHook((props) => useCloudSync(props), {
-        initialProps: { ...defaultProps, session: localSession, onRestore },
+        initialProps: { ...defaultProps, onRestore },
       })
       await Promise.resolve()
       await Promise.resolve()
     })
 
-    expect(onRestore).toHaveBeenCalledWith(cloudSession)
+    expect(onRestore).not.toHaveBeenCalled()
+    expect(mockPushSnapshot).toHaveBeenCalled()
+  })
+
+  it('passa o board local ao reconcile (habilita a comparação de progresso)', async () => {
+    const localSession = makeSession({ board: [{ id: 'c1', filmId: 'f1', film: 'F', tiles: [] }] })
+    mockReconcile.mockResolvedValue({ action: 'none' })
+
+    await act(async () => {
+      renderHook((props) => useCloudSync(props), {
+        initialProps: { ...defaultProps, session: localSession },
+      })
+      await Promise.resolve()
+    })
+
+    expect(mockReconcile).toHaveBeenCalledWith(defaultProps.localUpdatedAtIso, localSession.board)
   })
 })
