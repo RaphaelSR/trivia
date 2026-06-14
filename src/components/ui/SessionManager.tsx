@@ -3,7 +3,6 @@ import { Button } from "./Button";
 import { Modal } from "./Modal";
 import {
   Clock,
-  Save,
   History,
   Play,
   Trash2,
@@ -17,6 +16,8 @@ import { useGameMode } from "../../hooks/useGameMode";
 import { useAuth } from "../../modules/auth/hooks/useAuth";
 import { isSupabaseConfigured } from "../../shared/services/supabase.client";
 import { CircleUser, LogIn } from "lucide-react";
+import { SyncStatusIndicator } from "../../modules/control/ui/SyncStatusIndicator";
+import type { CloudSyncStatus } from "../../modules/game/application/useCloudSync";
 
 interface SessionManagerProps {
   isOpen: boolean;
@@ -26,9 +27,15 @@ interface SessionManagerProps {
   onResetGame?: () => void;
   /** Abre o painel de conta (login / minhas partidas). Quando ausente, a seção de conta não é exibida. */
   onOpenAccount?: () => void;
+  /**
+   * Estado real de sincronização da sessão ATIVA com a conta (mesma fonte do
+   * indicador do topo). Ausente em demo. Usado para mostrar UM status coerente
+   * — em vez de dois indicadores locais redundantes desconectados da nuvem.
+   */
+  cloudStatus?: CloudSyncStatus;
 }
 
-export function SessionManager({ isOpen, onClose, onLoadSession, onNewSession, onResetGame, onOpenAccount }: SessionManagerProps) {
+export function SessionManager({ isOpen, onClose, onLoadSession, onNewSession, onResetGame, onOpenAccount, cloudStatus }: SessionManagerProps) {
   const { gameMode } = useGameMode();
   const { user } = useAuth();
   const supabaseEnabled = isSupabaseConfigured();
@@ -118,21 +125,18 @@ export function SessionManager({ isOpen, onClose, onLoadSession, onNewSession, o
                   <Clock className="h-3 w-3" />
                   {formatDuration(sessionStatus.duration)}
                 </div>
-                <div className="flex items-center gap-1">
-                  <Save className={`h-3 w-3 ${sessionStatus.isSaved ? 'text-green-500' : 'text-orange-500'}`} />
-                  {sessionStatus.isSaved ? 'Salva' : 'Não salva'}
-                </div>
               </div>
             </div>
           </div>
-          <div className="flex items-center gap-2">
-            {/* Reflete o salvamento LOCAL (localStorage), não a nuvem. O status de
-                sincronização com a conta fica no indicador do topo (SyncStatusIndicator). */}
-            <div className={`h-2 w-2 rounded-full ${sessionStatus.isSaved ? 'bg-green-500' : 'bg-orange-500'}`} />
-            <span className="text-xs text-[var(--color-muted)]">
-              {sessionStatus.isSaved ? 'Salva localmente' : 'Não salva'}
-            </span>
-          </div>
+          {/* UM status coerente, na MESMA linguagem do indicador do topo:
+              "Salvo neste navegador" / "Salvo na sua conta" / "sincroniza ao
+              reconectar". Substitui os dois indicadores locais redundantes que
+              confundiam (salvo local) com o backup na nuvem. */}
+          {gameMode === 'demo' ? (
+            <span className="text-xs text-[var(--color-muted)]">Demonstração · não salva</span>
+          ) : (
+            <SyncStatusIndicator status={cloudStatus ?? 'local-only'} />
+          )}
         </div>
       </div>
     );
