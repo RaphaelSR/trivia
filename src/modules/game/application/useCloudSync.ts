@@ -19,8 +19,19 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { createCloudSessionSync } from '../infrastructure/cloud-session-sync'
-import { countAnsweredTiles } from '../domain/board.utils'
 import type { TriviaSession } from '../../trivia/types'
+
+/**
+ * Conflito detectado no reconcile: local e nuvem divergem de forma ambígua
+ * (a versão mais nova tem menos progresso). O caller mostra um modal e deixa
+ * o usuário escolher qual versão manter.
+ */
+export interface CloudSyncConflict {
+  localSession: TriviaSession
+  cloudSession: TriviaSession
+  localUpdatedAt: string | null
+  cloudUpdatedAt: string | null
+}
 
 /**
  * UI-facing sync status, derived from the service's internal SyncStatus.
@@ -47,6 +58,12 @@ export interface UseCloudSyncOptions {
    */
   onRestore: (cloudSession: TriviaSession) => void
   /**
+   * Chamado quando o reconcile detecta um CONFLITO ambíguo (local x nuvem).
+   * Quando ausente, o hook cai no fallback seguro (mantém o local). Quando
+   * presente, o caller mostra um modal e o usuário decide.
+   */
+  onConflict?: (conflict: CloudSyncConflict) => void
+  /**
    * ISO-8601 timestamp of the local session's last modification.
    * Comes from SessionRecord.metadata.lastModified of the loaded active session.
    * Pass null when there is no local session saved yet.
@@ -68,6 +85,7 @@ export function useCloudSync({
   enabled,
   title,
   onRestore,
+  onConflict,
   localUpdatedAtIso,
 }: UseCloudSyncOptions): { status: CloudSyncStatus; forceSync: () => Promise<ForceSyncResult> } {
   // Stable instance for the lifetime of the component
@@ -89,6 +107,12 @@ export function useCloudSync({
   useEffect(() => {
     onRestoreRef.current = onRestore
   }, [onRestore])
+
+  // Stable ref to onConflict (same reason as onRestoreRef).
+  const onConflictRef = useRef(onConflict)
+  useEffect(() => {
+    onConflictRef.current = onConflict
+  }, [onConflict])
 
   // Latest session+title+enabled ref — updated every render (sync-with-render
   // pattern) so that forceSync always reads current values with zero deps.
@@ -143,22 +167,26 @@ export function useCloudSync({
 
     void (async () => {
       try {
-        const result = await sync.reconcile(localUpdatedAtIso)
+        // Passa o board local para o reconcile habilitar a comparação de
+        // progresso (guarda anti-reversão + detecção de conflito ambíguo).
+        const result = await sync.reconcile(localUpdatedAtIso, latestRef.current.session.board)
 
         if (result.action === 'use-cloud' && result.cloudSession) {
-          // T3 — guarda anti-reversão: a nuvem ganhou por timestamp, mas se ela
-          // tem MENOS progresso que o local (ex.: snapshot antigo adotado ao
-          // reentrar), adotá-la apagaria jogadas. Nesse caso mantém o local e
-          // sobe ele, em vez de regredir a partida.
-          const local = latestRef.current.session
-          // Guarda defensiva: boards ausentes/malformados contam como 0 sem lançar.
-          const cloudProgress = countAnsweredTiles(result.cloudSession.board ?? [])
-          const localProgress = countAnsweredTiles(local.board ?? [])
-          if (cloudProgress < localProgress) {
-            syncRef.current.pushSnapshot(local, { title: latestRef.current.title })
-            await syncRef.current.flushNow()
+          onRestoreRef.current(result.cloudSession)
+        } else if (result.action === 'conflict' && result.cloudSession) {
+          // Ambíguo (a versão mais nova tem menos progresso). Se houver handler,
+          // o usuário decide; senão, fallback SEGURO = mantém o local (nunca
+          // perde jogadas silenciosamente) e sobe ele.
+          if (onConflictRef.current) {
+            onConflictRef.current({
+              localSession: latestRef.current.session,
+              cloudSession: result.cloudSession,
+              localUpdatedAt: localUpdatedAtIso,
+              cloudUpdatedAt: result.cloudUpdatedAt ?? null,
+            })
           } else {
-            onRestoreRef.current(result.cloudSession)
+            sync.pushSnapshot(latestRef.current.session, { title: latestRef.current.title })
+            await sync.flushNow()
           }
         } else if (result.action === 'keep-local') {
           // Local is fresher — push it up to align the cloud copy.
