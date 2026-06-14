@@ -9,6 +9,7 @@ import {
   Calendar,
   Settings,
   AlertCircle,
+  AlertTriangle,
   RefreshCw
 } from "lucide-react";
 import { useOfflineSession } from "../../hooks/useOfflineSession";
@@ -391,6 +392,17 @@ export function SessionManager({ isOpen, onClose, onLoadSession, onNewSession, o
                   : 'Dados salvos localmente neste navegador.'
                 }
               </p>
+              {/* T5 — aviso de aba anônima: o estado vive no localStorage deste
+                  navegador; janelas anônimas/privadas o apagam ao fechar. */}
+              {gameMode !== 'demo' && (
+                <p className="mt-1.5 flex items-start gap-1.5 text-xs text-amber-500">
+                  <AlertTriangle className="h-3.5 w-3.5 shrink-0 mt-0.5" />
+                  <span>
+                    Evite janelas anônimas/privadas: elas apagam os dados deste navegador ao fechar
+                    {user ? ' — sincronize antes de sair para não perder o progresso.' : '.'}
+                  </span>
+                </p>
+              )}
             </div>
           </div>
         </div>
