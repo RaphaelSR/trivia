@@ -19,6 +19,7 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { createCloudSessionSync } from '../infrastructure/cloud-session-sync'
+import { countAnsweredTiles } from '../domain/board.utils'
 import type { TriviaSession } from '../../trivia/types'
 
 /**
@@ -145,10 +146,25 @@ export function useCloudSync({
         const result = await sync.reconcile(localUpdatedAtIso)
 
         if (result.action === 'use-cloud' && result.cloudSession) {
-          onRestoreRef.current(result.cloudSession)
+          // T3 — guarda anti-reversão: a nuvem ganhou por timestamp, mas se ela
+          // tem MENOS progresso que o local (ex.: snapshot antigo adotado ao
+          // reentrar), adotá-la apagaria jogadas. Nesse caso mantém o local e
+          // sobe ele, em vez de regredir a partida.
+          const local = latestRef.current.session
+          // Guarda defensiva: boards ausentes/malformados contam como 0 sem lançar.
+          const cloudProgress = countAnsweredTiles(result.cloudSession.board ?? [])
+          const localProgress = countAnsweredTiles(local.board ?? [])
+          if (cloudProgress < localProgress) {
+            syncRef.current.pushSnapshot(local, { title: latestRef.current.title })
+            await syncRef.current.flushNow()
+          } else {
+            onRestoreRef.current(result.cloudSession)
+          }
         } else if (result.action === 'keep-local') {
-          // Local is fresher — push it up to align the cloud copy
-          sync.pushSnapshot(session, { title })
+          // Local is fresher — push it up to align the cloud copy.
+          // Usa latestRef (não o `session` do closure) para subir o estado MAIS
+          // recente, já que reconcile é async e a sessão pode ter mudado.
+          sync.pushSnapshot(latestRef.current.session, { title: latestRef.current.title })
           await sync.flushNow()
         }
         // 'none' → sem registro na nuvem; o push effect abaixo cuida do upload

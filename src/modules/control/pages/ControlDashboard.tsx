@@ -81,6 +81,7 @@ export function ControlDashboard() {
     removeQuestionTile,
     updateTeamsAndParticipants,
     awardPoints,
+    voidQuestion,
     awardMimicaPoints,
     advanceTurn,
     restoreSession,
@@ -1039,7 +1040,13 @@ export function ControlDashboard() {
                     title: 'Anular Pergunta',
                     description: `Esta ação irá anular a pergunta "${selectedTile.tile.question}" do filme "${selectedTile.column.film}" sem atribuir pontos. A pergunta será marcada como respondida e o turno avançará automaticamente para o próximo participante.`,
                     onConfirm: () => {
-                      updateTileState(selectedTile.tile.id, 'answered')
+                      // Anula a carta E registra um evento 'trivia-void' no log,
+                      // para a ação ficar auditável (a vez é consumida).
+                      voidQuestion(
+                        selectedTile.tile.id,
+                        activeParticipant.id,
+                        activeParticipant.teamId ?? activeTeam?.id ?? '',
+                      )
                       const message = `${selectedTile.column.film}: pergunta anulada (sem pontuação)`
                       toast.success(message)
                       advanceTurn()
