@@ -612,12 +612,16 @@ export function ControlDashboard() {
       // Marca onboarding como visto
       storageService.set(STORAGE_KEYS.onboardingSeen, 'true')
       
-      // Fecha o modal de onboarding e sugestão
+      // T10 — fecha o onboarding e abre a BIBLIOTECA direto, para o host
+      // adicionar os filmes + perguntas (que é onde o board é montado de fato).
+      // Abre direto (sem PIN) por ser logo após o setup; o PIN protege acessos
+      // posteriores via handleShowLibrary.
       setOfflineOnboardingOpen(false)
       setShowOnboardingSuggestion(false)
-      setActivePanel('board')
-      
-      toast.success('Configuração inicial concluída! Sessão pronta para jogar!')
+      setActivePanel('library')
+      setLibraryOpen(true)
+
+      toast.success('Configuração concluída! Agora adicione os filmes e perguntas na biblioteca.')
       
     } catch (error) {
       console.error('Erro ao configurar sessão offline:', error)
