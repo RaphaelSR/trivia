@@ -33,9 +33,11 @@ interface SessionManagerProps {
    * — em vez de dois indicadores locais redundantes desconectados da nuvem.
    */
   cloudStatus?: CloudSyncStatus;
+  /** Abre o histórico de versões da partida atual (T4). Ausente quando indisponível. */
+  onOpenVersions?: () => void;
 }
 
-export function SessionManager({ isOpen, onClose, onLoadSession, onNewSession, onResetGame, onOpenAccount, cloudStatus }: SessionManagerProps) {
+export function SessionManager({ isOpen, onClose, onLoadSession, onNewSession, onResetGame, onOpenAccount, cloudStatus, onOpenVersions }: SessionManagerProps) {
   const { gameMode } = useGameMode();
   const { user } = useAuth();
   const supabaseEnabled = isSupabaseConfigured();
@@ -347,6 +349,14 @@ export function SessionManager({ isOpen, onClose, onLoadSession, onNewSession, o
           </div>
         )}
         
+        {/* Histórico de versões (T4) — só quando disponível (online logado) */}
+        {onOpenVersions && sessionStatus.hasActiveSession && (
+          <Button variant="outline" onClick={() => { onClose(); onOpenVersions(); }} className="w-full gap-2">
+            <History className="h-4 w-4" />
+            Histórico de versões
+          </Button>
+        )}
+
         {/* Sessão Atual */}
         <div>
           <h3 className="text-lg font-semibold text-[var(--color-text)] mb-4">

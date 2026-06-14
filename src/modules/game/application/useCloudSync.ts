@@ -19,7 +19,11 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { createCloudSessionSync } from '../infrastructure/cloud-session-sync'
+import { saveSessionSnapshot } from '../infrastructure/session-snapshot.service'
 import type { TriviaSession } from '../../trivia/types'
+
+/** Intervalo mínimo entre checkpoints de versão (T4) — evita 1 snapshot por flush. */
+const SNAPSHOT_THROTTLE_MS = 3 * 60 * 1000
 
 /**
  * Conflito detectado no reconcile: local e nuvem divergem de forma ambígua
@@ -101,6 +105,9 @@ export function useCloudSync({
   // Whether the immediate initial flush already happened for the current
   // activation. Reset when enabled goes false so a re-login flushes again.
   const initialFlushDoneRef = useRef(false)
+
+  // Timestamp do último checkpoint de versão (T4), para throttle.
+  const lastSnapshotAtRef = useRef(0)
 
   // Stable ref to onRestore so the effect doesn't re-run when the callback identity changes
   const onRestoreRef = useRef(onRestore)
@@ -243,6 +250,17 @@ export function useCloudSync({
         setStatus('syncing')
       } else if (serviceStatus === 'synced') {
         setStatus('synced')
+        // T4 — checkpoint de versão (throttled ~3min): captura o estado já
+        // sincronizado para permitir restaurar uma versão anterior depois.
+        // Fire-and-forget; falhas são silenciosas no serviço.
+        const { session: snapSession, title: snapTitle } = latestRef.current
+        if (
+          snapSession.teams.length > 0 &&
+          Date.now() - lastSnapshotAtRef.current > SNAPSHOT_THROTTLE_MS
+        ) {
+          lastSnapshotAtRef.current = Date.now()
+          void saveSessionSnapshot(snapSession.id, snapTitle, snapSession)
+        }
       } else {
         // 'pending'
         setStatus('pending')

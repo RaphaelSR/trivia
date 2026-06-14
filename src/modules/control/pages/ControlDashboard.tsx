@@ -63,6 +63,8 @@ import { useAuth } from '@/modules/auth/hooks/useAuth'
 import { isSupabaseConfigured } from '@/shared/services/supabase.client'
 import { useCloudSync, type CloudSyncConflict } from '@/modules/game/application/useCloudSync'
 import { ConflictResolutionModal } from '@/components/ui/ConflictResolutionModal'
+import { VersionHistoryModal } from '@/components/ui/VersionHistoryModal'
+import { listSessionSnapshots, type SessionSnapshot } from '@/modules/game/infrastructure/session-snapshot.service'
 import { AuthPanel } from '@/modules/auth/components/AuthPanel'
 // PIN será gerenciado pelo hook usePinManagement
 
@@ -311,6 +313,28 @@ export function ControlDashboard() {
     },
     onConflict: (conflict) => setSessionConflict(conflict),
   })
+
+  // T4 — histórico de versões (snapshots na nuvem).
+  const [versionsOpen, setVersionsOpen] = useState(false)
+  const [snapshots, setSnapshots] = useState<SessionSnapshot[]>([])
+  const [snapshotsLoading, setSnapshotsLoading] = useState(false)
+
+  useEffect(() => {
+    if (!versionsOpen) return
+    let cancelled = false
+    setSnapshotsLoading(true)
+    listSessionSnapshots(session.id)
+      .then((list) => { if (!cancelled) setSnapshots(list) })
+      .finally(() => { if (!cancelled) setSnapshotsLoading(false) })
+    return () => { cancelled = true }
+  }, [versionsOpen, session.id])
+
+  const handleRestoreVersion = (snap: SessionSnapshot) => {
+    restoreSession(snap.session)
+    saveSession(snap.session, snap.session.title)
+    setVersionsOpen(false)
+    toast.success('Versão restaurada.')
+  }
 
   // O usuário escolheu qual versão manter no modal de conflito.
   const handleConflictChoice = (which: 'local' | 'cloud') => {
@@ -1520,6 +1544,14 @@ export function ControlDashboard() {
         onChoose={handleConflictChoice}
       />
 
+      <VersionHistoryModal
+        isOpen={versionsOpen}
+        onClose={() => setVersionsOpen(false)}
+        snapshots={snapshots}
+        loading={snapshotsLoading}
+        onRestore={handleRestoreVersion}
+      />
+
       <SessionManager
         isOpen={sessionManagerOpen}
         onClose={() => {
@@ -1527,6 +1559,7 @@ export function ControlDashboard() {
           setActivePanel('board')
         }}
         cloudStatus={gameMode !== 'demo' ? syncStatus : undefined}
+        onOpenVersions={syncEnabled ? () => setVersionsOpen(true) : undefined}
         onOpenAccount={isSupabaseConfigured() ? () => setAccountOpen(true) : undefined}
         onLoadSession={handleLoadSession}
         onNewSession={() => {
