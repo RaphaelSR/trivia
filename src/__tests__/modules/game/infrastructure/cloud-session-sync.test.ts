@@ -580,6 +580,54 @@ describe('CloudSessionSync — reconcile', () => {
     const r = await sync.reconcile(new Date().toISOString())
     expect(r.action).toBe('none')
   })
+
+  // ── Detecção de conflito (T7) — progresso = nº de cartas respondidas ────────
+  const answeredBoard = (answered: number) => [
+    {
+      id: 'c1',
+      filmId: 'f1',
+      film: 'F',
+      tiles: Array.from({ length: 3 }, (_, i) => ({
+        id: `q${i}`,
+        film: 'F',
+        points: 10,
+        state: (i < answered ? 'answered' : 'available') as 'answered' | 'available',
+        question: 'Q',
+        answer: 'A',
+      })),
+    },
+  ]
+
+  it('returns conflict when cloud is newer BUT local has more progress', async () => {
+    const cloudSession = makeSession({ id: 'cloud-c', board: answeredBoard(0) })
+    const cloudAt = new Date(Date.now() + 60_000).toISOString()
+    const localAt = new Date(Date.now() - 60_000).toISOString()
+    mockGetClient.mockReturnValue({ auth: buildAuthMock(), from: buildCloudMock(cloudSession, cloudAt) })
+
+    const r = await sync.reconcile(localAt, answeredBoard(2))
+    expect(r.action).toBe('conflict')
+    expect(r.cloudSession?.id).toBe('cloud-c')
+  })
+
+  it('returns conflict when local is newer BUT cloud has more progress', async () => {
+    const cloudSession = makeSession({ id: 'cloud-d', board: answeredBoard(2) })
+    const cloudAt = new Date(Date.now() - 60_000).toISOString()
+    const localAt = new Date(Date.now() + 60_000).toISOString()
+    mockGetClient.mockReturnValue({ auth: buildAuthMock(), from: buildCloudMock(cloudSession, cloudAt) })
+
+    const r = await sync.reconcile(localAt, answeredBoard(0))
+    expect(r.action).toBe('conflict')
+  })
+
+  it('returns use-cloud when cloud is newer AND not less complete (no conflict)', async () => {
+    const cloudSession = makeSession({ id: 'cloud-e', board: answeredBoard(2) })
+    const cloudAt = new Date(Date.now() + 60_000).toISOString()
+    const localAt = new Date(Date.now() - 60_000).toISOString()
+    mockGetClient.mockReturnValue({ auth: buildAuthMock(), from: buildCloudMock(cloudSession, cloudAt) })
+
+    const r = await sync.reconcile(localAt, answeredBoard(1))
+    expect(r.action).toBe('use-cloud')
+  })
 })
 
 // ── Suite 7: dispose removes listeners ────────────────────────────────────────

@@ -22,7 +22,8 @@
  */
 
 import { getSupabaseClient, isSupabaseConfigured } from '../../../shared/services/supabase.client'
-import type { TriviaSession } from '../../trivia/types'
+import { countAnsweredTiles } from '../domain/board.utils'
+import type { TriviaColumn, TriviaSession } from '../../trivia/types'
 
 // ── Internal types ────────────────────────────────────────────────────────────
 
@@ -62,17 +63,26 @@ export interface CloudSessionSync {
   pullActiveSnapshot(): Promise<{ session: TriviaSession; updatedAt: string } | null>
 
   /**
-   * Compares cloud updated_at against `localUpdatedAtIso` (last-write-wins).
+   * Decide o que fazer entre o estado local e o da nuvem (last-write-wins +
+   * guarda de progresso). Passe `localBoard` para habilitar a detecção de
+   * conflito (comparação de progresso por nº de cartas respondidas).
    *
-   * - 'use-cloud'  + cloudSession : cloud record is newer than local (or local is null).
-   * - 'keep-local'                : local record is newer or equal.
-   * - 'none'                      : no Supabase config, no auth, or no cloud record.
+   * - 'use-cloud'  + cloudSession : a nuvem deve vencer (mais nova e não menos completa).
+   * - 'keep-local'                : o local deve vencer (mais novo/igual).
+   * - 'conflict'   + cloudSession : AMBÍGUO — a versão mais nova tem MENOS progresso
+   *                                 que a mais antiga; o chamador deve perguntar ao usuário.
+   * - 'none'                      : sem Supabase, sem auth, ou sem registro na nuvem.
    *
-   * This method NEVER modifies local storage — the caller decides what to do.
+   * Nunca modifica o armazenamento local — quem chama decide.
    */
   reconcile(
     localUpdatedAtIso: string | null,
-  ): Promise<{ action: 'use-cloud' | 'keep-local' | 'none'; cloudSession?: TriviaSession }>
+    localBoard?: TriviaColumn[],
+  ): Promise<{
+    action: 'use-cloud' | 'keep-local' | 'none' | 'conflict'
+    cloudSession?: TriviaSession
+    cloudUpdatedAt?: string
+  }>
 
   /**
    * Returns true when there is a snapshot that has not yet been successfully
@@ -181,7 +191,12 @@ class CloudSessionSyncImpl implements CloudSessionSync {
 
   async reconcile(
     localUpdatedAtIso: string | null,
-  ): Promise<{ action: 'use-cloud' | 'keep-local' | 'none'; cloudSession?: TriviaSession }> {
+    localBoard?: TriviaColumn[],
+  ): Promise<{
+    action: 'use-cloud' | 'keep-local' | 'none' | 'conflict'
+    cloudSession?: TriviaSession
+    cloudUpdatedAt?: string
+  }> {
     const cloud = await this.pullActiveSnapshot()
 
     if (!cloud) return { action: 'none' }
@@ -189,8 +204,28 @@ class CloudSessionSyncImpl implements CloudSessionSync {
     const cloudTs = new Date(cloud.updatedAt).getTime()
     const localTs = localUpdatedAtIso ? new Date(localUpdatedAtIso).getTime() : null
 
-    if (localTs === null || cloudTs > localTs) {
-      return { action: 'use-cloud', cloudSession: cloud.session }
+    // Sem jogo local → adota a nuvem.
+    if (localTs === null) {
+      return { action: 'use-cloud', cloudSession: cloud.session, cloudUpdatedAt: cloud.updatedAt }
+    }
+
+    const cloudProgress = countAnsweredTiles(cloud.session.board ?? [])
+    const localProgress = countAnsweredTiles(localBoard ?? [])
+    const cloudIsNewer = cloudTs > localTs
+
+    // Conflito: a versão MAIS NOVA tem MENOS progresso que a mais antiga —
+    // ambíguo (ex.: jogou mais neste aparelho mas a nuvem foi tocada depois).
+    // Melhor perguntar do que arriscar perder jogadas em qualquer direção.
+    const conflict =
+      (cloudIsNewer && localProgress > cloudProgress) ||
+      (!cloudIsNewer && cloudProgress > localProgress)
+
+    if (conflict) {
+      return { action: 'conflict', cloudSession: cloud.session, cloudUpdatedAt: cloud.updatedAt }
+    }
+
+    if (cloudIsNewer) {
+      return { action: 'use-cloud', cloudSession: cloud.session, cloudUpdatedAt: cloud.updatedAt }
     }
 
     return { action: 'keep-local' }

@@ -61,7 +61,8 @@ import { buildParticipantScoreBreakdown, buildTeamScoreboard } from '../utils/sc
 import type { OnboardingConfig } from '../types/control.types'
 import { useAuth } from '@/modules/auth/hooks/useAuth'
 import { isSupabaseConfigured } from '@/shared/services/supabase.client'
-import { useCloudSync } from '@/modules/game/application/useCloudSync'
+import { useCloudSync, type CloudSyncConflict } from '@/modules/game/application/useCloudSync'
+import { ConflictResolutionModal } from '@/components/ui/ConflictResolutionModal'
 import { AuthPanel } from '@/modules/auth/components/AuthPanel'
 // PIN será gerenciado pelo hook usePinManagement
 
@@ -296,6 +297,8 @@ export function ControlDashboard() {
   //  - ao ativar (login/mount), reconcilia com a nuvem e restaura se mais novo.
   // Demo nunca sincroniza (enabled=false quando gameMode==='demo').
   const syncEnabled = gameMode !== 'demo' && Boolean(user) && isSupabaseConfigured()
+  // Conflito detectado pelo reconcile (local x nuvem divergem de forma ambígua).
+  const [sessionConflict, setSessionConflict] = useState<CloudSyncConflict | null>(null)
   const { status: syncStatus, forceSync } = useCloudSync({
     session,
     enabled: syncEnabled,
@@ -306,7 +309,24 @@ export function ControlDashboard() {
       restoreSession(cloudSession)
       saveSession(cloudSession, cloudSession.title)
     },
+    onConflict: (conflict) => setSessionConflict(conflict),
   })
+
+  // O usuário escolheu qual versão manter no modal de conflito.
+  const handleConflictChoice = (which: 'local' | 'cloud') => {
+    const conflict = sessionConflict
+    setSessionConflict(null)
+    if (!conflict) return
+    if (which === 'cloud') {
+      restoreSession(conflict.cloudSession)
+      saveSession(conflict.cloudSession, conflict.cloudSession.title)
+      toast.success('Usando a versão da sua conta.')
+    } else {
+      // Mantém o local e sobe ele por cima da nuvem.
+      void forceSync()
+      toast.success('Mantida a versão deste aparelho.')
+    }
+  }
 
   // Handler de force sync: chama forceSync() e exibe toast contextual em pt-BR.
   const handleForceSync = async () => {
@@ -1493,6 +1513,12 @@ export function ControlDashboard() {
           description="A rodada fecha quando todos os participantes aparecerem pelo menos uma vez."
         />
       </Modal>
+
+      <ConflictResolutionModal
+        isOpen={sessionConflict !== null}
+        conflict={sessionConflict}
+        onChoose={handleConflictChoice}
+      />
 
       <SessionManager
         isOpen={sessionManagerOpen}
