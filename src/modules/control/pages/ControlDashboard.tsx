@@ -7,6 +7,7 @@ import {
   Palette,
   RefreshCw,
   RotateCcw,
+  TriangleAlert,
   UserPlus,
   UsersRound,
   Theater,
@@ -63,6 +64,7 @@ import type { OnboardingConfig } from '../types/control.types'
 import { useAuth } from '@/modules/auth/hooks/useAuth'
 import { isSupabaseConfigured } from '@/shared/services/supabase.client'
 import { useCloudSync, type CloudSyncConflict } from '@/modules/game/application/useCloudSync'
+import { useTabGuard } from '@/modules/game/application/useTabGuard'
 import { ConflictResolutionModal } from '@/components/ui/ConflictResolutionModal'
 import { VersionHistoryModal } from '@/components/ui/VersionHistoryModal'
 import { listSessionSnapshots, type SessionSnapshot } from '@/modules/game/infrastructure/session-snapshot.service'
@@ -329,6 +331,10 @@ export function ControlDashboard() {
     },
     onConflict: (conflict) => setSessionConflict(conflict),
   })
+
+  // Outra aba deste navegador com a mesma sessão aberta? Duas abas se
+  // sobrescrevem no localStorage — a UI avisa para jogar em uma só.
+  const otherTabOpen = useTabGuard(session.id, gameMode !== 'demo')
 
   // T9 — configurações de som.
   const [soundSettingsOpen, setSoundSettingsOpen] = useState(false)
@@ -924,12 +930,23 @@ export function ControlDashboard() {
         />
       }
       statusStrip={
-        <GameStatusStrip
-          activeParticipant={activeParticipant}
-          activeTeam={activeTeam}
-          currentTurnLabel={currentTurnLabel}
-          scoreboard={scoreboard}
-        />
+        <>
+          {otherTabOpen && (
+            <div
+              role="alert"
+              className="flex items-center gap-2 border-b border-amber-400/20 bg-amber-500/10 px-4 py-2 text-xs font-medium text-amber-300"
+            >
+              <TriangleAlert size={14} className="shrink-0" />
+              Esta partida está aberta em outra aba ou janela. Jogue em uma só — mudanças feitas em duas abas se sobrescrevem.
+            </div>
+          )}
+          <GameStatusStrip
+            activeParticipant={activeParticipant}
+            activeTeam={activeTeam}
+            currentTurnLabel={currentTurnLabel}
+            scoreboard={scoreboard}
+          />
+        </>
       }
       sidebar={
         <ControlSidebar
