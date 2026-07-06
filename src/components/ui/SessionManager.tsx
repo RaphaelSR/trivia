@@ -33,11 +33,13 @@ interface SessionManagerProps {
    * — em vez de dois indicadores locais redundantes desconectados da nuvem.
    */
   cloudStatus?: CloudSyncStatus;
+  /** ISO do último sync bem-sucedido (mesma fonte do indicador do topo). */
+  cloudLastSyncedAt?: string | null;
   /** Abre o histórico de versões da partida atual (T4). Ausente quando indisponível. */
   onOpenVersions?: () => void;
 }
 
-export function SessionManager({ isOpen, onClose, onLoadSession, onNewSession, onResetGame, onOpenAccount, cloudStatus, onOpenVersions }: SessionManagerProps) {
+export function SessionManager({ isOpen, onClose, onLoadSession, onNewSession, onResetGame, onOpenAccount, cloudStatus, cloudLastSyncedAt, onOpenVersions }: SessionManagerProps) {
   const { gameMode } = useGameMode();
   const { user } = useAuth();
   const supabaseEnabled = isSupabaseConfigured();
@@ -174,7 +176,7 @@ export function SessionManager({ isOpen, onClose, onLoadSession, onNewSession, o
           {gameMode === 'demo' ? (
             <span className="shrink-0 text-xs text-[var(--color-muted)]">Demonstração · não salva</span>
           ) : (
-            <SyncStatusIndicator status={cloudStatus ?? 'local-only'} />
+            <SyncStatusIndicator status={cloudStatus ?? 'local-only'} lastSyncedAt={cloudLastSyncedAt} />
           )}
         </div>
 

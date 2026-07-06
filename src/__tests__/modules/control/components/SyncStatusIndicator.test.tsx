@@ -88,3 +88,27 @@ describe('SyncStatusIndicator — forceSync', () => {
     expect(btn).toHaveAttribute('aria-live', 'polite')
   })
 })
+
+describe('SyncStatusIndicator — horário do último sync', () => {
+  const iso = '2026-07-06T13:42:00'
+
+  it('verde mostra "Salvo na sua conta · HH:MM" quando há lastSyncedAt', () => {
+    render(<SyncStatusIndicator status="synced" lastSyncedAt={iso} />)
+    expect(screen.getByText(/Salvo na sua conta · \d{2}:\d{2}/)).toBeInTheDocument()
+  })
+
+  it('amarelo mostra a última sync — diz quanto está só neste navegador', () => {
+    render(<SyncStatusIndicator status="pending" lastSyncedAt={iso} />)
+    expect(screen.getByText(/Salvo neste navegador · última sync \d{2}:\d{2}/)).toBeInTheDocument()
+  })
+
+  it('sem lastSyncedAt os textos originais permanecem', () => {
+    render(<SyncStatusIndicator status="synced" />)
+    expect(screen.getByText('Salvo na sua conta')).toBeInTheDocument()
+  })
+
+  it('lastSyncedAt inválido não quebra nem polui o texto', () => {
+    render(<SyncStatusIndicator status="synced" lastSyncedAt="data-invalida" />)
+    expect(screen.getByText('Salvo na sua conta')).toBeInTheDocument()
+  })
+})

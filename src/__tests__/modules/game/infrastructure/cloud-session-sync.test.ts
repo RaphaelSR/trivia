@@ -956,6 +956,17 @@ describe('CloudSessionSync — status state machine', () => {
     expect(sync.getStatus()).toBe('pending')
   })
 
+  it('getLastSyncedAt: null antes do primeiro flush, ISO após sucesso', async () => {
+    const { fromFn } = buildSuccessFromMock()
+    mockGetClient.mockReturnValue({ auth: buildAuthMock(), from: fromFn })
+    sync = createCloudSessionSync()
+
+    expect(sync.getLastSyncedAt()).toBeNull()
+    sync.pushSnapshot(makeSession())
+    await sync.flushNow()
+    expect(sync.getLastSyncedAt()).toMatch(/^\d{4}-\d{2}-\d{2}T/)
+  })
+
   it('leaves synced IMMEDIATELY when a new snapshot is queued (honest badge)', async () => {
     const { fromFn } = buildSuccessFromMock()
     mockGetClient.mockReturnValue({ auth: buildAuthMock(), from: fromFn })

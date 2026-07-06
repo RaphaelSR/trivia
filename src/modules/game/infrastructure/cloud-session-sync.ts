@@ -95,6 +95,9 @@ export interface CloudSessionSync {
    */
   hasPendingSync(): boolean
 
+  /** ISO do último flush bem-sucedido nesta instância; null antes do primeiro. */
+  getLastSyncedAt(): string | null
+
   /**
    * Returns the current observable sync status.
    * - 'idle'    : no push has been attempted yet
@@ -130,6 +133,9 @@ class CloudSessionSyncImpl implements CloudSessionSync {
 
   /** Observable sync status. */
   private _status: SyncStatus = 'idle'
+
+  /** Horário (ISO) do último flush bem-sucedido; null antes do primeiro. */
+  private _lastSyncedAt: string | null = null
 
   /** Registered status listeners. */
   private _listeners: Set<SyncStatusListener> = new Set()
@@ -274,6 +280,10 @@ class CloudSessionSyncImpl implements CloudSessionSync {
     return this.pending !== null
   }
 
+  getLastSyncedAt(): string | null {
+    return this._lastSyncedAt
+  }
+
   getStatus(): SyncStatus {
     return this._status
   }
@@ -368,6 +378,7 @@ class CloudSessionSyncImpl implements CloudSessionSync {
       if (this.pending === record) {
         this.pending = null
       }
+      this._lastSyncedAt = new Date().toISOString()
       this._setStatus('synced')
     } catch (err) {
       console.warn('[CloudSessionSync] Cloud flush failed; will retry on next push or online event:', err)

@@ -337,7 +337,7 @@ export function ControlDashboard() {
   const syncEnabled = gameMode !== 'demo' && Boolean(user) && isSupabaseConfigured()
   // Conflito detectado pelo reconcile (local x nuvem divergem de forma ambígua).
   const [sessionConflict, setSessionConflict] = useState<CloudSyncConflict | null>(null)
-  const { status: syncStatus, forceSync, snapshotFailing } = useCloudSync({
+  const { status: syncStatus, forceSync, snapshotFailing, lastSyncedAt } = useCloudSync({
     session,
     enabled: syncEnabled,
     title: session.title,
@@ -960,6 +960,7 @@ export function ControlDashboard() {
           modeLabel={getModeDisplayName(gameMode)}
           backendLabel={backendLabel}
           syncStatus={gameMode !== 'demo' ? syncStatus : undefined}
+          lastSyncedAt={gameMode !== 'demo' ? lastSyncedAt : undefined}
           onForceSync={gameMode !== 'demo' ? handleForceSync : undefined}
           onOpenSessions={handleOpenSessions}
           onExit={() => {
@@ -1653,6 +1654,7 @@ export function ControlDashboard() {
           setActivePanel('board')
         }}
         cloudStatus={gameMode !== 'demo' ? syncStatus : undefined}
+        cloudLastSyncedAt={gameMode !== 'demo' ? lastSyncedAt : undefined}
         onOpenVersions={gameMode !== 'demo' ? () => setVersionsOpen(true) : undefined}
         onOpenAccount={isSupabaseConfigured() ? () => setAccountOpen(true) : undefined}
         onLoadSession={handleLoadSession}
