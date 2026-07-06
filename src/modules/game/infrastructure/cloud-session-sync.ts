@@ -24,7 +24,8 @@
 import { getSupabaseClient, isSupabaseConfigured } from '../../../shared/services/supabase.client'
 import { sendKeepaliveSessionPatch } from './keepalive-flush'
 import { countAnsweredTiles } from '../domain/board.utils'
-import type { TriviaColumn, TriviaSession } from '../../trivia/types'
+import { compareEventLogs } from '../domain/session'
+import type { TriviaSession } from '../../trivia/types'
 
 // ── Internal types ────────────────────────────────────────────────────────────
 
@@ -64,21 +65,24 @@ export interface CloudSessionSync {
   pullActiveSnapshot(): Promise<{ session: TriviaSession; updatedAt: string } | null>
 
   /**
-   * Decide o que fazer entre o estado local e o da nuvem (last-write-wins +
-   * guarda de progresso). Passe `localBoard` para habilitar a detecção de
-   * conflito (comparação de progresso por nº de cartas respondidas).
+   * Decide o que fazer entre o estado local e o da nuvem.
    *
-   * - 'use-cloud'  + cloudSession : a nuvem deve vencer (mais nova e não menos completa).
-   * - 'keep-local'                : o local deve vencer (mais novo/igual).
-   * - 'conflict'   + cloudSession : AMBÍGUO — a versão mais nova tem MENOS progresso
-   *                                 que a mais antiga; o chamador deve perguntar ao usuário.
+   * Quando local e nuvem são a MESMA partida e ambos têm eventLog, a decisão
+   * usa a relação de prefixo dos logs (revisão monotônica): quem contém o log
+   * do outro está à frente; histórias divergentes viram 'conflict'. Sem log
+   * dos dois lados, cai na heurística T7 (last-write-wins + guarda de
+   * progresso por nº de cartas respondidas).
+   *
+   * - 'use-cloud'  + cloudSession : a nuvem deve vencer.
+   * - 'keep-local'                : o local deve vencer.
+   * - 'conflict'   + cloudSession : AMBÍGUO — o chamador deve perguntar ao usuário.
    * - 'none'                      : sem Supabase, sem auth, ou sem registro na nuvem.
    *
    * Nunca modifica o armazenamento local — quem chama decide.
    */
   reconcile(
     localUpdatedAtIso: string | null,
-    localBoard?: TriviaColumn[],
+    localSession?: TriviaSession,
   ): Promise<{
     action: 'use-cloud' | 'keep-local' | 'none' | 'conflict'
     cloudSession?: TriviaSession
@@ -195,7 +199,7 @@ class CloudSessionSyncImpl implements CloudSessionSync {
 
   async reconcile(
     localUpdatedAtIso: string | null,
-    localBoard?: TriviaColumn[],
+    localSession?: TriviaSession,
   ): Promise<{
     action: 'use-cloud' | 'keep-local' | 'none' | 'conflict'
     cloudSession?: TriviaSession
@@ -213,9 +217,35 @@ class CloudSessionSyncImpl implements CloudSessionSync {
       return { action: 'use-cloud', cloudSession: cloud.session, cloudUpdatedAt: cloud.updatedAt }
     }
 
-    const cloudProgress = countAnsweredTiles(cloud.session.board ?? [])
-    const localProgress = countAnsweredTiles(localBoard ?? [])
     const cloudIsNewer = cloudTs > localTs
+
+    // Mesma partida com eventLog nos dois lados → decisão pela revisão
+    // monotônica (relação de prefixo dos logs), imune a relógio e a jogadas
+    // diferentes com a mesma contagem.
+    const localLog = localSession?.eventLog
+    const cloudLog = cloud.session.eventLog
+    if (localSession && localSession.id === cloud.session.id && localLog && cloudLog) {
+      const relation = compareEventLogs(localLog, cloudLog)
+      if (relation === 'diverged') {
+        return { action: 'conflict', cloudSession: cloud.session, cloudUpdatedAt: cloud.updatedAt }
+      }
+      if (relation === 'first-ahead') {
+        return { action: 'keep-local' }
+      }
+      if (relation === 'second-ahead') {
+        return { action: 'use-cloud', cloudSession: cloud.session, cloudUpdatedAt: cloud.updatedAt }
+      }
+      // 'equal': mesmo progresso de jogo — timestamps decidem a versão com as
+      // edições cosméticas mais recentes (título, times etc.).
+      if (cloudIsNewer) {
+        return { action: 'use-cloud', cloudSession: cloud.session, cloudUpdatedAt: cloud.updatedAt }
+      }
+      return { action: 'keep-local' }
+    }
+
+    // Fallback (T7): sem log comparável — heurística de timestamp + progresso.
+    const cloudProgress = countAnsweredTiles(cloud.session.board ?? [])
+    const localProgress = countAnsweredTiles(localSession?.board ?? [])
 
     // Conflito: a versão MAIS NOVA tem MENOS progresso que a mais antiga —
     // ambíguo (ex.: jogou mais neste aparelho mas a nuvem foi tocada depois).

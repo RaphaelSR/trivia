@@ -609,7 +609,7 @@ describe('CloudSessionSync — reconcile', () => {
     const localAt = new Date(Date.now() - 60_000).toISOString()
     mockGetClient.mockReturnValue({ auth: buildAuthMock(), from: buildCloudMock(cloudSession, cloudAt) })
 
-    const r = await sync.reconcile(localAt, answeredBoard(2))
+    const r = await sync.reconcile(localAt, makeSession({ id: 'cloud-c', board: answeredBoard(2) }))
     expect(r.action).toBe('conflict')
     expect(r.cloudSession?.id).toBe('cloud-c')
   })
@@ -620,7 +620,7 @@ describe('CloudSessionSync — reconcile', () => {
     const localAt = new Date(Date.now() + 60_000).toISOString()
     mockGetClient.mockReturnValue({ auth: buildAuthMock(), from: buildCloudMock(cloudSession, cloudAt) })
 
-    const r = await sync.reconcile(localAt, answeredBoard(0))
+    const r = await sync.reconcile(localAt, makeSession({ id: 'cloud-d', board: answeredBoard(0) }))
     expect(r.action).toBe('conflict')
   })
 
@@ -630,8 +630,77 @@ describe('CloudSessionSync — reconcile', () => {
     const localAt = new Date(Date.now() - 60_000).toISOString()
     mockGetClient.mockReturnValue({ auth: buildAuthMock(), from: buildCloudMock(cloudSession, cloudAt) })
 
-    const r = await sync.reconcile(localAt, answeredBoard(1))
+    const r = await sync.reconcile(localAt, makeSession({ id: 'cloud-e', board: answeredBoard(1) }))
     expect(r.action).toBe('use-cloud')
+  })
+
+  // ── Decisão por eventLog (revisão monotônica) ──────────────────────────────
+  const makeEvents = (n: number, prefix = 'ev') =>
+    Array.from({ length: n }, (_, i) => ({
+      id: `${prefix}-${i}`,
+      type: 'trivia-award' as const,
+      timestamp: new Date(2026, 0, 1, 0, i).toISOString(),
+      source: 'trivia' as const,
+      pointsAwarded: 10,
+      teamId: 'team-1',
+    }))
+
+  it('keep-local when the local log contains the cloud log, EVEN with cloud newer', async () => {
+    // Cenário aba anônima: a nuvem foi tocada por último (timestamp maior),
+    // mas o local tem MAIS eventos da mesma história — o log decide, sem modal.
+    const cloudSession = makeSession({ id: 'game-1', eventLog: makeEvents(2) })
+    const cloudAt = new Date(Date.now() + 60_000).toISOString()
+    const localAt = new Date(Date.now() - 60_000).toISOString()
+    mockGetClient.mockReturnValue({ auth: buildAuthMock(), from: buildCloudMock(cloudSession, cloudAt) })
+
+    const r = await sync.reconcile(localAt, makeSession({ id: 'game-1', eventLog: makeEvents(5) }))
+    expect(r.action).toBe('keep-local')
+  })
+
+  it('use-cloud when the cloud log contains the local log, EVEN with local newer', async () => {
+    const cloudSession = makeSession({ id: 'game-1', eventLog: makeEvents(5) })
+    const cloudAt = new Date(Date.now() - 60_000).toISOString()
+    const localAt = new Date(Date.now() + 60_000).toISOString()
+    mockGetClient.mockReturnValue({ auth: buildAuthMock(), from: buildCloudMock(cloudSession, cloudAt) })
+
+    const r = await sync.reconcile(localAt, makeSession({ id: 'game-1', eventLog: makeEvents(2) }))
+    expect(r.action).toBe('use-cloud')
+    expect(r.cloudSession?.id).toBe('game-1')
+  })
+
+  it('conflict when the logs diverged (same game, different plays)', async () => {
+    const cloudSession = makeSession({ id: 'game-1', eventLog: makeEvents(3, 'cloud') })
+    const cloudAt = new Date(Date.now() + 60_000).toISOString()
+    const localAt = new Date(Date.now() - 60_000).toISOString()
+    mockGetClient.mockReturnValue({ auth: buildAuthMock(), from: buildCloudMock(cloudSession, cloudAt) })
+
+    const r = await sync.reconcile(localAt, makeSession({ id: 'game-1', eventLog: makeEvents(3, 'local') }))
+    expect(r.action).toBe('conflict')
+  })
+
+  it('equal logs → timestamps decide cosmetic freshness (cloud newer wins)', async () => {
+    const cloudSession = makeSession({ id: 'game-1', eventLog: makeEvents(3) })
+    const cloudAt = new Date(Date.now() + 60_000).toISOString()
+    const localAt = new Date(Date.now() - 60_000).toISOString()
+    mockGetClient.mockReturnValue({ auth: buildAuthMock(), from: buildCloudMock(cloudSession, cloudAt) })
+
+    const r = await sync.reconcile(localAt, makeSession({ id: 'game-1', eventLog: makeEvents(3) }))
+    expect(r.action).toBe('use-cloud')
+  })
+
+  it('different game ids fall back to the T7 heuristic (conflict on ambiguity)', async () => {
+    // Ids diferentes: logs não são comparáveis; nuvem mais nova porém com
+    // menos progresso no board → heurística antiga sinaliza conflito.
+    const cloudSession = makeSession({ id: 'game-B', board: answeredBoard(0), eventLog: makeEvents(0) })
+    const cloudAt = new Date(Date.now() + 60_000).toISOString()
+    const localAt = new Date(Date.now() - 60_000).toISOString()
+    mockGetClient.mockReturnValue({ auth: buildAuthMock(), from: buildCloudMock(cloudSession, cloudAt) })
+
+    const r = await sync.reconcile(
+      localAt,
+      makeSession({ id: 'game-A', board: answeredBoard(2), eventLog: makeEvents(2) }),
+    )
+    expect(r.action).toBe('conflict')
   })
 })
 

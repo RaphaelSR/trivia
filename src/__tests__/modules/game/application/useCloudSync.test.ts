@@ -611,7 +611,7 @@ describe('useCloudSync — conflito (T7)', () => {
     expect(mockPushSnapshot).toHaveBeenCalled()
   })
 
-  it('passa o board local ao reconcile (habilita a comparação de progresso)', async () => {
+  it('passa a sessão local completa ao reconcile (decisão por eventLog + fallback de progresso)', async () => {
     const localSession = makeSession({ board: [{ id: 'c1', filmId: 'f1', film: 'F', tiles: [] }] })
     mockReconcile.mockResolvedValue({ action: 'none' })
 
@@ -622,6 +622,6 @@ describe('useCloudSync — conflito (T7)', () => {
       await Promise.resolve()
     })
 
-    expect(mockReconcile).toHaveBeenCalledWith(defaultProps.localUpdatedAtIso, localSession.board)
+    expect(mockReconcile).toHaveBeenCalledWith(defaultProps.localUpdatedAtIso, localSession)
   })
 })

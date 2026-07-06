@@ -180,9 +180,10 @@ export function useCloudSync({
 
     void (async () => {
       try {
-        // Passa o board local para o reconcile habilitar a comparação de
-        // progresso (guarda anti-reversão + detecção de conflito ambíguo).
-        const result = await sync.reconcile(localUpdatedAtIso, latestRef.current.session.board)
+        // Passa a sessão local completa: o reconcile decide pelo eventLog
+        // (revisão monotônica) quando possível, com fallback na comparação
+        // de progresso por cartas respondidas.
+        const result = await sync.reconcile(localUpdatedAtIso, latestRef.current.session)
 
         if (result.action === 'use-cloud' && result.cloudSession) {
           onRestoreRef.current(result.cloudSession)
