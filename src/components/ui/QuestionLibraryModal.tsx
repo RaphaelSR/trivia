@@ -122,6 +122,16 @@ export function QuestionLibraryModal({
     setInternalSortMode(value)
   }
 
+  // Ordem CONGELADA da lista de filmes: ordenar ao vivo fazia o item pular de
+  // posição enquanto o usuário renomeia um filme (A-Z) ou edita pontos (modo
+  // "pontos"). Recongela ao abrir e ao trocar o critério — não a cada tecla.
+  const [frozenColumnOrder, setFrozenColumnOrder] = useState<string[]>([])
+  useEffect(() => {
+    setFrozenColumnOrder(sortColumns(board, activeSortMode).map((column) => column.id))
+    // Intencional: NÃO depende de `board` — é justamente o congelamento.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isOpen, activeSortMode])
+
   const filteredBoard = useMemo(() => {
     const query = activeSearchQuery.trim().toLowerCase()
     const next = board.filter((column) => {
@@ -143,8 +153,13 @@ export function QuestionLibraryModal({
       return column.tiles.some((tile) => tile.points === activeFilterPoints)
     })
 
-    return sortColumns(next, activeSortMode)
-  }, [activeFilterPoints, activeSearchQuery, activeSortMode, board])
+    // Ordena pela posição congelada; filmes novos (fora do congelamento) vão
+    // para o fim, na ordem de inserção (sort estável).
+    const orderIndex = new Map(frozenColumnOrder.map((id, index) => [id, index]))
+    return [...next].sort(
+      (a, b) => (orderIndex.get(a.id) ?? Number.MAX_SAFE_INTEGER) - (orderIndex.get(b.id) ?? Number.MAX_SAFE_INTEGER),
+    )
+  }, [activeFilterPoints, activeSearchQuery, board, frozenColumnOrder])
 
   useEffect(() => {
     if (!filteredBoard.length) {
@@ -165,12 +180,33 @@ export function QuestionLibraryModal({
     [activeSelectedFilmId, filteredBoard],
   )
 
+  // Ordem CONGELADA dos tiles do filme selecionado: reordenar por pontos a
+  // cada tecla fazia o card PULAR de posição no meio da digitação — e, com o
+  // filtro de pontos ativo, SUMIR da lista. Recongela ao trocar de filme ou
+  // de filtro; perguntas novas entram no fim.
+  const [frozenTileOrder, setFrozenTileOrder] = useState<string[]>([])
+  useEffect(() => {
+    if (!selectedColumn) {
+      setFrozenTileOrder([])
+      return
+    }
+    const base = [...selectedColumn.tiles].sort((a, b) => a.points - b.points)
+    const visible = activeFilterPoints === null ? base : base.filter((tile) => tile.points === activeFilterPoints)
+    setFrozenTileOrder(visible.map((tile) => tile.id))
+    // Intencional: NÃO depende do conteúdo dos tiles — é o congelamento.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeSelectedFilmId, activeFilterPoints, isOpen])
+
   const editorTiles = useMemo(() => {
     if (!selectedColumn) return []
-    const baseTiles = [...selectedColumn.tiles].sort((a, b) => a.points - b.points)
-    if (activeFilterPoints === null) return baseTiles
-    return baseTiles.filter((tile) => tile.points === activeFilterPoints)
-  }, [activeFilterPoints, selectedColumn])
+    const byId = new Map(selectedColumn.tiles.map((tile) => [tile.id, tile]))
+    const frozen = frozenTileOrder
+      .map((id) => byId.get(id))
+      .filter((tile): tile is TriviaQuestionTile => Boolean(tile))
+    const frozenSet = new Set(frozenTileOrder)
+    const newcomers = selectedColumn.tiles.filter((tile) => !frozenSet.has(tile.id))
+    return [...frozen, ...newcomers]
+  }, [frozenTileOrder, selectedColumn])
 
   const totalQuestions = useMemo(() => countTotalTiles(board), [board])
 
@@ -551,8 +587,9 @@ export function QuestionLibraryModal({
 
                       const createColumnId = () => `import-${Date.now()}-${Math.random().toString(16).slice(2)}`
                       const columns = convertImportToColumns(importPreview, createColumnId, createQuestionTileId)
+                      // O toast fica por conta do handler do dashboard, que sabe
+                      // quantos filmes foram ADICIONADOS vs ATUALIZADOS.
                       onImportFilms(columns)
-                      toast.success(`${importPreview.films.length} filme${importPreview.films.length !== 1 ? 's' : ''} importado${importPreview.films.length !== 1 ? 's' : ''} com sucesso!`)
                       setShowImportModal(false)
                       setImportPreview(null)
                     }}

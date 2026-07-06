@@ -41,6 +41,7 @@ export function TriviaSessionProvider({ children }: TriviaSessionProviderProps) 
     addFilmColumn,
     removeFilmColumn,
     addQuestionTile,
+    replaceColumnTiles,
     removeQuestionTile,
   } = useBoardOperations(setSession)
 
@@ -71,6 +72,7 @@ export function TriviaSessionProvider({ children }: TriviaSessionProviderProps) 
     addFilmColumn,
     removeFilmColumn,
     addQuestionTile,
+    replaceColumnTiles,
     removeQuestionTile,
     updateTeamsAndParticipants,
     awardPoints,
@@ -92,6 +94,7 @@ export function TriviaSessionProvider({ children }: TriviaSessionProviderProps) 
     addFilmColumn,
     removeFilmColumn,
     addQuestionTile,
+    replaceColumnTiles,
     removeQuestionTile,
     updateTeamsAndParticipants,
     awardPoints,

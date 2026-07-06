@@ -202,3 +202,32 @@ export function downloadJsonFile(data: unknown, filename: string): void {
   URL.revokeObjectURL(url)
 }
 
+
+export type ImportPlan = {
+  /** Filmes que já existem no board (match por nome) — atualizar as perguntas. */
+  updates: Array<{ columnId: string; film: string; tiles: Array<Omit<TriviaQuestionTile, 'id'>> }>
+  /** Filmes novos — adicionar. */
+  additions: Array<{ film: string; tiles: Array<Omit<TriviaQuestionTile, 'id'>> }>
+}
+
+/**
+ * Decide o destino de cada filme importado: atualizar um existente (mesmo
+ * nome, ignorando caixa/espaços) ou adicionar como novo. Sem isso, re-importar
+ * o arquivo editado DUPLICAVA todos os filmes.
+ */
+export function planImport(
+  board: TriviaColumn[],
+  importData: Array<{ column: { film: string }; tiles: Array<Omit<TriviaQuestionTile, 'id'>> }>,
+): ImportPlan {
+  const byName = new Map(board.map((column) => [column.film.trim().toLowerCase(), column.id]))
+  const plan: ImportPlan = { updates: [], additions: [] }
+  for (const { column, tiles } of importData) {
+    const existingId = byName.get(column.film.trim().toLowerCase())
+    if (existingId) {
+      plan.updates.push({ columnId: existingId, film: column.film, tiles })
+    } else {
+      plan.additions.push({ film: column.film, tiles })
+    }
+  }
+  return plan
+}

@@ -93,6 +93,30 @@ export function useBoardOperations(setSession: Dispatch<SetStateAction<TriviaSes
     return tileId
   }, [setSession])
 
+  /**
+   * Substitui TODAS as perguntas de um filme (re-import atualizando valores).
+   * Tiles voltam ao estado 'available' — um re-import redefine o conteúdo.
+   */
+  const replaceColumnTiles = useCallback((columnId: string, defaults: Array<Partial<TriviaQuestionTile>>) => {
+    setSession((prev) => {
+      const nextBoard = prev.board.map((column) => {
+        if (column.id !== columnId) return column
+        const tiles: TriviaQuestionTile[] = defaults
+          .map((tileDefaults, index) => ({
+            id: `${columnId}-tile-${Date.now()}-${index}-${Math.random().toString(16).slice(2)}`,
+            film: column.film,
+            points: tileDefaults.points ?? 10,
+            question: tileDefaults.question ?? 'Nova pergunta',
+            answer: tileDefaults.answer ?? '',
+            state: 'available' as const,
+          }))
+          .sort((a, b) => a.points - b.points)
+        return { ...column, tiles }
+      })
+      return syncTurnSequenceWithBoard(prev, nextBoard)
+    })
+  }, [setSession])
+
   const removeQuestionTile = useCallback((columnId: string, tileId: string) => {
     setSession((prev) => {
       const nextBoard = prev.board.map((column) =>
@@ -112,6 +136,7 @@ export function useBoardOperations(setSession: Dispatch<SetStateAction<TriviaSes
     addFilmColumn,
     removeFilmColumn,
     addQuestionTile,
+    replaceColumnTiles,
     removeQuestionTile,
   }
 }

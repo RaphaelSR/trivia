@@ -1,7 +1,8 @@
 import '@testing-library/jest-dom'
+import { useState } from 'react'
 import { render, screen, fireEvent } from '@testing-library/react'
 import { QuestionLibraryModal } from '../../../components/ui/QuestionLibraryModal'
-import type { TriviaColumn } from '../../../modules/trivia/types'
+import type { TriviaColumn, TriviaQuestionTile } from '../../../modules/trivia/types'
 
 jest.mock('sonner', () => ({
   toast: {
@@ -314,5 +315,57 @@ describe('QuestionLibraryModal', () => {
 
       expect(screen.getByText('Importar')).toBeInTheDocument()
     })
+  })
+})
+
+describe('Ordem congelada durante a edição', () => {
+  it('editar pontos NÃO reordena os cards no meio da digitação', () => {
+    const board: TriviaColumn[] = [
+      {
+        id: 'c1',
+        filmId: 'f1',
+        film: 'Interestelar',
+        tiles: [
+          { id: 'q-a', film: 'Interestelar', points: 5, question: 'Robô?', answer: 'TARS', state: 'available' },
+          { id: 'q-b', film: 'Interestelar', points: 10, question: 'Planeta?', answer: 'Miller', state: 'available' },
+        ],
+      },
+    ]
+
+    function Wrapper() {
+      const [state, setState] = useState(board)
+      return (
+        <QuestionLibraryModal
+          isOpen
+          onClose={() => {}}
+          board={state}
+          selectedFilmId="c1"
+          onUpdateColumnTitle={() => {}}
+          onAddQuestion={() => {}}
+          onRemoveQuestion={() => {}}
+          onUpdateTileContent={(tileId, updates) => {
+            setState((prev: TriviaColumn[]) =>
+              prev.map((c: TriviaColumn) => ({
+                ...c,
+                tiles: c.tiles.map((t: TriviaQuestionTile) => (t.id === tileId ? { ...t, ...updates } : t)),
+              })),
+            )
+          }}
+          onAddFilm={() => {}}
+          onRemoveFilm={() => {}}
+        />
+      )
+    }
+
+    render(<Wrapper />)
+
+    const inputs = () => screen.getAllByRole('spinbutton') as HTMLInputElement[]
+    expect(inputs().map((i) => i.value)).toEqual(['5', '10'])
+
+    // muda o primeiro card de 5 → 25: com sort ao vivo ele PULARIA para o fim
+    fireEvent.change(inputs()[0], { target: { value: '25' } })
+
+    // ordem congelada: o card editado continua na primeira posição
+    expect(inputs().map((i) => i.value)).toEqual(['25', '10'])
   })
 })

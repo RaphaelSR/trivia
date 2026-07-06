@@ -40,6 +40,7 @@ import { STORAGE_KEYS } from '@/shared/constants/storage'
 import { FloatingActionBar } from '@/shared/components/FloatingActionBar'
 import { storageService } from '@/shared/services/storage.service'
 import { countAnsweredTiles, countTotalTiles } from '@/modules/game/domain/board.utils'
+import { planImport } from '@/modules/control/utils/filmExportUtils'
 import { getDefaultTimerForPoints } from '@/modules/game/domain/timer'
 import { buildTurnSequence, getTurnLabel } from '@/modules/game/domain/turn-order'
 import { FaqPanel } from '../ui/FaqPanel'
@@ -87,6 +88,7 @@ export function ControlDashboard() {
     addFilmColumn,
     removeFilmColumn,
     addQuestionTile,
+    replaceColumnTiles,
     removeQuestionTile,
     updateTeamsAndParticipants,
     awardPoints,
@@ -1420,8 +1422,14 @@ export function ControlDashboard() {
         onAddFilm={handleAddFilm}
         onRemoveFilm={handleRemoveFilm}
         onImportFilms={(importData) => {
-          importData.forEach(({ column, tiles }) => {
-            const columnId = addFilmColumn(column.film)
+          // Filme com o mesmo nome é ATUALIZADO (perguntas/pontos substituídos);
+          // só nomes novos viram colunas novas — re-importar não duplica.
+          const plan = planImport(session.board, importData)
+          plan.updates.forEach(({ columnId, tiles }) => {
+            replaceColumnTiles(columnId, tiles)
+          })
+          plan.additions.forEach(({ film, tiles }) => {
+            const columnId = addFilmColumn(film)
             tiles.forEach((tile) => {
               addQuestionTile(columnId, {
                 points: tile.points,
@@ -1430,9 +1438,10 @@ export function ControlDashboard() {
               })
             })
           })
-          toast.success(
-            `${importData.length} filme${importData.length !== 1 ? 's' : ''} importado${importData.length !== 1 ? 's' : ''} com sucesso!`
-          )
+          const parts = []
+          if (plan.additions.length) parts.push(`${plan.additions.length} filme${plan.additions.length !== 1 ? 's' : ''} adicionado${plan.additions.length !== 1 ? 's' : ''}`)
+          if (plan.updates.length) parts.push(`${plan.updates.length} atualizado${plan.updates.length !== 1 ? 's' : ''}`)
+          toast.success(`Importação concluída: ${parts.join(' e ')}.`)
         }}
       />
 

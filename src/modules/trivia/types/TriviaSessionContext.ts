@@ -23,6 +23,7 @@ export type TriviaSessionContextValue = {
   updateColumnTitle: (columnId: string, film: string) => void;
   addFilmColumn: (displayName?: string) => string;
   removeFilmColumn: (columnId: string) => void;
+  replaceColumnTiles: (columnId: string, defaults: Array<Partial<TriviaQuestionTile>>) => void
   addQuestionTile: (
     columnId: string,
     defaults?: Partial<TriviaQuestionTile>
