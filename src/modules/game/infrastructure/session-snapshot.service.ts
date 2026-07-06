@@ -29,24 +29,41 @@ async function authedClient() {
 }
 
 /**
- * Grava um snapshot da sessão (a RPC poda mantendo os últimos N). No-op quando
- * não configurado / deslogado. Nunca lança.
+ * Resultado de saveSessionSnapshot:
+ * - 'saved'   : snapshot gravado na nuvem.
+ * - 'skipped' : no-op legítimo (sem Supabase / deslogado) — não é falha.
+ * - 'failed'  : tentou e não conseguiu (rede, RLS, RPC) — quem chama pode
+ *               contar falhas consecutivas e avisar o usuário.
+ */
+export type SnapshotResult = 'saved' | 'skipped' | 'failed'
+
+/**
+ * Grava um snapshot da sessão (a RPC poda mantendo os últimos N). Nunca lança.
+ *
+ * Atenção: o supabase-js NÃO rejeita em erro de RPC — devolve `{ error }` no
+ * resultado; o catch só cobre falhas de rede. Os dois caminhos viram 'failed'.
  */
 export async function saveSessionSnapshot(
   clientSessionId: string,
   title: string,
   session: TriviaSession,
-): Promise<void> {
+): Promise<SnapshotResult> {
   const client = await authedClient()
-  if (!client) return
+  if (!client) return 'skipped'
   try {
-    await client.rpc('save_session_snapshot', {
+    const { error } = await client.rpc('save_session_snapshot', {
       p_client_session_id: clientSessionId,
       p_title: title,
       p_session: session,
     })
+    if (error) {
+      console.warn('[session-snapshot] falha ao gravar snapshot (ignorado):', error)
+      return 'failed'
+    }
+    return 'saved'
   } catch (err) {
     console.warn('[session-snapshot] falha ao gravar snapshot (ignorado):', err)
+    return 'failed'
   }
 }
 

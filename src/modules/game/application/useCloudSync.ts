@@ -26,6 +26,9 @@ import type { TriviaSession } from '../../trivia/types'
 /** Intervalo mínimo entre checkpoints de versão (T4) — evita 1 snapshot por flush. */
 const SNAPSHOT_THROTTLE_MS = 3 * 60 * 1000
 
+/** Falhas consecutivas de snapshot antes de avisar o usuário. */
+const SNAPSHOT_FAILURE_ALERT_THRESHOLD = 2
+
 /**
  * Conflito detectado no reconcile: local e nuvem divergem de forma ambígua
  * (a versão mais nova tem menos progresso). O caller mostra um modal e deixa
@@ -92,7 +95,16 @@ export function useCloudSync({
   onRestore,
   onConflict,
   localUpdatedAtIso,
-}: UseCloudSyncOptions): { status: CloudSyncStatus; forceSync: () => Promise<ForceSyncResult> } {
+}: UseCloudSyncOptions): {
+  status: CloudSyncStatus
+  forceSync: () => Promise<ForceSyncResult>
+  /**
+   * True após falhas consecutivas gravando checkpoints de versão (T4) — o jogo
+   * segue salvo, mas o histórico de versões não está ganhando pontos de
+   * restauração novos; a UI deve avisar. Volta a false no primeiro sucesso.
+   */
+  snapshotFailing: boolean
+} {
   // Stable instance for the lifetime of the component
   const syncRef = useRef(createCloudSessionSync())
 
@@ -113,6 +125,11 @@ export function useCloudSync({
 
   // Timestamp do último checkpoint de versão (T4), para throttle.
   const lastSnapshotAtRef = useRef(0)
+
+  // Falhas CONSECUTIVAS de snapshot. O snapshot é fire-and-forget; sem isso,
+  // uma RPC quebrada deixaria o histórico de versões vazio sem ninguém saber.
+  const snapshotFailuresRef = useRef(0)
+  const [snapshotFailing, setSnapshotFailing] = useState(false)
 
   // Stable ref to onRestore so the effect doesn't re-run when the callback identity changes
   const onRestoreRef = useRef(onRestore)
@@ -277,7 +294,18 @@ export function useCloudSync({
           Date.now() - lastSnapshotAtRef.current > SNAPSHOT_THROTTLE_MS
         ) {
           lastSnapshotAtRef.current = Date.now()
-          void saveSessionSnapshot(snapSession.id, snapTitle, snapSession)
+          void saveSessionSnapshot(snapSession.id, snapTitle, snapSession).then((result) => {
+            if (result === 'failed') {
+              snapshotFailuresRef.current += 1
+              if (snapshotFailuresRef.current >= SNAPSHOT_FAILURE_ALERT_THRESHOLD) {
+                setSnapshotFailing(true)
+              }
+            } else if (result === 'saved') {
+              snapshotFailuresRef.current = 0
+              setSnapshotFailing(false)
+            }
+            // 'skipped' (deslogou no meio) não conta pra nenhum lado.
+          })
         }
       } else {
         // 'pending'
@@ -288,5 +316,5 @@ export function useCloudSync({
     return unsubscribe
   }, [enabled])
 
-  return { status, forceSync }
+  return { status, forceSync, snapshotFailing }
 }

@@ -35,16 +35,16 @@ beforeEach(() => {
 })
 
 describe('session-snapshot.service — saveSessionSnapshot', () => {
-  it('no-op quando supabase não configurado', async () => {
+  it("no-op ('skipped') quando supabase não configurado", async () => {
     mockIsConfigured.mockReturnValue(false)
-    await saveSessionSnapshot('sess-1', 'T', makeSession())
+    expect(await saveSessionSnapshot('sess-1', 'T', makeSession())).toBe('skipped')
     expect(mockGetClient).not.toHaveBeenCalled()
   })
 
-  it('no-op quando deslogado', async () => {
+  it("no-op ('skipped') quando deslogado", async () => {
     const rpc = jest.fn()
     mockGetClient.mockReturnValue({ auth: noAuth, rpc })
-    await saveSessionSnapshot('sess-1', 'T', makeSession())
+    expect(await saveSessionSnapshot('sess-1', 'T', makeSession())).toBe('skipped')
     expect(rpc).not.toHaveBeenCalled()
   })
 
@@ -53,7 +53,7 @@ describe('session-snapshot.service — saveSessionSnapshot', () => {
     mockGetClient.mockReturnValue({ auth: authedAuth, rpc })
     const session = makeSession()
 
-    await saveSessionSnapshot('sess-1', 'Minha Partida', session)
+    expect(await saveSessionSnapshot('sess-1', 'Minha Partida', session)).toBe('saved')
 
     expect(rpc).toHaveBeenCalledWith('save_session_snapshot', {
       p_client_session_id: 'sess-1',
@@ -62,10 +62,16 @@ describe('session-snapshot.service — saveSessionSnapshot', () => {
     })
   })
 
-  it('não lança quando a RPC falha', async () => {
+  it("'failed' (sem lançar) quando a rede rejeita", async () => {
     const rpc = jest.fn().mockRejectedValue(new Error('net'))
     mockGetClient.mockReturnValue({ auth: authedAuth, rpc })
-    await expect(saveSessionSnapshot('sess-1', 'T', makeSession())).resolves.toBeUndefined()
+    await expect(saveSessionSnapshot('sess-1', 'T', makeSession())).resolves.toBe('failed')
+  })
+
+  it("'failed' quando a RPC resolve com { error } (supabase-js não rejeita)", async () => {
+    const rpc = jest.fn().mockResolvedValue({ data: null, error: { message: 'RLS negou' } })
+    mockGetClient.mockReturnValue({ auth: authedAuth, rpc })
+    expect(await saveSessionSnapshot('sess-1', 'T', makeSession())).toBe('failed')
   })
 })
 
