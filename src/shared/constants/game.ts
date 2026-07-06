@@ -24,8 +24,8 @@ export const GAME_MODE_LABELS: Record<GameMode, string> = {
 }
 
 export const GAME_MODE_DESCRIPTIONS: Record<GameMode, string> = {
-  demo: 'Apresentacao rapida com dados de exemplo',
-  offline: 'Salva por sessao e navegador neste dispositivo',
+  demo: 'Apresentação rápida com dados de exemplo',
+  offline: 'Salva por sessão e navegador neste dispositivo',
   online: 'Camada interna reservada para evolucao futura',
 }
 

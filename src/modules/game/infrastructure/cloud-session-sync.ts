@@ -153,7 +153,7 @@ class CloudSessionSyncImpl implements CloudSessionSync {
 
   pushSnapshot(session: TriviaSession, opts?: { title?: string }): void {
     // Coalesce: keep only the latest snapshot.
-    const title = opts?.title ?? session.title ?? 'Sessao online'
+    const title = opts?.title ?? session.title ?? 'Sessão online'
     this.pending = { session, title, dirty: this.pending?.dirty ?? false }
 
     // Honestidade do indicador: há mudança enfileirada e ainda não enviada,

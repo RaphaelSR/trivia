@@ -21,17 +21,17 @@ const faqSections: FaqSection[] = [
       {
         question: 'Qual modo devo usar?',
         answer:
-          'Use Demo para apresentar o sistema com dados prontos. Use Sessao Local quando quiser montar uma partida real e manter tudo salvo neste navegador.',
+          'Use Demo para apresentar o sistema com dados prontos. Use Sessão Local quando quiser montar uma partida real e manter tudo salvo neste navegador.',
       },
       {
-        question: 'A sessao local fica salva onde?',
+        question: 'A sessão local fica salva onde?',
         answer:
-          'Os dados ficam salvos no armazenamento local do navegador atual. Se voce trocar de navegador, dispositivo ou limpar os dados locais, essa sessao nao acompanha automaticamente.',
+          'Os dados ficam salvos no armazenamento local do navegador atual. Se você trocar de navegador, dispositivo ou limpar os dados locais, essa sessão não acompanha automaticamente.',
       },
       {
-        question: 'O onboarding eh obrigatorio?',
+        question: 'O onboarding é obrigatório?',
         answer:
-          'Nao. O onboarding so acelera a primeira configuracao. Voce pode pular e ajustar tudo depois pelo dashboard.',
+          'Não. O onboarding só acelera a primeira configuração. Você pode pular e ajustar tudo depois pelo dashboard.',
       },
     ],
   },
@@ -43,7 +43,7 @@ const faqSections: FaqSection[] = [
       {
         question: 'Como a rodada funciona no painel?',
         answer:
-          'O host seleciona uma carta do board, conduz o cronometro, revela a resposta quando fizer sentido e confirma a distribuicao de pontos no final da pergunta. A ordem real dos turnos vem da sequencia prevista da partida.',
+          'O host seleciona uma carta do board, conduz o cronômetro, revela a resposta quando fizer sentido e confirma a distribuição de pontos no final da pergunta. A ordem real dos turnos vem da sequência prevista da partida.',
       },
       {
         question: 'Quando uma rodada fecha?',
@@ -51,9 +51,9 @@ const faqSections: FaqSection[] = [
           'A rodada fecha quando todos os participantes aparecerem pelo menos uma vez. Com times desiguais, times menores podem reiniciar a fila antes dos maiores completarem a rodada.',
       },
       {
-        question: 'O que acontece quando uma pergunta eh anulada?',
+        question: 'O que acontece quando uma pergunta é anulada?',
         answer:
-          'A carta eh marcada como respondida, nenhum ponto eh distribuido e o turno avanca para o proximo participante.',
+          'A carta é marcada como respondida, nenhum ponto é distribuido e o turno avanca para o proximo participante.',
       },
       {
         question: 'Quando a partida termina?',
@@ -64,45 +64,45 @@ const faqSections: FaqSection[] = [
   },
   {
     id: 'trivia-scoring',
-    title: 'Pontuacao do trivia',
+    title: 'Pontuação do trivia',
     icon: Trophy,
     items: [
       {
-        question: 'Como a pontuacao das perguntas funciona?',
+        question: 'Como a pontuação das perguntas funciona?',
         answer:
-          'Cada carta tem um valor base de pontos. No modo rapido, voce pode aplicar valor cheio, metade ou nenhuma pontuacao. No modo avancado, pode distribuir pontos customizados por time usando multiplicadores.',
+          'Cada carta tem um valor base de pontos. No modo rápido, você pode aplicar valor cheio, metade ou nenhuma pontuação. No modo avançado, pode distribuir pontos customizados por time usando multiplicadores.',
       },
       {
         question: 'Posso dividir pontos entre times?',
         answer:
-          'Sim. No modo avancado de pontuacao, voce escolhe os times que recebem pontos e pode direcionar o credito para um participante especifico ou para o time inteiro.',
+          'Sim. No modo avançado de pontuação, você escolhe os times que recebem pontos e pode direcionar o credito para um participante específico ou para o time inteiro.',
       },
       {
         question: 'Os pontos sempre vao para um jogador?',
         answer:
-          'Nao. Se nenhum participante for escolhido na distribuicao, a pontuacao fica atribuida ao time. Quando um participante eh selecionado, o detalhe individual tambem registra esse ponto.',
+          'Não. Se nenhum participante for escolhido na distribuição, a pontuação fica atribuida ao time. Quando um participante é selecionado, o detalhe individual tambem registra esse ponto.',
       },
     ],
   },
   {
     id: 'mimica-scoring',
-    title: 'Pontuacao da mimica',
+    title: 'Pontuação da mimica',
     icon: UsersRound,
     items: [
       {
-        question: 'Quais modos de pontuacao existem na mimica?',
+        question: 'Quais modos de pontuação existem na mimica?',
         answer:
-          'Valor cheio para o time da vez, meio valor, roubo para outro time, distribuicao para todos e anulacao sem pontos.',
+          'Valor cheio para o time da vez, meio valor, roubo para outro time, distribuição para todos e anulacao sem pontos.',
       },
       {
         question: 'Como os pontos da mimica sao calculados?',
         answer:
-          'Valor cheio e roubo usam o valor base definido na rodada. Meio valor entrega metade. No modo todos, o valor eh dividido entre os times. No modo anular, zero pontos.',
+          'Valor cheio e roubo usam o valor base definido na rodada. Meio valor entrega metade. No modo todos, o valor é dividido entre os times. No modo anular, zero pontos.',
       },
       {
         question: 'A mimica usa a mesma ordem de turnos?',
         answer:
-          'Sim. O modal mostra a ordem atual, a rodada e o proximo participante, mantendo a alternancia entre equipes.',
+          'Sim. O modal mostra a ordem atual, a rodada e o proximo participante, mantendo a alternância entre equipes.',
       },
     ],
   },
@@ -114,12 +114,12 @@ const faqSections: FaqSection[] = [
       {
         question: 'Como os turnos sao montados?',
         answer:
-          'Com perguntas no board, a sequencia eh balanceada para alternar equipes ao longo da partida. Sem perguntas, a alternancia usa a ordem normal dos participantes por time.',
+          'Com perguntas no board, a sequência é balanceada para alternar equipes ao longo da partida. Sem perguntas, a alternância usa a ordem normal dos participantes por time.',
       },
       {
         question: 'Consigo prever quem joga em cada rodada?',
         answer:
-          'Sim. Quando a sessao ja tem times validos e perguntas no board, voce pode abrir a previa completa da ordem. Ela usa a mesma sequencia real do jogo e agrupa os turnos por rodada.',
+          'Sim. Quando a sessão já tem times válidos e perguntas no board, você pode abrir a prévia completa da ordem. Ela usa a mesma sequência real do jogo e agrupa os turnos por rodada.',
       },
       {
         question: 'Posso reorganizar os times depois?',
@@ -129,7 +129,7 @@ const faqSections: FaqSection[] = [
       {
         question: 'Regenerar turnos faz o que?',
         answer:
-          'Reconstrói a sequencia de turnos com base nos times atuais, tentando manter a alternancia entre equipes e evitando repeticao consecutiva quando possivel.',
+          'Reconstrói a sequência de turnos com base nos times atuais, tentando manter a alternância entre equipes e evitando repetição consecutiva quando possível.',
       },
     ],
   },
@@ -141,34 +141,34 @@ const faqSections: FaqSection[] = [
       {
         question: 'Para que serve a biblioteca?',
         answer:
-          'Ela eh o editor principal do conteudo. Voce escolhe um filme, ajusta titulo, perguntas, respostas e pontos em um fluxo mestre-detalhe.',
+          'Ela é o editor principal do conteúdo. Você escolhe um filme, ajusta título, perguntas, respostas e pontos em um fluxo mestre-detalhe.',
       },
       {
-        question: 'O PIN ainda eh obrigatorio para a biblioteca?',
+        question: 'O PIN ainda é obrigatório para a biblioteca?',
         answer:
-          'Nao. Se nenhum PIN estiver configurado, a biblioteca abre direto. O PIN so protege o acesso quando o host decidir configurar um.',
+          'Não. Se nenhum PIN estiver configurado, a biblioteca abre direto. O PIN só protege o acesso quando o host decidir configurar um.',
       },
       {
-        question: 'Qual a diferenca entre catalogo e board?',
+        question: 'Qual a diferenca entre catálogo e board?',
         answer:
-          'O board mostra os filmes ativos da partida. O catalogo organiza filmes personalizados salvos para reaproveitar depois em outras sessoes locais.',
+          'O board mostra os filmes ativos da partida. O catálogo organiza filmes personalizados salvos para reaproveitar depois em outras sessões locais.',
       },
     ],
   },
   {
     id: 'sessions-security',
-    title: 'Sessoes locais, reset e seguranca',
+    title: 'Sessões locais, reset e segurança',
     icon: RotateCcw,
     items: [
       {
-        question: 'Quando devo usar Sessao Local?',
+        question: 'Quando devo usar Sessão Local?',
         answer:
-          'Sempre que quiser persistencia real entre partidas neste mesmo navegador, mantendo historico local, configuracoes do host e conteudo da sessao.',
+          'Sempre que quiser persistência real entre partidas neste mesmo navegador, mantendo histórico local, configurações do host e conteúdo da sessão.',
       },
       {
         question: 'Resetar o jogo pede PIN?',
         answer:
-          'Nao por padrao. O reset agora usa confirmacao destrutiva explicita, para nao depender de um PIN fixo.',
+          'Não por padrão. O reset agora usa confirmação destrutiva explícita, para não depender de um PIN fixo.',
       },
       {
         question: 'Se eu configurar um PIN, o que ele protege?',
@@ -194,9 +194,9 @@ export function FaqPanel({ onOpenOnboarding }: FaqPanelProps) {
         <p className="text-[10px] font-semibold uppercase tracking-[0.35em] text-[var(--color-muted)]">FAQ / Ajuda</p>
         <div className="mt-3 flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
           <div className="max-w-2xl">
-            <h2 className="text-2xl font-semibold text-[var(--color-text)]">Regras, pontuacao e fluxo do host em um so lugar</h2>
+            <h2 className="text-2xl font-semibold text-[var(--color-text)]">Regras, pontuação e fluxo do host em um só lugar</h2>
             <p className="mt-2 text-sm leading-7 text-[var(--color-muted)]">
-              Use esta aba para tirar duvidas rapidas durante a partida sem sair do painel principal. O conteudo abaixo foi alinhado com o comportamento real do jogo.
+              Use esta aba para tirar dúvidas rápidas durante a partida sem sair do painel principal. O conteúdo abaixo foi alinhado com o comportamento real do jogo.
             </p>
           </div>
           <Button variant="outline" onClick={onOpenOnboarding} className="gap-2">

@@ -28,7 +28,7 @@ export class LocalSessionRepository implements SessionRepository {
   ): SessionRecord | null {
     const now = new Date().toISOString()
     const sessionId = session.id || `session-${Date.now()}`
-    const name = sessionName || session.title || `Sessao ${new Date().toLocaleDateString('pt-BR')}`
+    const name = sessionName || session.title || `Sessão ${new Date().toLocaleDateString('pt-BR')}`
 
     const sessionData: SessionRecord = {
       metadata: {

@@ -49,11 +49,12 @@ export function ConfirmActionModal({
   const styles = variantStyles[variant]
 
   return (
+    // description fica SÓ na caixa de aviso abaixo — passar também ao Modal
+    // duplicava o mesmo texto como subtítulo.
     <Modal
       isOpen={isOpen}
       onClose={onClose}
       title={title}
-      description={description}
     >
       <div className="space-y-4">
         <div className="flex items-start gap-4 p-4 rounded-xl bg-[var(--color-surface)] border border-[var(--color-border)]">

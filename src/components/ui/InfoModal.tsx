@@ -13,7 +13,7 @@ export function InfoModal({ isOpen, onClose, onOpenOnboarding }: InfoModalProps)
       isOpen={isOpen}
       onClose={onClose}
       title="FAQ / Ajuda"
-      description="Versao modal da ajuda do host. O conteudo segue o mesmo FAQ exibido na lateral do controle."
+      description="Versão modal da ajuda do host. O conteúdo segue o mesmo FAQ exibido na lateral do controle."
       size="xl"
     >
       <FaqPanel onOpenOnboarding={onOpenOnboarding ?? onClose} />

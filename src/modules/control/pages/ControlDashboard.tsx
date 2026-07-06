@@ -826,7 +826,7 @@ export function ControlDashboard() {
         <SidebarNavItem
           icon={<Info size={18} />}
           title="Onboarding"
-          description="Executa o assistente guiado para preparar a sessao local neste navegador."
+          description="Executa o assistente guiado para preparar a sessão local neste navegador."
           onClick={() => {
             handleStartOnboarding()
             handleCloseMobileSidebar()
@@ -835,7 +835,7 @@ export function ControlDashboard() {
         <SidebarNavItem
           icon={<BookOpen size={18} />}
           title="FAQ / Ajuda"
-          description="Explica fluxo da rodada, pontuacao, biblioteca, sessoes locais e regras atuais."
+          description="Explica fluxo da rodada, pontuação, biblioteca, sessões locais e regras atuais."
           active={activePanel === 'faq'}
           onClick={handleOpenInfo}
         />
@@ -979,7 +979,7 @@ export function ControlDashboard() {
             <p className="mt-2 text-xs leading-5 text-[var(--color-muted)]">
               {sessionStatus.hasActiveSession
                 ? `${sessionStatus.duration} min desde a criação · backend ${backendLabel}`
-                : 'As alteracoes ficam nesta sessao local ate voce salvar ou carregar outra sessao do navegador.'}
+                : 'As alterações ficam nesta sessão local até você salvar ou carregar outra sessão do navegador.'}
             </p>
           </div>
         </ControlSidebar>
@@ -993,8 +993,8 @@ export function ControlDashboard() {
         {activePanel !== 'faq' && gameMode === 'offline' && orderedTeams.length === 0 ? (
           <EmptyStatePanel
             icon={<UsersRound size={24} />}
-            title="Configure a sessao local para comecar"
-            description="Defina times, participantes, filmes e perguntas antes da primeira rodada. Voce pode usar o assistente guiado ou montar tudo manualmente."
+            title="Configure a sessão local para começar"
+            description="Defina times, participantes, filmes e perguntas antes da primeira rodada. Você pode usar o assistente guiado ou montar tudo manualmente."
             action={
               <div className="flex flex-wrap justify-center gap-3">
                 {showOnboardingSuggestion ? (
@@ -1184,7 +1184,7 @@ export function ControlDashboard() {
                       )
 
                       const recipient = participant ? `${participant.name} (${team?.name})` : team?.name ?? 'time'
-                      message += `${team?.name}: ${distribution.points} pontos para ${recipient}\n`
+                      message += `${distribution.points} pontos para ${recipient}\n`
                     })
 
                     playSound('correct')

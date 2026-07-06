@@ -9,7 +9,7 @@ import {
   GAME_MODE_LABELS,
 } from '../../shared/constants/game'
 
-const offlineFeatures = ['Salvo neste navegador', 'Times e filmes proprios', 'Melhor opcao para jogar']
+const offlineFeatures = ['Salvo neste navegador', 'Times e filmes próprios', 'Melhor opção para jogar']
 
 function buildDemoRoute(teamCount: number, membersPerTeam: number, questionCount: number) {
   const searchParams = new URLSearchParams({
@@ -93,7 +93,7 @@ export function ModeSelector() {
             </div>
             <span className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.22em] text-[var(--color-muted)]">
               <Sparkles className="h-3.5 w-3.5" />
-              configuravel
+              configurável
             </span>
           </div>
 
@@ -102,7 +102,7 @@ export function ModeSelector() {
               {GAME_MODE_LABELS.demo}
             </h3>
             <p className="max-w-[34rem] text-base leading-7 text-[var(--color-muted)]">
-              Monte um demo pequeno, medio ou grande para simular o jogo inteiro com times mais cheios e mais perguntas.
+              Monte um demo pequeno, médio ou grande para simular o jogo inteiro com times mais cheios e mais perguntas.
             </p>
           </div>
 
@@ -143,7 +143,7 @@ export function ModeSelector() {
           </div>
 
           <div className="rounded-2xl border border-[var(--color-primary)]/18 bg-[var(--color-primary)]/7 px-4 py-3 text-sm text-[var(--color-muted)]">
-            Bom para validar fluxo, ordem de turnos, placar e ritmo da partida sem precisar montar uma sessao manual do zero.
+            Bom para validar fluxo, ordem de turnos, placar e ritmo da partida sem precisar montar uma sessão manual do zero.
           </div>
 
           <div className="mt-auto pt-2">
@@ -172,7 +172,7 @@ export function ModeSelector() {
 
           <div className="space-y-3">
             <h3 className="max-w-[16ch] text-3xl font-semibold leading-[1.08] text-[var(--color-text)] xl:text-[2.15rem]">
-              Sessao Local no Navegador
+              Sessão Local no Navegador
             </h3>
             <p className="max-w-[34rem] text-base leading-7 text-[var(--color-muted)]">
               Crie uma partida real, salve no navegador atual e continue depois neste mesmo dispositivo.
@@ -197,7 +197,7 @@ export function ModeSelector() {
               className="inline-flex h-9 w-full items-center justify-center gap-2 rounded-2xl bg-[var(--color-secondary)] px-4 text-sm font-semibold text-[var(--color-text)] shadow-md transition-all duration-200 hover:bg-[color:color-mix(in_srgb,var(--color-secondary)_88%,var(--color-background)_12%)] hover:shadow-lg hover:shadow-[var(--color-secondary)]/25 active:scale-[0.97] sm:w-auto sm:min-w-[220px]"
             >
               <Play className="h-4 w-4" />
-              Abrir Sessao Local
+              Abrir Sessão Local
             </Link>
           </div>
         </div>
