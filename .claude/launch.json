@@ -3,8 +3,8 @@
   "configurations": [
     {
       "name": "trivia-dev",
-      "runtimeExecutable": "/Users/raphaelrocha/.nvm/versions/node/v20.19.4/bin/node",
-      "runtimeArgs": ["node_modules/vite/bin/vite.js"],
+      "runtimeExecutable": "npm",
+      "runtimeArgs": ["run", "dev"],
       "port": 5173,
       "autoPort": false
     }
