@@ -7,7 +7,9 @@ import type { TriviaSession } from "../types";
 export function createEmptySession(): TriviaSession {
   return {
     id: "empty-session",
-    title: "Nova Sessão Local",
+    // Nome padrão com a data: sem isso, toda sessão vira "Nova Sessão Local"
+    // e o gerenciador fica com uma lista de itens indistinguíveis.
+    title: `Partida de ${new Date().toLocaleDateString("pt-BR")}`,
     scheduledAt: new Date().toISOString(),
     theme: {
       id: "default-dark",

@@ -2,7 +2,6 @@ import { useState } from "react";
 import { Button } from "./Button";
 import { Modal } from "./Modal";
 import {
-  Clock,
   History,
   Play,
   Trash2,
@@ -54,20 +53,15 @@ export function SessionManager({ isOpen, onClose, onLoadSession, onNewSession, o
     loadSession
   } = useOfflineSession();
   
-  const [selectedSession, setSelectedSession] = useState<string | null>(null);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState<string | null>(null);
 
   const sessionStatus = getSessionStatus();
   const currentSessionId = currentSession?.metadata.id;
 
-  const formatDuration = (minutes: number): string => {
-    if (minutes < 60) {
-      return `${minutes}min`;
-    }
-    const hours = Math.floor(minutes / 60);
-    const remainingMinutes = minutes % 60;
-    return `${hours}h ${remainingMinutes}min`;
-  };
+  // A sessão ativa já tem card próprio ("Jogando agora") — mantê-la também na
+  // lista duplicava o item e gerava o badge contraditório "Ativa" em
+  // "Sessões Anteriores".
+  const savedSessions = sessionHistory.filter((session) => session.id !== currentSessionId);
 
   const formatDate = (dateString: string): string => {
     const date = new Date(dateString);
@@ -75,9 +69,51 @@ export function SessionManager({ isOpen, onClose, onLoadSession, onNewSession, o
       day: '2-digit',
       month: '2-digit',
       year: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit'
     });
+  };
+
+  // "Última atividade" relativa substitui a antiga "duração", que era
+  // calculada como (agora - criação) e crescia para sempre (ex.: "2224h").
+  const formatRelative = (iso: string): string => {
+    const diffMinutes = Math.floor((Date.now() - new Date(iso).getTime()) / 60000);
+    if (diffMinutes < 1) return 'agora mesmo';
+    if (diffMinutes < 60) return `há ${diffMinutes} min`;
+    const hours = Math.floor(diffMinutes / 60);
+    if (hours < 24) return `há ${hours}h`;
+    const days = Math.floor(hours / 24);
+    if (days === 1) return 'ontem';
+    if (days < 60) return `há ${days} dias`;
+    return `em ${formatDate(iso)}`;
+  };
+
+  const renderSessionStats = (sessionId: string) => {
+    const sessionData = loadSession(sessionId);
+    if (!sessionData) return null;
+
+    const questionsCount = sessionData.board?.reduce((acc, column) => acc + column.tiles.length, 0) || 0;
+    const teamsCount = sessionData.teams?.length || 0;
+    const totalScore = sessionData.teams?.reduce((acc, team) => acc + (team.score || 0), 0) || 0;
+    if (teamsCount === 0 && questionsCount === 0) return null;
+
+    return (
+      <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-[var(--color-muted)]">
+        {teamsCount > 0 && (
+          <span>
+            <span className="font-semibold text-[var(--color-text)]">{teamsCount}</span> time{teamsCount !== 1 ? 's' : ''}
+          </span>
+        )}
+        {questionsCount > 0 && (
+          <span>
+            <span className="font-semibold text-[var(--color-text)]">{questionsCount}</span> pergunta{questionsCount !== 1 ? 's' : ''}
+          </span>
+        )}
+        {totalScore > 0 && (
+          <span>
+            <span className="font-semibold text-[var(--color-primary)]">{totalScore}</span> ponto{totalScore !== 1 ? 's' : ''} marcados
+          </span>
+        )}
+      </div>
+    );
   };
 
   const handleLoadSession = (sessionId: string) => {
@@ -90,7 +126,6 @@ export function SessionManager({ isOpen, onClose, onLoadSession, onNewSession, o
   const handleDeleteSession = (sessionId: string) => {
     deleteSession(sessionId);
     setShowDeleteConfirm(null);
-    setSelectedSession(null);
   };
 
   const renderCurrentSession = () => {
@@ -114,21 +149,22 @@ export function SessionManager({ isOpen, onClose, onLoadSession, onNewSession, o
 
     return (
       <div className="p-4 rounded-2xl bg-[var(--color-primary)]/5 border border-[var(--color-primary)]/20">
-        <div className="flex items-start justify-between">
-          <div className="flex items-start gap-3">
+        <div className="flex items-start justify-between gap-3">
+          <div className="flex min-w-0 items-start gap-3">
             <div className="p-2 rounded-xl bg-[var(--color-primary)]/10">
               <Play className="h-4 w-4 text-[var(--color-primary)]" />
             </div>
-            <div className="space-y-1">
-              <h4 className="font-semibold text-[var(--color-text)] text-sm">
+            <div className="min-w-0">
+              <h4 className="truncate font-semibold text-[var(--color-text)] text-sm">
                 {sessionStatus.sessionName}
               </h4>
-              <div className="flex items-center gap-4 text-xs text-[var(--color-muted)]">
-                <div className="flex items-center gap-1">
-                  <Clock className="h-3 w-3" />
-                  {formatDuration(sessionStatus.duration)}
-                </div>
-              </div>
+              {currentSession && (
+                <p className="mt-0.5 text-xs text-[var(--color-muted)]">
+                  Criada em {formatDate(currentSession.metadata.createdAt)} · última jogada{' '}
+                  {formatRelative(currentSession.metadata.lastModified)}
+                </p>
+              )}
+              {currentSessionId && renderSessionStats(currentSessionId)}
             </div>
           </div>
           {/* UM status coerente, na MESMA linguagem do indicador do topo:
@@ -136,27 +172,46 @@ export function SessionManager({ isOpen, onClose, onLoadSession, onNewSession, o
               reconectar". Substitui os dois indicadores locais redundantes que
               confundiam (salvo local) com o backup na nuvem. */}
           {gameMode === 'demo' ? (
-            <span className="text-xs text-[var(--color-muted)]">Demonstração · não salva</span>
+            <span className="shrink-0 text-xs text-[var(--color-muted)]">Demonstração · não salva</span>
           ) : (
             <SyncStatusIndicator status={cloudStatus ?? 'local-only'} />
           )}
         </div>
+
+        {/* Ações que agem SOBRE a sessão atual moram junto dela — soltas no
+            topo do modal, não dava para saber a que se referiam. */}
+        {(onOpenVersions || onResetGame) && (
+          <div className="mt-3 flex flex-wrap gap-2 border-t border-[var(--color-border)] pt-3">
+            {onOpenVersions && (
+              <Button variant="outline" size="sm" onClick={() => { onClose(); onOpenVersions(); }} className="gap-1.5">
+                <History className="h-3.5 w-3.5" />
+                Histórico de versões
+              </Button>
+            )}
+            {onResetGame && (
+              <Button variant="outline" size="sm" onClick={() => { onResetGame(); onClose(); }} className="gap-1.5">
+                <RefreshCw className="h-3.5 w-3.5" />
+                Resetar jogo
+              </Button>
+            )}
+          </div>
+        )}
       </div>
     );
   };
 
   const renderSessionHistory = () => {
-    if (sessionHistory.length === 0) {
+    if (savedSessions.length === 0) {
       return (
         <div className="p-4 rounded-2xl bg-[var(--color-muted)]/5 border border-[var(--color-muted)]/20">
           <div className="flex items-center gap-3">
             <History className="h-5 w-5 text-[var(--color-muted)]" />
             <div>
               <h4 className="font-semibold text-[var(--color-text)] text-sm">
-                Nenhuma sessão anterior
+                Nenhuma outra sessão salva
               </h4>
               <p className="text-xs text-[var(--color-muted)]">
-                Suas sessões salvas aparecerão aqui
+                Ao começar uma nova sessão, a atual fica guardada aqui para você retomar depois.
               </p>
             </div>
           </div>
@@ -166,106 +221,50 @@ export function SessionManager({ isOpen, onClose, onLoadSession, onNewSession, o
 
     return (
       <div className="space-y-3">
-        {sessionHistory.map((session) => (
+        {savedSessions.map((session) => (
           <div
             key={session.id}
-            className={`p-4 rounded-2xl border transition-all ${
-              selectedSession === session.id
-                ? 'border-[var(--color-primary)] bg-[var(--color-primary)]/5'
-                : 'border-[var(--color-border)] bg-[var(--color-surface)] hover:border-[var(--color-primary)]/50'
-            }`}
+            className="p-4 rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] transition-all hover:border-[var(--color-primary)]/50"
           >
-            <div className="flex items-start justify-between">
-              <div className="flex items-start gap-3 flex-1">
+            <div className="flex items-start justify-between gap-3">
+              <div className="flex min-w-0 flex-1 items-start gap-3">
                 <div className="p-2 rounded-xl bg-[var(--color-secondary)]/10">
                   <Calendar className="h-4 w-4 text-[var(--color-secondary)]" />
                 </div>
-                <div className="space-y-1 flex-1">
-                  <h4 className="font-semibold text-[var(--color-text)] text-sm">
+                <div className="min-w-0 flex-1">
+                  <h4 className="truncate font-semibold text-[var(--color-text)] text-sm">
                     {session.name}
                   </h4>
-                  <div className="flex items-center gap-4 text-xs text-[var(--color-muted)]">
-                    <div className="flex items-center gap-1">
-                      <Calendar className="h-3 w-3" />
-                      {formatDate(session.createdAt)}
-                    </div>
-                    <div className="flex items-center gap-1">
-                      <Clock className="h-3 w-3" />
-                      {formatDuration(session.duration)}
-                    </div>
-                  </div>
-                  {(() => {
-                    const sessionData = loadSession(session.id)
-                    if (sessionData) {
-                      const filmsCount = sessionData.board?.length || 0
-                      const questionsCount = sessionData.board?.reduce((acc, column) => acc + column.tiles.length, 0) || 0
-                      const teamsCount = sessionData.teams?.length || 0
-                      const totalScore = sessionData.teams?.reduce((acc, team) => acc + (team.score || 0), 0) || 0
-                      
-                      return (
-                        <div className="flex items-center gap-3 mt-2 text-xs text-[var(--color-muted)]">
-                          {filmsCount > 0 && (
-                            <span className="flex items-center gap-1">
-                              <span className="font-semibold text-[var(--color-text)]">{filmsCount}</span>
-                              <span>filme{filmsCount !== 1 ? 's' : ''}</span>
-                            </span>
-                          )}
-                          {questionsCount > 0 && (
-                            <span className="flex items-center gap-1">
-                              <span className="font-semibold text-[var(--color-text)]">{questionsCount}</span>
-                              <span>pergunta{questionsCount !== 1 ? 's' : ''}</span>
-                            </span>
-                          )}
-                          {teamsCount > 0 && (
-                            <span className="flex items-center gap-1">
-                              <span className="font-semibold text-[var(--color-text)]">{teamsCount}</span>
-                              <span>time{teamsCount !== 1 ? 's' : ''}</span>
-                            </span>
-                          )}
-                          {totalScore > 0 && (
-                            <span className="flex items-center gap-1">
-                              <span className="font-semibold text-[var(--color-primary)]">{totalScore}</span>
-                              <span>pontos</span>
-                            </span>
-                          )}
-                        </div>
-                      )
-                    }
-                    return null
-                  })()}
-                  <div className="flex items-center gap-2 mt-2">
-                    <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                      session.mode === 'demo' 
-                        ? 'bg-blue-100 text-blue-700' 
-                        : session.mode === 'offline'
-                        ? 'bg-orange-100 text-orange-700'
-                        : 'bg-green-100 text-green-700'
-                    }`}>
-                      {session.mode === 'demo' ? 'Demo' : session.mode === 'offline' ? 'Sessão Local' : 'Online'}
+                  <p className="mt-0.5 text-xs text-[var(--color-muted)]">
+                    Criada em {formatDate(session.createdAt)} · última jogada {formatRelative(session.lastModified)}
+                  </p>
+                  {renderSessionStats(session.id)}
+                  {/* Badge de modo só quando difere do modo atual — na lista
+                      normal todas são do mesmo modo e o chip vira ruído. */}
+                  {session.mode !== gameMode && (
+                    <span className="mt-2 inline-block rounded-full bg-[var(--color-muted)]/10 px-2 py-0.5 text-[10px] font-medium uppercase tracking-wide text-[var(--color-muted)]">
+                      {session.mode === 'demo' ? 'Demo' : session.mode === 'offline' ? 'Sessão local' : 'Online'}
                     </span>
-                    {session.isActive && (
-                      <span className="px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-700">
-                        Ativa
-                      </span>
-                    )}
-                  </div>
+                  )}
                 </div>
               </div>
-              <div className="flex items-center gap-2 ml-4">
+              <div className="flex shrink-0 items-center gap-2">
                 <Button
                   variant="outline"
                   size="sm"
                   onClick={() => handleLoadSession(session.id)}
-                  disabled={session.id === currentSessionId}
-                  title={session.id === currentSessionId ? "Esta é a sessão ativa" : "Carregar esta sessão"}
+                  className="gap-1.5"
                 >
-                  <Play className="h-4 w-4" />
+                  <Play className="h-3.5 w-3.5" />
+                  Retomar
                 </Button>
                 <Button
                   variant="outline"
                   size="sm"
                   onClick={() => setShowDeleteConfirm(session.id)}
                   className="text-red-500 hover:text-red-700"
+                  aria-label={`Excluir a sessão ${session.name}`}
+                  title="Excluir esta sessão"
                 >
                   <Trash2 className="h-4 w-4" />
                 </Button>
@@ -285,9 +284,41 @@ export function SessionManager({ isOpen, onClose, onLoadSession, onNewSession, o
   };
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} title="Gerenciar Sessões">
+    <Modal isOpen={isOpen} onClose={onClose} title="Gerenciar sessões">
       <div className="p-6 space-y-6">
-        {/* Acesso à conta — login / minhas partidas (só quando o online está disponível) */}
+        {/* 1. O que está acontecendo AGORA — sempre em primeiro */}
+        <section>
+          <h3 className="text-base font-semibold text-[var(--color-text)] mb-3">
+            Jogando agora
+          </h3>
+          {renderCurrentSession()}
+        </section>
+
+        {/* 2. Ação primária, com a consequência explicada ao lado */}
+        {sessionStatus.hasActiveSession && (
+          <div className="flex flex-col gap-3 rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] p-4 sm:flex-row sm:items-center sm:justify-between">
+            <div className="min-w-0">
+              <p className="text-sm font-semibold text-[var(--color-text)]">Começar uma nova sessão</p>
+              <p className="text-xs text-[var(--color-muted)]">
+                A partida atual fica guardada em "Sessões salvas" — você pode retomá-la quando quiser.
+              </p>
+            </div>
+            <Button variant="primary" onClick={handleNewSession} className="shrink-0">
+              <Play className="h-4 w-4 mr-2" />
+              Nova sessão
+            </Button>
+          </div>
+        )}
+
+        {/* 3. Sessões guardadas para retomar */}
+        <section>
+          <h3 className="text-base font-semibold text-[var(--color-text)] mb-3">
+            Sessões salvas{savedSessions.length > 0 ? ` (${savedSessions.length})` : ''}
+          </h3>
+          {renderSessionHistory()}
+        </section>
+
+        {/* 4. Conta — contexto de sincronização (só quando o online está disponível) */}
         {supabaseEnabled && onOpenAccount && (
           <div className="flex flex-col gap-3 rounded-2xl border border-[var(--color-primary)]/20 bg-[var(--color-primary)]/5 p-4 sm:flex-row sm:items-center sm:justify-between">
             {user ? (
@@ -321,93 +352,40 @@ export function SessionManager({ isOpen, onClose, onLoadSession, onNewSession, o
           </div>
         )}
 
-        {/* Botões de Ação */}
-        {sessionStatus.hasActiveSession && (
-          <div className="flex gap-3">
-            <Button
-              variant="primary"
-              onClick={handleNewSession}
-              className="flex-1"
-            >
-              <Play className="h-4 w-4 mr-2" />
-              Nova Sessão
-            </Button>
-            {onResetGame && (
-              <Button
-                variant="outline"
-                onClick={() => {
-                  if (onResetGame) {
-                    onResetGame();
-                  }
-                  onClose();
-                }}
-                className="flex-1"
-              >
-                <RefreshCw className="h-4 w-4 mr-2" />
-                Resetar Jogo
-              </Button>
-            )}
-          </div>
-        )}
-        
-        {/* Histórico de versões (T4) — só quando disponível (online logado) */}
-        {onOpenVersions && sessionStatus.hasActiveSession && (
-          <Button variant="outline" onClick={() => { onClose(); onOpenVersions(); }} className="w-full gap-2">
-            <History className="h-4 w-4" />
-            Histórico de versões
-          </Button>
-        )}
-
-        {/* Sessão Atual */}
-        <div>
-          <h3 className="text-lg font-semibold text-[var(--color-text)] mb-4">
-            Sessão Atual
-          </h3>
-          {renderCurrentSession()}
-        </div>
-
-        {/* Histórico de Sessões */}
-        <div>
-          <h3 className="text-lg font-semibold text-[var(--color-text)] mb-4">
-            Sessões Anteriores
-          </h3>
-          {renderSessionHistory()}
-        </div>
-
-        {/* Informações do Modo */}
+        {/* 5. Onde o jogo fica salvo + aviso de aba anônima (T5) */}
         <div className="p-4 rounded-2xl bg-[var(--color-secondary)]/5 border border-[var(--color-secondary)]/20">
           <div className="flex items-start gap-3">
             <Settings className="h-5 w-5 text-[var(--color-secondary)] mt-0.5" />
-            <div>
+            <div className="min-w-0 flex-1">
               <h4 className="font-semibold text-[var(--color-text)] text-sm mb-1">
-                Modo {gameMode === 'demo' ? 'Demo' : gameMode === 'offline' ? 'Sessão Local' : 'Online'}
+                Onde o jogo fica salvo
               </h4>
-              <p className="text-xs text-[var(--color-muted)]">
+              <p className="text-xs leading-relaxed text-[var(--color-muted)]">
                 {gameMode === 'demo'
-                  ? 'Dados de teste pré-configurados, sem persistência'
+                  ? 'Modo demonstração: dados de exemplo, nada é salvo.'
                   : user && supabaseEnabled
-                  ? 'Salvo neste navegador e sincronizado com a sua conta.'
+                  ? 'Neste navegador e sincronizado com a sua conta — dá para continuar de outro aparelho.'
                   : supabaseEnabled
-                  ? 'Salvo neste navegador. Entre na sua conta para sincronizar.'
-                  : 'Dados salvos localmente neste navegador.'
+                  ? 'Neste navegador. Entre na sua conta para sincronizar e não depender deste aparelho.'
+                  : 'Neste navegador.'
                 }
               </p>
-              {/* T5 — aviso de aba anônima: o estado vive no localStorage deste
-                  navegador; janelas anônimas/privadas o apagam ao fechar. */}
+              {/* T5 — aviso de aba anônima em caixa própria: texto solto em
+                  âmbar ficava ilegível nos temas claros. */}
               {gameMode !== 'demo' && (
-                <p className="mt-1.5 flex items-start gap-1.5 text-xs text-amber-500">
-                  <AlertTriangle className="h-3.5 w-3.5 shrink-0 mt-0.5" />
-                  <span>
+                <div className="mt-2 flex items-start gap-2 rounded-lg border border-amber-500/30 bg-amber-500/10 px-3 py-2">
+                  <AlertTriangle className="h-3.5 w-3.5 shrink-0 mt-0.5 text-amber-600" />
+                  <p className="text-xs leading-relaxed text-amber-600">
                     Evite janelas anônimas/privadas: elas apagam os dados deste navegador ao fechar
                     {user ? ' — sincronize antes de sair para não perder o progresso.' : '.'}
-                  </span>
-                </p>
+                  </p>
+                </div>
               )}
             </div>
           </div>
         </div>
 
-        {/* Botões de Ação */}
+        {/* Rodapé */}
         <div className="flex justify-end gap-3 pt-4 border-t border-[var(--color-border)]">
           <Button variant="outline" onClick={onClose}>
             Fechar
@@ -417,37 +395,38 @@ export function SessionManager({ isOpen, onClose, onLoadSession, onNewSession, o
 
       {/* Modal de Confirmação de Exclusão */}
       {showDeleteConfirm && (
-        <Modal 
-          isOpen={true} 
+        <Modal
+          isOpen={true}
           onClose={() => setShowDeleteConfirm(null)}
-          title="Confirmar Exclusão"
+          title="Excluir sessão"
         >
           <div className="p-6">
             <div className="space-y-4">
               <div className="flex items-start gap-3">
                 <AlertCircle className="h-5 w-5 text-red-500 mt-0.5" />
-                <div>
-                  <h4 className="font-semibold text-[var(--color-text)]">
-                    Excluir Sessão
-                  </h4>
-                  <p className="text-sm text-[var(--color-muted)] mt-1">
-                    Tem certeza que deseja excluir esta sessão? Esta ação não pode ser desfeita.
-                  </p>
-                </div>
+                <p className="text-sm leading-relaxed text-[var(--color-muted)]">
+                  Excluir{' '}
+                  <span className="font-semibold text-[var(--color-text)]">
+                    {savedSessions.find((s) => s.id === showDeleteConfirm)?.name ?? 'esta sessão'}
+                  </span>
+                  ? Times, perguntas e placar dela serão apagados deste navegador. Esta ação não
+                  pode ser desfeita.
+                </p>
               </div>
               <div className="flex justify-end gap-3">
-                <Button 
-                  variant="outline" 
+                <Button
+                  variant="outline"
                   onClick={() => setShowDeleteConfirm(null)}
                 >
                   Cancelar
                 </Button>
-                <Button 
+                <Button
                   variant="outline"
                   onClick={() => handleDeleteSession(showDeleteConfirm)}
-                  className="text-red-500 hover:text-red-700"
+                  className="border-red-500/40 bg-red-500/10 text-red-500 hover:bg-red-500/20 hover:text-red-600"
                 >
-                  Excluir
+                  <Trash2 className="h-4 w-4 mr-2" />
+                  Excluir sessão
                 </Button>
               </div>
             </div>

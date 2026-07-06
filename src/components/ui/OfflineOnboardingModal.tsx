@@ -37,7 +37,7 @@ export function OfflineOnboardingModal({
   const [config, setConfig] = useState<OnboardingConfig>({
     theme: "brazil",
     pin: "",
-    sessionTitle: "Nova Sessão Local",
+    sessionTitle: `Partida de ${new Date().toLocaleDateString("pt-BR")}`,
     sessionDate: new Date().toISOString().split('T')[0],
     customFilms: [],
     teams: [],
@@ -127,7 +127,7 @@ export function OfflineOnboardingModal({
     setConfig({
       theme: "brazil",
       pin: "",
-      sessionTitle: "Nova Sessão Local",
+      sessionTitle: `Partida de ${new Date().toLocaleDateString("pt-BR")}`,
       sessionDate: new Date().toISOString().split('T')[0],
       customFilms: [],
       teams: [],
