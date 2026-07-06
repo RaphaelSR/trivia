@@ -39,7 +39,7 @@ import { Timer } from '@/components/ui/Timer'
 import { STORAGE_KEYS } from '@/shared/constants/storage'
 import { FloatingActionBar } from '@/shared/components/FloatingActionBar'
 import { storageService } from '@/shared/services/storage.service'
-import { countAnsweredTiles, countTotalTiles } from '@/modules/game/domain/board.utils'
+import { countAnsweredTiles, countTotalTiles, releaseActiveTiles } from '@/modules/game/domain/board.utils'
 import { planImport } from '@/modules/control/utils/filmExportUtils'
 import { getDefaultTimerForPoints } from '@/modules/game/domain/timer'
 import { buildTurnSequence, getTurnLabel } from '@/modules/game/domain/turn-order'
@@ -315,7 +315,8 @@ export function ControlDashboard() {
             newLogLength < prevLogLength
               ? 'Antes de restaurar uma versão'
               : describeMove(session.eventLog?.[prevLogLength])
-          saveCheckpoint(prev, label)
+          // Checkpoint nasce sem cartas 'active' (estado de modal aberto).
+          saveCheckpoint(releaseActiveTiles(prev), label)
         }
         prevSessionRef.current = session
         saveSession(session, session.title)
