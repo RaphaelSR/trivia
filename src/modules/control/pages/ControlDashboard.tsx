@@ -21,7 +21,7 @@ import { FilmManager } from '@/components/ui/FilmManager'
 import { MimicaModal } from '@/components/ui/MimicaModal'
 import { Modal } from '@/components/ui/Modal'
 import { TriviaBoard } from '@/components/ui/TriviaBoard'
-import type { TriviaColumn, TriviaParticipant, TriviaQuestionTile, TriviaTeam } from '@/modules/trivia/types'
+import type { TriviaColumn, TriviaParticipant, TriviaQuestionTile, TriviaSession, TriviaTeam } from '@/modules/trivia/types'
 import { useTriviaSession } from '@/modules/trivia/hooks/useTriviaSession'
 import { useThemeMode } from '@/app/providers/useThemeMode'
 import { useCustomFilms } from '@/hooks/useCustomFilms'
@@ -67,6 +67,7 @@ import { useCloudSync, type CloudSyncConflict } from '@/modules/game/application
 import { useTabGuard } from '@/modules/game/application/useTabGuard'
 import { ConflictResolutionModal } from '@/components/ui/ConflictResolutionModal'
 import { VersionHistoryModal } from '@/components/ui/VersionHistoryModal'
+import { describeMove, listCheckpoints, saveCheckpoint, type SessionCheckpoint } from '@/modules/game/infrastructure/session-checkpoint.service'
 import { listSessionSnapshots, type SessionSnapshot } from '@/modules/game/infrastructure/session-snapshot.service'
 import { SoundSettingsModal } from '@/components/ui/SoundSettingsModal'
 import { playSound } from '@/shared/services/audio.service'
@@ -291,6 +292,9 @@ export function ControlDashboard() {
   // Jogadas (carta respondida / placar) salvam NA HORA — fechar a aba logo após
   // um lance não pode perdê-lo; o debounce de 1s fica para edições cosméticas.
   const lastSavedProgressRef = useRef<string | null>(null)
+  // Estado da renderização anterior — é ele que vira checkpoint quando uma
+  // jogada acontece ("voltar para antes de responder X").
+  const prevSessionRef = useRef<TriviaSession | null>(null)
   useEffect(() => {
     if ((gameMode === 'offline' || gameMode === 'online') && orderedTeams.length > 0) {
       const progressSignature = `${countAnsweredTiles(session.board)}:${session.teams.reduce((sum, team) => sum + team.score, 0)}`
@@ -299,10 +303,24 @@ export function ControlDashboard() {
       lastSavedProgressRef.current = progressSignature
 
       if (significantChange) {
+        // Checkpoint local do estado ANTERIOR, rotulado pela jogada que
+        // acabou de acontecer (primeiro evento novo do log append-only).
+        const prev = prevSessionRef.current
+        if (prev && prev.id === session.id) {
+          const prevLogLength = prev.eventLog?.length ?? 0
+          const newLogLength = session.eventLog?.length ?? 0
+          const label =
+            newLogLength < prevLogLength
+              ? 'Antes de restaurar uma versão'
+              : describeMove(session.eventLog?.[prevLogLength])
+          saveCheckpoint(prev, label)
+        }
+        prevSessionRef.current = session
         saveSession(session, session.title)
         return
       }
 
+      prevSessionRef.current = session
       const timer = setTimeout(() => {
         saveSession(session, session.title);
       }, 1000); // Debounce de 1 segundo
@@ -353,13 +371,15 @@ export function ControlDashboard() {
   // T9 — configurações de som.
   const [soundSettingsOpen, setSoundSettingsOpen] = useState(false)
 
-  // T4 — histórico de versões (snapshots na nuvem).
+  // T4 — histórico de versões (snapshots na nuvem + checkpoints locais por jogada).
   const [versionsOpen, setVersionsOpen] = useState(false)
   const [snapshots, setSnapshots] = useState<SessionSnapshot[]>([])
   const [snapshotsLoading, setSnapshotsLoading] = useState(false)
+  const [checkpoints, setCheckpoints] = useState<SessionCheckpoint[]>([])
 
   useEffect(() => {
     if (!versionsOpen) return
+    setCheckpoints(listCheckpoints(session.id))
     let cancelled = false
     setSnapshotsLoading(true)
     listSessionSnapshots(session.id)
@@ -373,6 +393,13 @@ export function ControlDashboard() {
     saveSession(snap.session, snap.session.title)
     setVersionsOpen(false)
     toast.success('Versão restaurada.')
+  }
+
+  const handleRestoreCheckpoint = (checkpoint: SessionCheckpoint) => {
+    restoreSession(checkpoint.session)
+    saveSession(checkpoint.session, checkpoint.session.title)
+    setVersionsOpen(false)
+    toast.success(`Jogo restaurado: ${checkpoint.label.toLowerCase()}.`)
   }
 
   // O usuário escolheu qual versão manter no modal de conflito.
@@ -1609,6 +1636,9 @@ export function ControlDashboard() {
         snapshots={snapshots}
         loading={snapshotsLoading}
         onRestore={handleRestoreVersion}
+        checkpoints={checkpoints}
+        onRestoreCheckpoint={handleRestoreCheckpoint}
+        cloudAvailable={syncEnabled}
       />
 
       <SoundSettingsModal
@@ -1623,7 +1653,7 @@ export function ControlDashboard() {
           setActivePanel('board')
         }}
         cloudStatus={gameMode !== 'demo' ? syncStatus : undefined}
-        onOpenVersions={syncEnabled ? () => setVersionsOpen(true) : undefined}
+        onOpenVersions={gameMode !== 'demo' ? () => setVersionsOpen(true) : undefined}
         onOpenAccount={isSupabaseConfigured() ? () => setAccountOpen(true) : undefined}
         onLoadSession={handleLoadSession}
         onNewSession={() => {
