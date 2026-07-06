@@ -98,7 +98,7 @@ export interface CloudSessionSync {
   /**
    * Returns the current observable sync status.
    * - 'idle'    : no push has been attempted yet
-   * - 'syncing' : a flush is in progress
+   * - 'syncing' : changes queued (debounce window) or a flush is in progress
    * - 'synced'  : last flush succeeded, nothing pending
    * - 'pending' : flush failed or auth missing; data preserved locally
    */
@@ -155,6 +155,11 @@ class CloudSessionSyncImpl implements CloudSessionSync {
     // Coalesce: keep only the latest snapshot.
     const title = opts?.title ?? session.title ?? 'Sessao online'
     this.pending = { session, title, dirty: this.pending?.dirty ?? false }
+
+    // Honestidade do indicador: há mudança enfileirada e ainda não enviada,
+    // então o status NÃO pode continuar 'synced' durante a janela de debounce
+    // ("Salvo na sua conta" com dado só na memória seria mentira).
+    this._setStatus('syncing')
 
     if (this.timer !== null) {
       clearTimeout(this.timer)

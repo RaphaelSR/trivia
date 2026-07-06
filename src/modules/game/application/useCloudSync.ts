@@ -41,7 +41,7 @@ export interface CloudSyncConflict {
 /**
  * UI-facing sync status, derived from the service's internal SyncStatus.
  * - 'local-only' : cloud sync is disabled (not logged in / Supabase unconfigured)
- * - 'syncing'    : a flush is in progress
+ * - 'syncing'    : changes queued (debounce window) or a flush is in progress
  * - 'synced'     : last flush succeeded, nothing pending
  * - 'pending'    : flush failed or auth missing; data is saved locally pending retry
  */

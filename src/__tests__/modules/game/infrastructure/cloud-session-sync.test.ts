@@ -956,6 +956,24 @@ describe('CloudSessionSync — status state machine', () => {
     expect(sync.getStatus()).toBe('pending')
   })
 
+  it('leaves synced IMMEDIATELY when a new snapshot is queued (honest badge)', async () => {
+    const { fromFn } = buildSuccessFromMock()
+    mockGetClient.mockReturnValue({ auth: buildAuthMock(), from: fromFn })
+    sync = createCloudSessionSync()
+
+    sync.pushSnapshot(makeSession())
+    await sync.flushNow()
+    expect(sync.getStatus()).toBe('synced')
+
+    // Nova mudança enfileirada: o badge não pode continuar dizendo
+    // "Salvo na sua conta" durante a janela de debounce.
+    sync.pushSnapshot(makeSession({ title: 'Mudança nova' }))
+    expect(sync.getStatus()).toBe('syncing')
+
+    await sync.flushNow()
+    expect(sync.getStatus()).toBe('synced')
+  })
+
   it('subscribe receives current status immediately', () => {
     const { fromFn } = buildSuccessFromMock()
     mockGetClient.mockReturnValue({ auth: buildAuthMock(), from: fromFn })
