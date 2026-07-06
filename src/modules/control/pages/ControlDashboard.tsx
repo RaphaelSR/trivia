@@ -94,6 +94,7 @@ export function ControlDashboard() {
     awardPoints,
     voidQuestion,
     awardMimicaPoints,
+    updateSessionInfo,
     advanceTurn,
     restoreSession,
   } = useTriviaSession()
@@ -238,7 +239,6 @@ export function ControlDashboard() {
   const answeredCards = useMemo(() => countAnsweredTiles(session.board), [session.board])
   const totalCards = useMemo(() => countTotalTiles(session.board), [session.board])
   const sessionStatus = getSessionStatus()
-  const backendLabel = gameMode === 'online' ? 'online-cache' : gameMode === 'offline' ? 'local' : 'demo'
   const currentTurnLabel = getTurnLabel(
     session.activeParticipantId,
     session.turnSequence,
@@ -663,20 +663,13 @@ export function ControlDashboard() {
       // Atualiza a sessão com os novos dados
       updateTeamsAndParticipants(newTeams, newParticipants, turnSequence)
       
-      // Atualiza título e data da sessão
-      const sessionTitle = config.sessionTitle || `Sessão ${new Date().toLocaleDateString('pt-BR')}`
+      // Título e data vão para o ESTADO — o antigo setTimeout salvava um
+      // closure desatualizado e o autosave gravava por cima com o título
+      // velho: o nome dado no onboarding nunca pegava.
+      const sessionTitle = config.sessionTitle || `Partida de ${new Date().toLocaleDateString('pt-BR')}`
       const sessionDate = config.sessionDate || new Date().toISOString()
-      
-      // Aguarda um momento para garantir que o estado foi atualizado antes de salvar
-      setTimeout(() => {
-        const currentSession = {
-          ...session,
-          title: sessionTitle,
-          scheduledAt: sessionDate,
-        }
-        saveSession(currentSession, sessionTitle)
-        toast.success(`Nova sessão "${sessionTitle}" criada e salva!`)
-      }, 100)
+      updateSessionInfo({ title: sessionTitle, scheduledAt: sessionDate })
+      toast.success(`Sessão "${sessionTitle}" criada!`)
       
       // Marca onboarding como visto
       storageService.set(STORAGE_KEYS.onboardingSeen, 'true')
@@ -973,8 +966,7 @@ export function ControlDashboard() {
         <ControlTopbar
           title={sessionStatus.sessionName ?? session.title}
           mode={gameMode}
-          modeLabel={getModeDisplayName(gameMode)}
-          backendLabel={backendLabel}
+          modeLabel={gameMode === 'offline' && syncEnabled ? 'Sessão sincronizada' : getModeDisplayName(gameMode)}
           syncStatus={gameMode !== 'demo' ? syncStatus : undefined}
           lastSyncedAt={gameMode !== 'demo' ? lastSyncedAt : undefined}
           onForceSync={gameMode !== 'demo' ? handleForceSync : undefined}
@@ -1022,7 +1014,9 @@ export function ControlDashboard() {
             </p>
             <p className="mt-2 text-xs leading-5 text-[var(--color-muted)]">
               {sessionStatus.hasActiveSession
-                ? `${sessionStatus.duration} min desde a criação · backend ${backendLabel}`
+                ? `Criada em ${new Date(currentSession?.metadata.createdAt ?? session.scheduledAt).toLocaleDateString('pt-BR')} · ${
+                    syncEnabled ? 'sincronizada com a sua conta' : 'salva neste navegador'
+                  }`
                 : 'As alterações ficam nesta sessão local até você salvar ou carregar outra sessão do navegador.'}
             </p>
           </div>

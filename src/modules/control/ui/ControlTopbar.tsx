@@ -7,7 +7,6 @@ interface ControlTopbarProps {
   title: string
   modeLabel: string
   mode: 'demo' | 'offline' | 'online'
-  backendLabel?: string
   syncStatus?: CloudSyncStatus
   lastSyncedAt?: string | null
   onForceSync?: () => void

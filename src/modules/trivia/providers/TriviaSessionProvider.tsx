@@ -50,6 +50,10 @@ export function TriviaSessionProvider({ children }: TriviaSessionProviderProps) 
   const { user } = useAuth()
   useGameHistorySync({ session, gameMode, user })
 
+  const updateSessionInfo = useCallback((updates: Partial<Pick<TriviaSession, 'title' | 'scheduledAt'>>) => {
+    setSession((prev) => ({ ...prev, ...updates }))
+  }, [])
+
   const restoreSession = useCallback((sessionToRestore: TriviaSession) => {
     // Curas de qualquer sessão que volta do armazenamento (checkpoint,
     // snapshot na nuvem, conflito): ids duplicados e cartas presas em
@@ -80,6 +84,7 @@ export function TriviaSessionProvider({ children }: TriviaSessionProviderProps) 
     voidQuestion,
     awardMimicaPoints,
     restoreSession,
+    updateSessionInfo,
   }), [
     session,
     teams,
@@ -102,6 +107,7 @@ export function TriviaSessionProvider({ children }: TriviaSessionProviderProps) 
     voidQuestion,
     awardMimicaPoints,
     restoreSession,
+    updateSessionInfo,
   ])
 
   return <TriviaSessionContext.Provider value={value}>{children}</TriviaSessionContext.Provider>

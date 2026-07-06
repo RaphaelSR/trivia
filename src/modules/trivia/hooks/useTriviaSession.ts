@@ -22,7 +22,8 @@ export function useTriviaSession() {
     awardPoints,
     voidQuestion,
     awardMimicaPoints,
-    restoreSession
+    restoreSession,
+    updateSessionInfo
   } = useTriviaSessionContext();
 
   return {
@@ -47,6 +48,7 @@ export function useTriviaSession() {
     awardPoints,
     voidQuestion,
     awardMimicaPoints,
-    restoreSession
+    restoreSession,
+    updateSessionInfo
   };
 }
