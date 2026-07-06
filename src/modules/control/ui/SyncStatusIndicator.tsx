@@ -14,6 +14,8 @@ interface SyncStatusIndicatorProps {
   status: CloudSyncStatus
   /** When provided and status !== 'syncing', the pill becomes a clickable button. */
   onForceSync?: () => void | Promise<unknown>
+  /** ISO do último sync bem-sucedido — vira "· 13:42" no texto. */
+  lastSyncedAt?: string | null
 }
 
 interface StatusConfig {
@@ -24,7 +26,14 @@ interface StatusConfig {
   className: string
 }
 
-function getConfig(status: CloudSyncStatus): StatusConfig {
+function formatSyncTime(iso: string): string {
+  const d = new Date(iso)
+  if (Number.isNaN(d.getTime())) return ''
+  return d.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })
+}
+
+function getConfig(status: CloudSyncStatus, lastSyncedAt?: string | null): StatusConfig {
+  const syncTime = lastSyncedAt ? formatSyncTime(lastSyncedAt) : ''
   switch (status) {
     case 'syncing':
       return {
@@ -37,16 +46,22 @@ function getConfig(status: CloudSyncStatus): StatusConfig {
       return {
         // Check duplo verde = "tudo salvo na nuvem", inequivocamente positivo.
         icon: <CheckCheck size={12} className="shrink-0" />,
-        text: 'Salvo na sua conta',
-        title: 'Tudo salvo na sua conta e disponível em qualquer dispositivo.',
+        text: syncTime ? `Salvo na sua conta · ${syncTime}` : 'Salvo na sua conta',
+        title: syncTime
+          ? `Tudo salvo na sua conta às ${syncTime} e disponível em qualquer dispositivo.`
+          : 'Tudo salvo na sua conta e disponível em qualquer dispositivo.',
         className: 'text-emerald-400',
       }
     case 'pending':
       return {
         // Âmbar = atenção (ainda não sincronizou), não erro. O jogo está salvo localmente.
         icon: <CloudUpload size={12} className="shrink-0" />,
-        text: 'Salvo neste navegador · sincroniza ao reconectar',
-        title: 'Salvo neste navegador. Vai sincronizar com a sua conta assim que a conexão voltar — nada se perde.',
+        text: syncTime
+          ? `Salvo neste navegador · última sync ${syncTime}`
+          : 'Salvo neste navegador · sincroniza ao reconectar',
+        title: syncTime
+          ? `Salvo neste navegador. A última sincronização com a sua conta foi às ${syncTime}; o resto sobe assim que a conexão voltar — nada se perde.`
+          : 'Salvo neste navegador. Vai sincronizar com a sua conta assim que a conexão voltar — nada se perde.',
         className: 'text-amber-400',
       }
     case 'local-only':
@@ -61,8 +76,8 @@ function getConfig(status: CloudSyncStatus): StatusConfig {
   }
 }
 
-export function SyncStatusIndicator({ status, onForceSync }: SyncStatusIndicatorProps) {
-  const config = getConfig(status)
+export function SyncStatusIndicator({ status, onForceSync, lastSyncedAt }: SyncStatusIndicatorProps) {
+  const config = getConfig(status, lastSyncedAt)
   const isClickable = onForceSync !== undefined && status !== 'syncing'
   const sharedClassName = `flex items-center gap-1.5 rounded-full border border-white/8 bg-black/15 px-2.5 py-1 backdrop-blur-sm ${config.className}${isClickable ? ' cursor-pointer' : ''}`
 

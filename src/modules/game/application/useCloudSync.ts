@@ -104,12 +104,17 @@ export function useCloudSync({
    * restauração novos; a UI deve avisar. Volta a false no primeiro sucesso.
    */
   snapshotFailing: boolean
+  /** ISO do último sync bem-sucedido nesta sessão de uso; null antes do primeiro. */
+  lastSyncedAt: string | null
 } {
   // Stable instance for the lifetime of the component
   const syncRef = useRef(createCloudSessionSync())
 
   // Observable sync status for UI
   const [status, setStatus] = useState<CloudSyncStatus>('local-only')
+
+  // Horário (ISO) do último sync bem-sucedido — para a UI mostrar "· 13:42".
+  const [lastSyncedAt, setLastSyncedAt] = useState<string | null>(null)
 
   // Track whether we've already run the initial reconcile for the current
   // enabled=true activation, to avoid re-running on every re-render.
@@ -277,6 +282,7 @@ export function useCloudSync({
     }
 
     const unsubscribe = syncRef.current.subscribe((serviceStatus) => {
+      setLastSyncedAt(syncRef.current.getLastSyncedAt())
       // Map service SyncStatus → CloudSyncStatus
       // 'idle' before first push = 'local-only' (nothing synced yet)
       if (serviceStatus === 'idle') {
@@ -316,5 +322,5 @@ export function useCloudSync({
     return unsubscribe
   }, [enabled])
 
-  return { status, forceSync, snapshotFailing }
+  return { status, forceSync, snapshotFailing, lastSyncedAt }
 }
