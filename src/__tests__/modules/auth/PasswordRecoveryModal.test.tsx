@@ -109,6 +109,24 @@ describe('PasswordRecoveryModal', () => {
     expect(screen.getByText('Definir nova senha')).toBeInTheDocument()
   })
 
+  it('botão de mostrar/ocultar revela as duas senhas de uma vez', () => {
+    const { fireAuthEvent } = renderWithCapturedCallback()
+    fireAuthEvent('PASSWORD_RECOVERY')
+
+    const nova = screen.getByLabelText('Nova senha')
+    const confirmar = screen.getByLabelText('Confirmar nova senha')
+    expect(nova).toHaveAttribute('type', 'password')
+    expect(confirmar).toHaveAttribute('type', 'password')
+
+    fireEvent.click(screen.getByRole('button', { name: 'Mostrar senhas' }))
+    expect(nova).toHaveAttribute('type', 'text')
+    expect(confirmar).toHaveAttribute('type', 'text')
+
+    fireEvent.click(screen.getByRole('button', { name: 'Ocultar senhas' }))
+    expect(nova).toHaveAttribute('type', 'password')
+    expect(confirmar).toHaveAttribute('type', 'password')
+  })
+
   it('"Deixar para depois" fecha sem salvar', async () => {
     const { fireAuthEvent } = renderWithCapturedCallback()
     fireAuthEvent('PASSWORD_RECOVERY')
