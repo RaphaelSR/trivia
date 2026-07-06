@@ -53,7 +53,7 @@ export function ResetGameModal({
 
   const handleConfirm = () => {
     if (!Object.values(resetOptions).some(Boolean)) {
-      setError('Selecione pelo menos uma opcao para resetar.')
+      setError('Selecione pelo menos uma opção para resetar.')
       return
     }
 
@@ -82,7 +82,7 @@ export function ResetGameModal({
       isOpen={isOpen}
       onClose={handleClose}
       title="Resetar jogo"
-      description="Escolha quais partes da sessao deseja limpar. O reset nao depende mais de PIN obrigatorio."
+      description="Escolha quais partes da sessão deseja limpar. O reset não depende mais de PIN obrigatório."
     >
       <div className="space-y-5">
         <div className="rounded-2xl border border-[var(--color-danger)]/20 bg-[var(--color-danger)]/5 p-4">
@@ -93,7 +93,7 @@ export function ResetGameModal({
                 Acao destrutiva
               </h4>
               <p className="text-xs leading-6 text-[var(--color-muted)]">
-                Use reset apenas quando quiser limpar parte da sessao atual. Se voce configurou PIN, ele continua servindo para proteger a biblioteca, mas nao eh mais obrigatorio para reset.
+                Use reset apenas quando quiser limpar parte da sessão atual. Se você configurou PIN, ele continua servindo para proteger a biblioteca, mas não é mais obrigatório para reset.
               </p>
             </div>
           </div>
@@ -108,12 +108,12 @@ export function ResetGameModal({
 
         <div className="space-y-3">
           {[
-            ['points', 'Pontuacao', 'Zera pontos de todos os times e participantes.'],
+            ['points', 'Pontuação', 'Zera pontos de todos os times e participantes.'],
             ['questions', 'Perguntas', 'Remove as perguntas mantendo a estrutura do painel.'],
             ['films', 'Filmes e colunas', 'Remove todos os filmes e suas cartas do board.'],
-            ['teams', 'Times', 'Remove os grupos cadastrados na sessao atual.'],
+            ['teams', 'Times', 'Remove os grupos cadastrados na sessão atual.'],
             ['participants', 'Participantes', 'Limpa os membros vinculados aos times.'],
-            ['themes', 'Tema visual', 'Volta para o tema padrao da aplicacao.'],
+            ['themes', 'Tema visual', 'Volta para o tema padrão da aplicação.'],
           ].map(([key, title, description]) => (
             <label
               key={key}
@@ -144,7 +144,7 @@ export function ResetGameModal({
             className="mt-1 h-4 w-4 rounded border-[var(--color-border)] text-[var(--color-primary)] focus:ring-[var(--color-primary)]"
           />
           <span className="text-sm leading-6 text-[var(--color-text)]">
-            Entendo que o reset remove dados da sessao atual e que essa acao nao pode ser desfeita automaticamente.
+            Entendo que o reset remove dados da sessão atual e que essa ação não pode ser desfeita automaticamente.
           </span>
         </label>
 

@@ -15,7 +15,7 @@ const demoTeamBlueprints = [
 ]
 
 const demoParticipantNames = [
-  'Joao',
+  'João',
   'Cris',
   'Dani',
   'Cami',

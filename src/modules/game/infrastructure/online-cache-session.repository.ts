@@ -28,7 +28,7 @@ export class OnlineCacheSessionRepository implements SessionRepository {
   ): SessionRecord | null {
     const now = new Date().toISOString()
     const sessionId = session.id || `online-session-${Date.now()}`
-    const name = sessionName || session.title || `Sessao online ${new Date().toLocaleDateString('pt-BR')}`
+    const name = sessionName || session.title || `Sessão online ${new Date().toLocaleDateString('pt-BR')}`
 
     const sessionData: SessionRecord = {
       metadata: {
