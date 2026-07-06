@@ -76,6 +76,7 @@ export function PasswordRecoveryModal() {
             <label htmlFor="recovery-password" className="mb-1 block text-xs text-[var(--color-muted)]">Nova senha</label>
             <input
               id="recovery-password"
+              name="new-password"
               type="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
@@ -89,6 +90,7 @@ export function PasswordRecoveryModal() {
             <label htmlFor="recovery-confirm" className="mb-1 block text-xs text-[var(--color-muted)]">Confirmar nova senha</label>
             <input
               id="recovery-confirm"
+              name="confirm-password"
               type="password"
               value={confirm}
               onChange={(e) => setConfirm(e.target.value)}

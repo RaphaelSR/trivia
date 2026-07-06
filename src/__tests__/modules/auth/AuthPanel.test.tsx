@@ -328,7 +328,7 @@ describe('AuthPanel — esqueci minha senha', () => {
     mockUseAuth.mockReturnValue(defaultAuthState)
   })
 
-  it('mostra o link apenas na aba Entrar', () => {
+  it('mostra o link apenas na aba Entrar, ao lado do label de senha', () => {
     render(<AuthPanel onClose={() => {}} />)
     expect(screen.getByRole('button', { name: 'Esqueci minha senha' })).toBeInTheDocument()
 
@@ -336,42 +336,107 @@ describe('AuthPanel — esqueci minha senha', () => {
     expect(screen.queryByRole('button', { name: 'Esqueci minha senha' })).not.toBeInTheDocument()
   })
 
+  it('abre a tela dedicada de redefinição, sem campo de senha, com e-mail pré-preenchido', () => {
+    render(<AuthPanel onClose={() => {}} />)
+    fireEvent.change(screen.getByPlaceholderText('seu@email.com'), {
+      target: { value: 'rrocha@teste.com' },
+    })
+    fireEvent.click(screen.getByRole('button', { name: 'Esqueci minha senha' }))
+
+    expect(screen.getByText('Redefinir senha')).toBeInTheDocument()
+    expect(screen.getByLabelText('Email')).toHaveValue('rrocha@teste.com')
+    expect(screen.queryByLabelText('Senha')).not.toBeInTheDocument()
+  })
+
+  it('"Voltar para entrar" retorna ao formulário de login', () => {
+    render(<AuthPanel onClose={() => {}} />)
+    fireEvent.click(screen.getByRole('button', { name: 'Esqueci minha senha' }))
+    fireEvent.click(screen.getByRole('button', { name: /Voltar para entrar/ }))
+
+    expect(screen.queryByText('Redefinir senha')).not.toBeInTheDocument()
+    // aba 'Entrar' + botão de submit 'Entrar' → o formulário de login voltou
+    expect(screen.getAllByRole('button', { name: 'Entrar' })).toHaveLength(2)
+  })
+
   it('exige e-mail válido antes de enviar', async () => {
     render(<AuthPanel onClose={() => {}} />)
+    fireEvent.click(screen.getByRole('button', { name: 'Esqueci minha senha' }))
     await act(async () => {
-      fireEvent.click(screen.getByRole('button', { name: 'Esqueci minha senha' }))
+      fireEvent.click(screen.getByRole('button', { name: 'Enviar link de redefinição' }))
     })
-    expect(screen.getByText(/Informe seu e-mail no campo acima/)).toBeInTheDocument()
+
+    expect(screen.getByText('Informe um endereço de email válido.')).toBeInTheDocument()
     expect(defaultAuthState.requestReset).not.toHaveBeenCalled()
   })
 
-  it('envia o link e mostra a confirmação', async () => {
+  it('envia o link, mostra confirmação e entra em cooldown de reenvio', async () => {
     render(<AuthPanel onClose={() => {}} />)
     fireEvent.change(screen.getByPlaceholderText('seu@email.com'), {
       target: { value: 'rrocha@teste.com' },
     })
+    fireEvent.click(screen.getByRole('button', { name: 'Esqueci minha senha' }))
     await act(async () => {
-      fireEvent.click(screen.getByRole('button', { name: 'Esqueci minha senha' }))
+      fireEvent.click(screen.getByRole('button', { name: 'Enviar link de redefinição' }))
     })
 
     expect(defaultAuthState.requestReset).toHaveBeenCalledWith('rrocha@teste.com')
-    expect(screen.getByText(/Enviamos um link de redefinição para rrocha@teste.com/)).toBeInTheDocument()
-    // o link some depois do envio (evita spam de cliques)
-    expect(screen.queryByRole('button', { name: 'Esqueci minha senha' })).not.toBeInTheDocument()
+    expect(screen.getByText(/Link enviado para/)).toBeInTheDocument()
+    const resendButton = screen.getByRole('button', { name: /reenviar em \d+s/ })
+    expect(resendButton).toBeDisabled()
   })
 
-  it('mostra erro quando o serviço falha', async () => {
+  it('mostra o erro do serviço (ex.: rate limit) e permite tentar de novo', async () => {
     mockUseAuth.mockReturnValue({
       ...defaultAuthState,
-      requestReset: jest.fn().mockResolvedValue('Não foi possível enviar o e-mail agora. Tente novamente em instantes.'),
+      requestReset: jest.fn().mockResolvedValue('Muitos e-mails em pouco tempo. Aguarde um minuto e tente novamente.'),
     })
     render(<AuthPanel onClose={() => {}} />)
     fireEvent.change(screen.getByPlaceholderText('seu@email.com'), {
       target: { value: 'rrocha@teste.com' },
     })
+    fireEvent.click(screen.getByRole('button', { name: 'Esqueci minha senha' }))
     await act(async () => {
-      fireEvent.click(screen.getByRole('button', { name: 'Esqueci minha senha' }))
+      fireEvent.click(screen.getByRole('button', { name: 'Enviar link de redefinição' }))
     })
-    expect(screen.getByText(/Não foi possível enviar o e-mail/)).toBeInTheDocument()
+
+    expect(screen.getByText(/Muitos e-mails em pouco tempo/)).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Enviar link de redefinição' })).toBeEnabled()
+  })
+})
+
+describe('AuthPanel — atributos de autofill (gerenciador de senhas)', () => {
+  beforeEach(() => {
+    jest.clearAllMocks()
+    mockUseAuth.mockReturnValue(defaultAuthState)
+  })
+
+  it('inputs de login têm name/autocomplete para o navegador oferecer salvar', () => {
+    render(<AuthPanel onClose={() => {}} />)
+    const email = screen.getByPlaceholderText('seu@email.com')
+    const senha = screen.getByPlaceholderText('••••••••')
+
+    expect(email).toHaveAttribute('name', 'email')
+    expect(email).toHaveAttribute('autocomplete', 'username')
+    expect(senha).toHaveAttribute('name', 'password')
+    expect(senha).toHaveAttribute('autocomplete', 'current-password')
+  })
+
+  it('cadastro usa new-password para o navegador sugerir senha forte', () => {
+    render(<AuthPanel onClose={() => {}} />)
+    fireEvent.click(screen.getByRole('button', { name: 'Criar conta' }))
+    const senha = screen.getByPlaceholderText('Mínimo 8 caracteres')
+    expect(senha).toHaveAttribute('autocomplete', 'new-password')
+  })
+
+  it('botão de mostrar/ocultar senha alterna o tipo do input', () => {
+    render(<AuthPanel onClose={() => {}} />)
+    const senha = screen.getByPlaceholderText('••••••••')
+    expect(senha).toHaveAttribute('type', 'password')
+
+    fireEvent.click(screen.getByRole('button', { name: 'Mostrar senha' }))
+    expect(senha).toHaveAttribute('type', 'text')
+
+    fireEvent.click(screen.getByRole('button', { name: 'Ocultar senha' }))
+    expect(senha).toHaveAttribute('type', 'password')
   })
 })
