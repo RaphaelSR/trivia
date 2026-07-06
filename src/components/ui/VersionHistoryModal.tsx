@@ -72,7 +72,7 @@ export function VersionHistoryModal({
           </h3>
           {checkpoints.length === 0 ? (
             <p className="rounded-2xl border border-[var(--color-muted)]/20 bg-[var(--color-muted)]/5 p-3 text-xs text-[var(--color-muted)]">
-              Cada carta respondida cria um ponto de retorno aqui, guardado neste navegador.
+              Cada jogada — e ações como remover filme, importar ou resetar — cria um ponto de retorno aqui, guardado neste navegador.
             </p>
           ) : (
             <ul className="max-h-56 space-y-2 overflow-y-auto pr-1">

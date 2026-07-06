@@ -600,7 +600,13 @@ export function ControlDashboard() {
     }
   }
 
-  const handleResetGame = sessionManagement.resetGame
+  const handleResetGame: typeof sessionManagement.resetGame = (...args) => {
+    // Reset é a ação mais destrutiva do jogo — merece um ponto de retorno.
+    if (gameMode !== 'demo') {
+      saveCheckpoint(releaseActiveTiles(session), 'Antes de resetar o jogo')
+    }
+    return sessionManagement.resetGame(...args)
+  }
 
   const handleOfflineOnboardingComplete = (config: OnboardingConfig) => {
     try {
@@ -719,6 +725,9 @@ export function ControlDashboard() {
 
   const handleRemoveFilm = (columnId: string, filmName: string) => {
     if (window.confirm(`Remover o filme "${filmName}" e todas as suas perguntas?`)) {
+      if (gameMode !== 'demo') {
+        saveCheckpoint(releaseActiveTiles(session), `Antes de remover ${filmName}`)
+      }
       removeFilmColumn(columnId)
       toast.success('Filme removido da biblioteca')
     }
@@ -735,6 +744,10 @@ export function ControlDashboard() {
 
   const handleRemoveQuestion = (columnId: string, tileId: string) => {
     if (window.confirm('Remover esta pergunta?')) {
+      if (gameMode !== 'demo') {
+        const film = session.board.find((column) => column.id === columnId)?.film ?? 'um filme'
+        saveCheckpoint(releaseActiveTiles(session), `Antes de remover uma pergunta de ${film}`)
+      }
       removeQuestionTile(columnId, tileId)
       toast.success('Pergunta removida')
     }
@@ -1425,6 +1438,9 @@ export function ControlDashboard() {
         onImportFilms={(importData) => {
           // Filme com o mesmo nome é ATUALIZADO (perguntas/pontos substituídos);
           // só nomes novos viram colunas novas — re-importar não duplica.
+          if (gameMode !== 'demo' && session.board.length > 0) {
+            saveCheckpoint(releaseActiveTiles(session), 'Antes de importar filmes')
+          }
           const plan = planImport(session.board, importData)
           plan.updates.forEach(({ columnId, tiles }) => {
             replaceColumnTiles(columnId, tiles)

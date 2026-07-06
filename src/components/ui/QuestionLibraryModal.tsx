@@ -363,9 +363,9 @@ export function QuestionLibraryModal({
                       variant="ghost"
                       size="sm"
                       onClick={() => {
-                        if (window.confirm(`Remover o filme "${selectedColumn.film}" e todas as suas perguntas?`)) {
-                          onRemoveFilm(selectedColumn.id, selectedColumn.film)
-                        }
+                        // A confirmação fica no handler do dashboard — aqui
+                        // havia um segundo window.confirm duplicado.
+                        onRemoveFilm(selectedColumn.id, selectedColumn.film)
                       }}
                       className="gap-2 text-[var(--color-danger)] hover:bg-[var(--color-danger)]/10 hover:text-[var(--color-danger)]"
                     >
