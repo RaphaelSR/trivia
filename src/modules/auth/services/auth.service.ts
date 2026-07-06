@@ -151,6 +151,14 @@ export async function requestPasswordReset(email: string): Promise<{ error: stri
   })
 
   if (error) {
+    // O motivo real fica no console para diagnóstico; a UI recebe mensagem
+    // genérica (não vaza detalhes), exceto rate limit — esse o usuário
+    // resolve sozinho esperando, então merece mensagem própria.
+    console.warn('[auth] resetPasswordForEmail falhou:', error)
+    const message = error.message?.toLowerCase() ?? ''
+    if (error.status === 429 || message.includes('rate limit') || message.includes('security purposes')) {
+      return { error: 'Muitos e-mails em pouco tempo. Aguarde um minuto e tente novamente.' }
+    }
     return { error: 'Não foi possível enviar o e-mail agora. Tente novamente em instantes.' }
   }
   return { error: null }

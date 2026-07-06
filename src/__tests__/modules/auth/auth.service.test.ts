@@ -231,13 +231,13 @@ describe('auth.service — redefinição de senha', () => {
     mockIsConfigured.mockReturnValue(true)
     const resetPasswordForEmail = jest
       .fn()
-      .mockResolvedValue({ data: null, error: { message: 'rate limit' } })
+      .mockResolvedValue({ data: null, error: { message: 'smtp indisponivel' } })
     mockGetClient.mockReturnValue({ auth: { resetPasswordForEmail } })
 
     const result = await requestPasswordReset('a@b.com')
 
     expect(result.error).toMatch(/Não foi possível enviar/)
-    expect(result.error).not.toContain('rate limit')
+    expect(result.error).not.toContain('smtp')
   })
 
   it('updatePassword chama auth.updateUser com a nova senha', async () => {

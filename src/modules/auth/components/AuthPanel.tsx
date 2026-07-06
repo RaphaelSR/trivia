@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
-import { LogOut, Trash2, X } from 'lucide-react'
+import { ArrowLeft, Eye, EyeOff, LogOut, Trash2, X } from 'lucide-react'
 import type { User } from '@supabase/supabase-js'
 import { useAuth } from '../hooks/useAuth'
 import { listNormalizedGames } from '../services/normalized-history.service'
@@ -12,6 +12,9 @@ import { DeleteGameDialog } from './DeleteGameDialog'
 type Tab = 'signin' | 'signup'
 
 const RESEND_COOLDOWN_SECONDS = 30
+
+/** Cooldown do link de redefinição — o Supabase só aceita 1 pedido por endereço a cada 60s. */
+const RESET_COOLDOWN_SECONDS = 60
 
 interface AuthPanelProps {
   onClose: () => void
@@ -315,6 +318,142 @@ function ConfirmationPendingPanel({ email, onClose, onResend }: ConfirmationPend
 }
 
 // ---------------------------------------------------------------------------
+// ForgotPasswordPanel — tela dedicada de redefinição de senha
+// ---------------------------------------------------------------------------
+
+interface ForgotPasswordPanelProps {
+  /** E-mail pré-preenchido vindo do formulário de login. */
+  initialEmail: string
+  onBack: () => void
+  onClose: () => void
+  onRequestReset: (email: string) => Promise<string | null>
+}
+
+function ForgotPasswordPanel({ initialEmail, onBack, onClose, onRequestReset }: ForgotPasswordPanelProps) {
+  const [email, setEmail] = useState(initialEmail)
+  const [error, setError] = useState<string | null>(null)
+  const [sentTo, setSentTo] = useState<string | null>(null)
+  const [sending, setSending] = useState(false)
+  const [cooldown, setCooldown] = useState(0)
+  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null)
+
+  useEffect(() => {
+    return () => {
+      if (intervalRef.current !== null) clearInterval(intervalRef.current)
+    }
+  }, [])
+
+  function startCooldown() {
+    setCooldown(RESET_COOLDOWN_SECONDS)
+    intervalRef.current = setInterval(() => {
+      setCooldown((prev) => {
+        if (prev <= 1) {
+          if (intervalRef.current !== null) clearInterval(intervalRef.current)
+          intervalRef.current = null
+          return 0
+        }
+        return prev - 1
+      })
+    }, 1000)
+  }
+
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault()
+    setError(null)
+
+    if (!isValidEmail(email)) {
+      setError('Informe um endereço de email válido.')
+      return
+    }
+
+    setSending(true)
+    const err = await onRequestReset(email)
+    setSending(false)
+
+    if (err) {
+      setError(err)
+      return
+    }
+
+    setSentTo(email)
+    startCooldown()
+  }
+
+  const buttonLabel = sending
+    ? 'Enviando…'
+    : sentTo
+      ? cooldown > 0
+        ? `Enviado ✓ · reenviar em ${cooldown}s`
+        : 'Reenviar link'
+      : 'Enviar link de redefinição'
+
+  return (
+    <div className="relative w-full max-w-sm rounded-2xl border border-white/10 bg-black/60 p-6 shadow-2xl backdrop-blur-xl">
+      <button
+        aria-label="Fechar"
+        onClick={onClose}
+        className="absolute right-4 top-4 text-[var(--color-muted)] transition-colors hover:text-[var(--color-text)]"
+      >
+        <X className="h-4 w-4" />
+      </button>
+
+      <button
+        onClick={onBack}
+        className="mb-4 flex items-center gap-1.5 text-xs text-[var(--color-muted)] transition-colors hover:text-[var(--color-text)]"
+      >
+        <ArrowLeft className="h-3.5 w-3.5" />
+        Voltar para entrar
+      </button>
+
+      <h2 className="text-base font-semibold text-[var(--color-text)]">Redefinir senha</h2>
+      <p className="mt-1.5 mb-4 text-xs leading-relaxed text-[var(--color-muted)]">
+        Informe o e-mail da sua conta e enviaremos um link para criar uma nova senha. Não precisa
+        lembrar a senha atual.
+      </p>
+
+      <form onSubmit={handleSubmit} noValidate className="flex flex-col gap-3">
+        <div>
+          <label htmlFor="forgot-email" className="mb-1 block text-xs text-[var(--color-muted)]">
+            Email
+          </label>
+          <input
+            id="forgot-email"
+            name="email"
+            type="email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            placeholder="seu@email.com"
+            autoComplete="email"
+            className="w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm text-[var(--color-text)] placeholder-[var(--color-muted)] outline-none transition-colors focus:border-[var(--color-primary)]/50 focus:bg-white/8"
+          />
+        </div>
+
+        {error && (
+          <p className="rounded-lg border border-red-500/20 bg-red-500/10 px-3 py-2 text-xs text-red-400">
+            {error}
+          </p>
+        )}
+
+        {sentTo && !error && (
+          <p className="rounded-lg border border-emerald-500/20 bg-emerald-500/10 px-3 py-2 text-xs leading-relaxed text-emerald-400">
+            Link enviado para <span className="font-medium">{sentTo}</span>. Abra o e-mail neste
+            aparelho e clique no link — confira também a caixa de spam.
+          </p>
+        )}
+
+        <button
+          type="submit"
+          disabled={sending || cooldown > 0}
+          className="mt-1 w-full rounded-lg bg-[var(--color-primary)] py-2 text-sm font-semibold text-black transition-opacity hover:opacity-90 disabled:opacity-50"
+        >
+          {buttonLabel}
+        </button>
+      </form>
+    </div>
+  )
+}
+
+// ---------------------------------------------------------------------------
 // AuthPanel — ponto de entrada público
 // ---------------------------------------------------------------------------
 
@@ -328,8 +467,9 @@ export function AuthPanel({ onClose, initialTab = 'signin' }: AuthPanelProps) {
   const [error, setError] = useState<string | null>(null)
   // Guarda o email pendente de confirmação; null = sem confirmação pendente
   const [pendingEmail, setPendingEmail] = useState<string | null>(null)
-  // E-mail para o qual o link de redefinição de senha foi enviado
-  const [resetSentTo, setResetSentTo] = useState<string | null>(null)
+  // Tela dedicada de "esqueci minha senha" (só e-mail, sem campo de senha)
+  const [forgotOpen, setForgotOpen] = useState(false)
+  const [showPassword, setShowPassword] = useState(false)
 
   function validate(): string | null {
     if (!isValidEmail(email)) return 'Informe um endereço de email válido.'
@@ -375,21 +515,6 @@ export function AuthPanel({ onClose, initialTab = 'signin' }: AuthPanelProps) {
     setTab(next)
     setError(null)
     setPendingEmail(null)
-    setResetSentTo(null)
-  }
-
-  async function handleForgotPassword() {
-    setError(null)
-    if (!isValidEmail(email)) {
-      setError('Informe seu e-mail no campo acima para receber o link de redefinição.')
-      return
-    }
-    const err = await requestReset(email)
-    if (err) {
-      setError(err)
-    } else {
-      setResetSentTo(email)
-    }
   }
 
   // Se a sessão apareceu (usuário voltou do link de confirmação),
@@ -405,6 +530,18 @@ export function AuthPanel({ onClose, initialTab = 'signin' }: AuthPanelProps) {
         email={pendingEmail}
         onClose={onClose}
         onResend={resend}
+      />
+    )
+  }
+
+  // Fluxo de redefinição de senha — tela própria, sem campo de senha
+  if (forgotOpen) {
+    return (
+      <ForgotPasswordPanel
+        initialEmail={email}
+        onBack={() => setForgotOpen(false)}
+        onClose={onClose}
+        onRequestReset={requestReset}
       />
     )
   }
@@ -441,21 +578,26 @@ export function AuthPanel({ onClose, initialTab = 'signin' }: AuthPanelProps) {
       <form onSubmit={handleSubmit} noValidate className="flex flex-col gap-3">
         {tab === 'signup' && (
           <div>
-            <label className="mb-1 block text-xs text-[var(--color-muted)]">Nome de exibição</label>
+            <label htmlFor="auth-display-name" className="mb-1 block text-xs text-[var(--color-muted)]">Nome de exibição</label>
             <input
+              id="auth-display-name"
+              name="name"
               type="text"
               value={displayName}
               onChange={(e) => setDisplayName(e.target.value)}
               placeholder="Como você quer ser chamado"
               maxLength={40}
+              autoComplete="name"
               className="w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm text-[var(--color-text)] placeholder-[var(--color-muted)] outline-none transition-colors focus:border-[var(--color-primary)]/50 focus:bg-white/8"
             />
           </div>
         )}
 
         <div>
-          <label className="mb-1 block text-xs text-[var(--color-muted)]">Email</label>
+          <label htmlFor="auth-email" className="mb-1 block text-xs text-[var(--color-muted)]">Email</label>
           <input
+            id="auth-email"
+            name="email"
             type="email"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
@@ -466,15 +608,41 @@ export function AuthPanel({ onClose, initialTab = 'signin' }: AuthPanelProps) {
         </div>
 
         <div>
-          <label className="mb-1 block text-xs text-[var(--color-muted)]">Senha</label>
-          <input
-            type="password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            placeholder={tab === 'signin' ? '••••••••' : 'Mínimo 8 caracteres'}
-            autoComplete={tab === 'signin' ? 'current-password' : 'new-password'}
-            className="w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm text-[var(--color-text)] placeholder-[var(--color-muted)] outline-none transition-colors focus:border-[var(--color-primary)]/50 focus:bg-white/8"
-          />
+          <div className="mb-1 flex items-center justify-between">
+            <label htmlFor="auth-password" className="block text-xs text-[var(--color-muted)]">Senha</label>
+            {tab === 'signin' && (
+              <button
+                type="button"
+                onClick={() => {
+                  setError(null)
+                  setForgotOpen(true)
+                }}
+                className="text-xs text-[var(--color-muted)] underline-offset-2 transition-colors hover:text-[var(--color-text)] hover:underline"
+              >
+                Esqueci minha senha
+              </button>
+            )}
+          </div>
+          <div className="relative">
+            <input
+              id="auth-password"
+              name="password"
+              type={showPassword ? 'text' : 'password'}
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              placeholder={tab === 'signin' ? '••••••••' : 'Mínimo 8 caracteres'}
+              autoComplete={tab === 'signin' ? 'current-password' : 'new-password'}
+              className="w-full rounded-lg border border-white/10 bg-white/5 py-2 pl-3 pr-10 text-sm text-[var(--color-text)] placeholder-[var(--color-muted)] outline-none transition-colors focus:border-[var(--color-primary)]/50 focus:bg-white/8"
+            />
+            <button
+              type="button"
+              aria-label={showPassword ? 'Ocultar senha' : 'Mostrar senha'}
+              onClick={() => setShowPassword((v) => !v)}
+              className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[var(--color-muted)] transition-colors hover:text-[var(--color-text)]"
+            >
+              {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+            </button>
+          </div>
         </div>
 
         {error && (
@@ -496,22 +664,6 @@ export function AuthPanel({ onClose, initialTab = 'signin' }: AuthPanelProps) {
               ? 'Entrar'
               : 'Criar conta'}
         </button>
-
-        {tab === 'signin' && (
-          resetSentTo ? (
-            <p className="rounded-lg border border-emerald-500/20 bg-emerald-500/10 px-3 py-2 text-xs text-emerald-400">
-              Enviamos um link de redefinição para {resetSentTo}. Confira também a caixa de spam.
-            </p>
-          ) : (
-            <button
-              type="button"
-              onClick={() => void handleForgotPassword()}
-              className="text-xs text-[var(--color-muted)] underline-offset-2 transition-colors hover:text-[var(--color-text)] hover:underline"
-            >
-              Esqueci minha senha
-            </button>
-          )
-        )}
       </form>
     </div>
   )
