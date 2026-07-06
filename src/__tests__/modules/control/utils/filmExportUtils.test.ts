@@ -1,4 +1,5 @@
 import {
+  planImport,
   exportFilmsWithQuestions,
   importFilmsWithQuestions,
   convertImportToColumns,
@@ -331,3 +332,42 @@ describe('filmExportUtils', () => {
   })
 })
 
+
+describe('planImport — re-import atualiza em vez de duplicar', () => {
+  const makeColumn = (id: string, film: string) => ({
+    id,
+    filmId: id,
+    film,
+    tiles: [],
+  })
+  const makeTiles = (points: number[]) =>
+    points.map((p) => ({ film: 'x', points: p, question: 'Q', answer: 'A', state: 'available' as const }))
+
+  it('filme com mesmo nome (ignorando caixa/espaços) vira update', () => {
+    const board = [makeColumn('c1', 'Interestelar')]
+    const plan = planImport(board, [
+      { column: { film: '  interestelar ' }, tiles: makeTiles([25, 10]) },
+    ])
+    expect(plan.updates).toHaveLength(1)
+    expect(plan.updates[0].columnId).toBe('c1')
+    expect(plan.additions).toHaveLength(0)
+  })
+
+  it('filme novo vira addition', () => {
+    const board = [makeColumn('c1', 'Interestelar')]
+    const plan = planImport(board, [{ column: { film: 'Matrix' }, tiles: makeTiles([5]) }])
+    expect(plan.updates).toHaveLength(0)
+    expect(plan.additions).toHaveLength(1)
+    expect(plan.additions[0].film).toBe('Matrix')
+  })
+
+  it('arquivo misto separa updates e additions', () => {
+    const board = [makeColumn('c1', 'Interestelar'), makeColumn('c2', 'Up')]
+    const plan = planImport(board, [
+      { column: { film: 'Interestelar' }, tiles: makeTiles([5]) },
+      { column: { film: 'Coraline' }, tiles: makeTiles([10]) },
+    ])
+    expect(plan.updates.map((u) => u.columnId)).toEqual(['c1'])
+    expect(plan.additions.map((a) => a.film)).toEqual(['Coraline'])
+  })
+})
