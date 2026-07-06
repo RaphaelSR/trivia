@@ -14,7 +14,7 @@ type ScoringControlsProps = {
   onClose: () => void
 }
 
-type ScoreOutcome = 'full' | 'half' | 'none' | 'custom'
+type ScoreOutcome = 'full' | 'half' | 'missed' | 'none' | 'custom'
 
 type OutcomeOption = {
   id: ScoreOutcome
@@ -32,6 +32,13 @@ const OUTCOME_OPTIONS: OutcomeOption[] = [
     id: 'half',
     title: 'Parcial',
     description: 'Meio valor',
+  },
+  {
+    // Regra da casa mais usada: quem erra não pontua e os OUTROS times
+    // ganham metade — antes exigia montar isso manualmente no Personalizar.
+    id: 'missed',
+    title: 'Errou',
+    description: 'Metade para os outros',
   },
   {
     id: 'none',
@@ -103,6 +110,18 @@ export function ScoringControls({
     if (outcome === 'none') {
       setCustomModeOpen(false)
       setDistributions([])
+      return
+    }
+
+    if (outcome === 'missed') {
+      const halfPoints = Math.round(basePoints / 2)
+      setSuggestedPoints(halfPoints)
+      setCustomModeOpen(false)
+      setDistributions(
+        teams
+          .filter((team) => team.id !== activeTeamId)
+          .map((team) => buildDistribution(team.id, halfPoints)),
+      )
       return
     }
 
@@ -179,7 +198,9 @@ export function ScoringControls({
         ? 'Sem pontuação.'
         : customModeOpen
           ? `${distributions.length} destino(s), ${totalPoints} pts.`
-          : `${activeTeam?.name ?? 'Time da vez'} recebe ${totalPoints} pts.`
+          : selectedOutcome === 'missed'
+            ? `${activeTeam?.name ?? 'Time da vez'} errou — ${distributions.length} time(s) recebem ${suggestedPoints} pts cada.`
+            : `${activeTeam?.name ?? 'Time da vez'} recebe ${totalPoints} pts.`
 
   return (
     <div className="space-y-3">
@@ -233,9 +254,29 @@ export function ScoringControls({
             </div>
 
             <div>
-              <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-[var(--color-muted)]">
-                Quem recebe
-              </p>
+              <div className="flex items-center justify-between gap-2">
+                <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-[var(--color-muted)]">
+                  Quem recebe
+                </p>
+                {/* Atalho para o roubo em cadeia: preenche todos exceto o time
+                    da vez com metade; daí é só remover quem errou por último. */}
+                <button
+                  type="button"
+                  onClick={() => {
+                    const halfPoints = Math.round(basePoints / 2)
+                    setSuggestedPoints(halfPoints)
+                    setCustomPointsInput(String(halfPoints))
+                    setDistributions(
+                      teams
+                        .filter((team) => team.id !== activeTeamId)
+                        .map((team) => buildDistribution(team.id, halfPoints)),
+                    )
+                  }}
+                  className="rounded-full border border-[var(--color-border)] bg-[var(--color-surface)] px-2.5 py-1 text-[11px] font-semibold text-[var(--color-text)] transition hover:border-[var(--color-primary)]/40"
+                >
+                  Outros · metade
+                </button>
+              </div>
 
               <div className="mt-2 space-y-2">
                 {teams.map((team) => {
@@ -299,6 +340,8 @@ export function ScoringControls({
                   type="button"
                   onClick={() => applyOutcome(option.id)}
                   className={`rounded-xl border px-3 py-2 text-left transition ${
+                    option.id === 'custom' ? 'col-span-2 ' : ''
+                  }${
                     isSelected
                       ? 'border-[var(--color-primary)] bg-[var(--color-primary)]/10'
                       : 'border-[var(--color-border)] bg-[var(--color-surface)] hover:border-[var(--color-primary)]/40'
