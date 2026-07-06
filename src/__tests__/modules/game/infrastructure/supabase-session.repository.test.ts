@@ -12,6 +12,10 @@ jest.mock('@/shared/services/supabase.client', () => ({
   getSupabaseClient: jest.fn(),
 }))
 
+jest.mock('@/modules/game/infrastructure/keepalive-flush', () => ({
+  sendKeepaliveSessionPatch: jest.fn().mockReturnValue(true),
+}))
+
 import { isSupabaseConfigured, getSupabaseClient } from '@/shared/services/supabase.client'
 import { SupabaseSessionRepository } from '@/modules/game/infrastructure/supabase-session.repository'
 import type { TriviaSession } from '@/modules/trivia/types'

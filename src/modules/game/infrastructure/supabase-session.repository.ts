@@ -15,6 +15,7 @@
 import { getSupabaseClient, isSupabaseConfigured } from '../../../shared/services/supabase.client'
 import type { GameMode } from '../../../shared/types/game'
 import type { TriviaSession } from '../../trivia/types'
+import { sendKeepaliveSessionPatch } from './keepalive-flush'
 import { OnlineCacheSessionRepository } from './online-cache-session.repository'
 import type { SessionHistoryMetadata, SessionRecord, SessionRepository } from './session.repository'
 
@@ -42,10 +43,13 @@ export class SupabaseSessionRepository implements SessionRepository {
     if (typeof window !== 'undefined') {
       this._handleVisibilityChange = this._handleVisibilityChange.bind(this)
       this._handleBeforeUnload = this._handleBeforeUnload.bind(this)
+      this._handlePageHide = this._handlePageHide.bind(this)
       this._handleOnline = this._handleOnline.bind(this)
 
       window.addEventListener('visibilitychange', this._handleVisibilityChange)
       window.addEventListener('beforeunload', this._handleBeforeUnload)
+      // pagehide é mais confiável que beforeunload (Safari/mobile e bfcache).
+      window.addEventListener('pagehide', this._handlePageHide)
       window.addEventListener('online', this._handleOnline)
     }
   }
@@ -54,6 +58,7 @@ export class SupabaseSessionRepository implements SessionRepository {
     if (typeof window !== 'undefined') {
       window.removeEventListener('visibilitychange', this._handleVisibilityChange)
       window.removeEventListener('beforeunload', this._handleBeforeUnload)
+      window.removeEventListener('pagehide', this._handlePageHide)
       window.removeEventListener('online', this._handleOnline)
     }
     if (this.flushTimer !== null) {
@@ -291,11 +296,30 @@ export class SupabaseSessionRepository implements SessionRepository {
 
   private _handleVisibilityChange(): void {
     if (typeof document !== 'undefined' && document.visibilityState === 'hidden') {
-      void this.flushNow()
+      this._emergencyFlush()
     }
   }
 
   private _handleBeforeUnload(): void {
+    this._emergencyFlush()
+  }
+
+  private _handlePageHide(): void {
+    this._emergencyFlush()
+  }
+
+  /**
+   * Caminho de saída da página: PATCH keepalive (sobrevive ao unload) +
+   * flush assíncrono normal para o caso de a página continuar viva.
+   */
+  private _emergencyFlush(): void {
+    if (this.pendingSnapshot) {
+      sendKeepaliveSessionPatch({
+        title: this.pendingSnapshot.title,
+        mode: this.pendingSnapshot.mode,
+        session: this.pendingSnapshot.session,
+      })
+    }
     void this.flushNow()
   }
 

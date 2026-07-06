@@ -14,6 +14,9 @@ export function isSupabaseConfigured(): boolean {
 
 let _client: SupabaseClient | null = null
 
+let _cachedAccessToken: string | null = null
+let _cachedUserId: string | null = null
+
 /**
  * Retorna o cliente Supabase (singleton lazy) ou null quando não configurado.
  * Nunca lança erro na inicialização do app.
@@ -33,5 +36,32 @@ export function getSupabaseClient(): SupabaseClient | null {
     },
   })
 
+  _client.auth.onAuthStateChange((_event, session) => {
+    _cachedAccessToken = session?.access_token ?? null
+    _cachedUserId = session?.user?.id ?? null
+  })
+
   return _client
+}
+
+/**
+ * Snapshot síncrono da autenticação atual, mantido via onAuthStateChange.
+ * Handlers de unload (pagehide/beforeunload) não podem esperar o
+ * client.auth.getSession() assíncrono — a página morre antes do await
+ * resolver — então leem daqui.
+ */
+export function getCachedAuth(): { accessToken: string; userId: string } | null {
+  if (!_cachedAccessToken || !_cachedUserId) return null
+  return { accessToken: _cachedAccessToken, userId: _cachedUserId }
+}
+
+/**
+ * URL base do REST (PostgREST) + anon key, para requests diretos fora do
+ * supabase-js (ex.: fetch keepalive em unload). Null quando não configurado.
+ */
+export function getSupabaseRestConfig(): { restUrl: string; anonKey: string } | null {
+  if (!isSupabaseConfigured()) return null
+  const url = (readViteEnv('VITE_SUPABASE_URL') as string).replace(/\/+$/, '')
+  const anonKey = readViteEnv('VITE_SUPABASE_ANON_KEY') as string
+  return { restUrl: `${url}/rest/v1`, anonKey }
 }

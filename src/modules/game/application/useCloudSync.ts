@@ -20,6 +20,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { createCloudSessionSync } from '../infrastructure/cloud-session-sync'
 import { saveSessionSnapshot } from '../infrastructure/session-snapshot.service'
+import { countAnsweredTiles } from '../domain/board.utils'
 import type { TriviaSession } from '../../trivia/types'
 
 /** Intervalo mínimo entre checkpoints de versão (T4) — evita 1 snapshot por flush. */
@@ -106,6 +107,10 @@ export function useCloudSync({
   // activation. Reset when enabled goes false so a re-login flushes again.
   const initialFlushDoneRef = useRef(false)
 
+  // Progresso (cartas respondidas + placar) do último push — usado para
+  // detectar eventos significativos de jogo e pular o debounce de 2.5s.
+  const lastPushedProgressRef = useRef<{ answered: number; score: number } | null>(null)
+
   // Timestamp do último checkpoint de versão (T4), para throttle.
   const lastSnapshotAtRef = useRef(0)
 
@@ -160,6 +165,7 @@ export function useCloudSync({
     if (!enabled) {
       reconciledRef.current = false
       initialFlushDoneRef.current = false
+      lastPushedProgressRef.current = null
     }
   }, [enabled])
 
@@ -218,6 +224,15 @@ export function useCloudSync({
     if (!enabled) return
     if (session.teams.length === 0) return
 
+    // Evento significativo = carta respondida ou placar alterado. Perder isso
+    // ao fechar a aba é perder uma jogada; o debounce fica só para edições
+    // cosméticas (título, ordem de times etc.).
+    const answered = countAnsweredTiles(session.board)
+    const score = session.teams.reduce((sum, team) => sum + team.score, 0)
+    const prev = lastPushedProgressRef.current
+    lastPushedProgressRef.current = { answered, score }
+    const significantChange = prev !== null && (answered !== prev.answered || score !== prev.score)
+
     syncRef.current.pushSnapshot(session, { title })
 
     // Upload inicial IMEDIATO: no primeiro push de uma ativação (login com uma
@@ -227,6 +242,8 @@ export function useCloudSync({
     // síncrona aqui, então não há corrida com logout (diferente do reconcile async).
     if (!initialFlushDoneRef.current) {
       initialFlushDoneRef.current = true
+      void syncRef.current.flushNow()
+    } else if (significantChange) {
       void syncRef.current.flushNow()
     }
     // title changes are intentionally NOT a dep here — we want to push on session
