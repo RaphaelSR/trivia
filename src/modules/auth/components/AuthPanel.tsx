@@ -319,7 +319,7 @@ function ConfirmationPendingPanel({ email, onClose, onResend }: ConfirmationPend
 // ---------------------------------------------------------------------------
 
 export function AuthPanel({ onClose, initialTab = 'signin' }: AuthPanelProps) {
-  const { user, loading, login, register, logout, resend } = useAuth()
+  const { user, loading, login, register, logout, resend, requestReset } = useAuth()
 
   const [tab, setTab] = useState<Tab>(initialTab)
   const [email, setEmail] = useState('')
@@ -328,6 +328,8 @@ export function AuthPanel({ onClose, initialTab = 'signin' }: AuthPanelProps) {
   const [error, setError] = useState<string | null>(null)
   // Guarda o email pendente de confirmação; null = sem confirmação pendente
   const [pendingEmail, setPendingEmail] = useState<string | null>(null)
+  // E-mail para o qual o link de redefinição de senha foi enviado
+  const [resetSentTo, setResetSentTo] = useState<string | null>(null)
 
   function validate(): string | null {
     if (!isValidEmail(email)) return 'Informe um endereço de email válido.'
@@ -373,6 +375,21 @@ export function AuthPanel({ onClose, initialTab = 'signin' }: AuthPanelProps) {
     setTab(next)
     setError(null)
     setPendingEmail(null)
+    setResetSentTo(null)
+  }
+
+  async function handleForgotPassword() {
+    setError(null)
+    if (!isValidEmail(email)) {
+      setError('Informe seu e-mail no campo acima para receber o link de redefinição.')
+      return
+    }
+    const err = await requestReset(email)
+    if (err) {
+      setError(err)
+    } else {
+      setResetSentTo(email)
+    }
   }
 
   // Se a sessão apareceu (usuário voltou do link de confirmação),
@@ -479,6 +496,22 @@ export function AuthPanel({ onClose, initialTab = 'signin' }: AuthPanelProps) {
               ? 'Entrar'
               : 'Criar conta'}
         </button>
+
+        {tab === 'signin' && (
+          resetSentTo ? (
+            <p className="rounded-lg border border-emerald-500/20 bg-emerald-500/10 px-3 py-2 text-xs text-emerald-400">
+              Enviamos um link de redefinição para {resetSentTo}. Confira também a caixa de spam.
+            </p>
+          ) : (
+            <button
+              type="button"
+              onClick={() => void handleForgotPassword()}
+              className="text-xs text-[var(--color-muted)] underline-offset-2 transition-colors hover:text-[var(--color-text)] hover:underline"
+            >
+              Esqueci minha senha
+            </button>
+          )
+        )}
       </form>
     </div>
   )
