@@ -1,5 +1,5 @@
-import { createSessionForMode, rebuildSessionTurnState, syncTurnSequenceWithBoard } from '@/modules/game/domain/session'
-import type { TriviaSession, TriviaTeam, TriviaParticipant } from '@/modules/trivia/types'
+import { compareEventLogs, createSessionForMode, rebuildSessionTurnState, syncTurnSequenceWithBoard } from '@/modules/game/domain/session'
+import type { GameEvent, TriviaSession, TriviaTeam, TriviaParticipant } from '@/modules/trivia/types'
 
 describe('session domain', () => {
   it('creates empty session for offline and online modes', () => {
@@ -179,5 +179,37 @@ describe('session domain', () => {
     expect(synced.turnSequence[synced.activeTurnIndex]).toBe('a2')
     expect(synced.activeTurnIndex).not.toBe(0)
     expect(synced.activeTeamId).toBe('team-a')
+  })
+})
+
+describe('compareEventLogs', () => {
+  const makeEvents = (ids: string[]): GameEvent[] =>
+    ids.map((id) => ({
+      id,
+      type: 'trivia-award',
+      timestamp: '2026-01-01T00:00:00.000Z',
+      source: 'trivia',
+      pointsAwarded: 10,
+      teamId: 'team-1',
+    }))
+
+  it('returns equal for identical logs (including both empty)', () => {
+    expect(compareEventLogs([], [])).toBe('equal')
+    expect(compareEventLogs(makeEvents(['a', 'b']), makeEvents(['a', 'b']))).toBe('equal')
+  })
+
+  it('returns first-ahead when the first contains the second as prefix', () => {
+    expect(compareEventLogs(makeEvents(['a', 'b', 'c']), makeEvents(['a', 'b']))).toBe('first-ahead')
+    expect(compareEventLogs(makeEvents(['a']), [])).toBe('first-ahead')
+  })
+
+  it('returns second-ahead when the second contains the first as prefix', () => {
+    expect(compareEventLogs(makeEvents(['a']), makeEvents(['a', 'b']))).toBe('second-ahead')
+    expect(compareEventLogs([], makeEvents(['a']))).toBe('second-ahead')
+  })
+
+  it('returns diverged when histories differ within the common prefix', () => {
+    expect(compareEventLogs(makeEvents(['a', 'x']), makeEvents(['a', 'y']))).toBe('diverged')
+    expect(compareEventLogs(makeEvents(['x']), makeEvents(['y', 'z']))).toBe('diverged')
   })
 })

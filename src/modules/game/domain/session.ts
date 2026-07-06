@@ -1,5 +1,5 @@
 import type { DemoSessionConfig, GameMode } from '../../../shared/types/game'
-import type { TriviaColumn, TriviaParticipant, TriviaSession, TriviaTeam } from '../../trivia/types'
+import type { GameEvent, TriviaColumn, TriviaParticipant, TriviaSession, TriviaTeam } from '../../trivia/types'
 import { createEmptySession } from '../../trivia/utils/createEmptySession'
 import { createLocalSession } from '../../trivia/utils/createLocalSession'
 import { buildTurnSequence, resolveTurnIndex } from './turn-order'
@@ -60,6 +60,33 @@ export function restorePersistedSession(session: TriviaSession | null, gameMode:
       healed.turnSequence,
     ),
   }
+}
+
+/**
+ * Relação entre dois eventLogs append-only da mesma partida.
+ * - 'equal'        : mesmos eventos, mesma ordem.
+ * - 'first-ahead'  : o primeiro contém o segundo como prefixo (está à frente).
+ * - 'second-ahead' : o segundo contém o primeiro como prefixo.
+ * - 'diverged'     : as histórias divergem — nenhum é prefixo do outro.
+ */
+export type EventLogRelation = 'equal' | 'first-ahead' | 'second-ahead' | 'diverged'
+
+/**
+ * Compara dois eventLogs append-only pela relação de prefixo.
+ *
+ * Como o log NUNCA é sobrescrito, um log que contém o outro como prefixo está
+ * estritamente à frente na mesma linha do tempo — uma revisão monotônica.
+ * Isso decide local × nuvem sem depender de relógio (timestamps mentem quando
+ * uma edição cosmética toca a cópia atrasada por último) nem de contagem de
+ * cartas (empata quando as jogadas são diferentes).
+ */
+export function compareEventLogs(first: GameEvent[], second: GameEvent[]): EventLogRelation {
+  const common = Math.min(first.length, second.length)
+  for (let i = 0; i < common; i++) {
+    if (first[i].id !== second[i].id) return 'diverged'
+  }
+  if (first.length === second.length) return 'equal'
+  return first.length > second.length ? 'first-ahead' : 'second-ahead'
 }
 
 export function syncTurnSequenceWithBoard(session: TriviaSession, board: TriviaColumn[]): TriviaSession {
