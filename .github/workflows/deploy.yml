@@ -46,6 +46,13 @@ jobs:
           VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
           VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
 
+      # SPA no GitHub Pages: rotas como /control e /claim não existem como
+      # arquivo — F5 (ou abrir o link direto) pedia a URL ao servidor e caía
+      # no 404 do Pages. Servir o app também como 404.html faz o router
+      # assumir em qualquer URL (os assets usam caminho absoluto /trivia/).
+      - name: SPA fallback (404.html)
+        run: cp dist/index.html dist/404.html
+
       - name: Setup Pages
         uses: actions/configure-pages@v4
 
