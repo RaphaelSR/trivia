@@ -61,19 +61,19 @@ export function PasswordRecoveryModal() {
 
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm">
-      <div className="w-full max-w-sm rounded-2xl border border-white/10 bg-black/70 p-6 shadow-2xl backdrop-blur-xl">
+      <div className="w-full max-w-sm rounded-2xl border border-white/10 bg-zinc-900/95 p-6 shadow-2xl backdrop-blur-xl">
         <div className="mb-4 flex items-center gap-2">
           <KeyRound className="h-4 w-4 text-[var(--color-primary)]" />
-          <h2 className="text-base font-semibold text-[var(--color-text)]">Definir nova senha</h2>
+          <h2 className="text-lg font-semibold text-zinc-100">Definir nova senha</h2>
         </div>
 
-        <p className="mb-4 text-xs leading-5 text-[var(--color-muted)]">
+        <p className="mb-4 text-sm leading-relaxed text-zinc-400">
           Você chegou aqui pelo link de redefinição. Escolha a nova senha da sua conta.
         </p>
 
         <form onSubmit={handleSubmit} noValidate className="flex flex-col gap-3">
           <div>
-            <label htmlFor="recovery-password" className="mb-1 block text-xs text-[var(--color-muted)]">Nova senha</label>
+            <label htmlFor="recovery-password" className="mb-1 block text-xs text-zinc-400">Nova senha</label>
             <input
               id="recovery-password"
               name="new-password"
@@ -82,12 +82,12 @@ export function PasswordRecoveryModal() {
               onChange={(e) => setPassword(e.target.value)}
               placeholder={`Mínimo ${MIN_PASSWORD_LENGTH} caracteres`}
               autoComplete="new-password"
-              className="w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm text-[var(--color-text)] placeholder-[var(--color-muted)] outline-none transition-colors focus:border-[var(--color-primary)]/50 focus:bg-white/8"
+              className="w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm text-zinc-100 placeholder-zinc-500 outline-none transition-colors focus:border-[var(--color-primary)]/50 focus:bg-white/8"
             />
           </div>
 
           <div>
-            <label htmlFor="recovery-confirm" className="mb-1 block text-xs text-[var(--color-muted)]">Confirmar nova senha</label>
+            <label htmlFor="recovery-confirm" className="mb-1 block text-xs text-zinc-400">Confirmar nova senha</label>
             <input
               id="recovery-confirm"
               name="confirm-password"
@@ -96,7 +96,7 @@ export function PasswordRecoveryModal() {
               onChange={(e) => setConfirm(e.target.value)}
               placeholder="Repita a nova senha"
               autoComplete="new-password"
-              className="w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm text-[var(--color-text)] placeholder-[var(--color-muted)] outline-none transition-colors focus:border-[var(--color-primary)]/50 focus:bg-white/8"
+              className="w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm text-zinc-100 placeholder-zinc-500 outline-none transition-colors focus:border-[var(--color-primary)]/50 focus:bg-white/8"
             />
           </div>
 
@@ -117,7 +117,7 @@ export function PasswordRecoveryModal() {
           <button
             type="button"
             onClick={() => setOpen(false)}
-            className="text-xs text-[var(--color-muted)] transition-colors hover:text-[var(--color-text)]"
+            className="text-xs text-zinc-400 transition-colors hover:text-zinc-100"
           >
             Deixar para depois
           </button>
