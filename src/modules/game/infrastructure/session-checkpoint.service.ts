@@ -17,7 +17,8 @@ import { createId } from '../../../shared/utils/id'
 import type { GameEvent, TriviaSession } from '../../trivia/types'
 
 const KEY_PREFIX = 'trivia-checkpoints-'
-const MAX_CHECKPOINTS = 15
+// 30 estados ≈ um jogo inteiro de 27 perguntas + ações estruturais.
+const MAX_CHECKPOINTS = 30
 
 export interface SessionCheckpoint {
   id: string
@@ -42,13 +43,22 @@ export function listCheckpoints(sessionId: string): SessionCheckpoint[] {
  * outras sessões — só a partida ativa merece ocupar a quota.
  */
 export function saveCheckpoint(sessionBefore: TriviaSession, label: string): void {
+  const existing = listCheckpoints(sessionBefore.id)
+
+  // Dedup: ações destrutivas criam checkpoint explícito E podem disparar o
+  // detector automático com o MESMO estado — guardar duas fotos idênticas só
+  // gasta buffer e confunde a lista.
+  if (existing[0] && JSON.stringify(existing[0].session) === JSON.stringify(sessionBefore)) {
+    return
+  }
+
   const entry: SessionCheckpoint = {
     id: createId('ckpt'),
     createdAt: new Date().toISOString(),
     label,
     session: sessionBefore,
   }
-  const next = [entry, ...listCheckpoints(sessionBefore.id)].slice(0, MAX_CHECKPOINTS)
+  const next = [entry, ...existing].slice(0, MAX_CHECKPOINTS)
   storageService.setJson(storageKey(sessionBefore.id), next)
   pruneOtherSessions(sessionBefore.id)
 }

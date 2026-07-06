@@ -205,7 +205,8 @@ describe('QuestionLibraryModal', () => {
       const removeButton = screen.getByRole('button', { name: /Remover filme/i })
       fireEvent.click(removeButton)
 
-      expect(window.confirm).toHaveBeenCalled()
+      // A confirmação é responsabilidade do handler do dashboard — o modal
+      // chama onRemoveFilm direto (havia um window.confirm duplicado aqui).
       expect(mockOnRemoveFilm).toHaveBeenCalledWith('col-1', 'Matrix')
     })
   })

@@ -66,14 +66,24 @@ describe('session-checkpoint.service', () => {
     expect(list[1].label).toBe('Antes da jogada 1')
   })
 
-  it('ring buffer: mantém no máximo 15 estados', () => {
-    for (let i = 0; i < 20; i++) {
-      saveCheckpoint(makeSession('sess-1'), `Antes da jogada ${i}`)
+  it('ring buffer: mantém no máximo 30 estados', () => {
+    for (let i = 0; i < 40; i++) {
+      // títulos diferentes para não cair no dedup de estados idênticos
+      saveCheckpoint(makeSession('sess-1', { title: `Estado ${i}` }), `Antes da jogada ${i}`)
     }
     const list = listCheckpoints('sess-1')
-    expect(list).toHaveLength(15)
-    expect(list[0].label).toBe('Antes da jogada 19')
-    expect(list[14].label).toBe('Antes da jogada 5')
+    expect(list).toHaveLength(30)
+    expect(list[0].label).toBe('Antes da jogada 39')
+    expect(list[29].label).toBe('Antes da jogada 10')
+  })
+
+  it('dedup: estado idêntico ao checkpoint mais recente não é guardado de novo', () => {
+    const session = makeSession('sess-1', { title: 'Mesmo estado' })
+    saveCheckpoint(session, 'Antes de remover Interestelar')
+    saveCheckpoint(session, 'Antes de um ajuste no placar') // detector automático, mesma foto
+    const list = listCheckpoints('sess-1')
+    expect(list).toHaveLength(1)
+    expect(list[0].label).toBe('Antes de remover Interestelar')
   })
 
   it('poda checkpoints de OUTRAS sessões ao salvar (quota do localStorage)', () => {
