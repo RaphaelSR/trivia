@@ -35,6 +35,32 @@ export function isGameFinished(board: TriviaColumn[]): boolean {
  * referência) quando não há duplicatas, então não perturba sessões saudáveis
  * nem dispara re-renders desnecessários.
  */
+/**
+ * Solta cartas presas em 'active' de volta para 'available'.
+ *
+ * 'active' significa "o modal desta pergunta está aberto AGORA" — é um estado
+ * de UI transitório. Qualquer sessão que volta do armazenamento (F5, restaurar
+ * checkpoint/snapshot, sync da nuvem) não tem modal aberto; sem esta cura, a
+ * carta fica presa como "AO VIVO" para sempre e a pergunta se perde.
+ * Retorna a MESMA referência quando nada muda.
+ */
+export function releaseActiveTiles<T extends { board: TriviaColumn[] }>(session: T): T {
+  let changed = false
+
+  const board = session.board.map((column) => {
+    if (!column.tiles.some((tile) => tile.state === 'active')) return column
+    changed = true
+    return {
+      ...column,
+      tiles: column.tiles.map((tile) =>
+        tile.state === 'active' ? { ...tile, state: 'available' as const } : tile,
+      ),
+    }
+  })
+
+  return changed ? { ...session, board } : session
+}
+
 export function dedupeTileIds<T extends { board: TriviaColumn[] }>(session: T): T {
   const seen = new Set<string>()
   let changed = false

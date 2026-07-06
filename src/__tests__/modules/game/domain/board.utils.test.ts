@@ -1,4 +1,4 @@
-import { countAnsweredTiles, countTotalTiles, dedupeTileIds, getAvailableTiles, isGameFinished } from '@/modules/game/domain/board.utils'
+import { countAnsweredTiles, countTotalTiles, dedupeTileIds, getAvailableTiles, isGameFinished, releaseActiveTiles } from '@/modules/game/domain/board.utils'
 import type { TriviaColumn } from '@/modules/trivia/types'
 
 const board: TriviaColumn[] = [
@@ -92,5 +92,49 @@ describe('board.utils', () => {
       expect(result.board[0].tiles[0].id).toBe('shared')
       expect(result.board[1].tiles[0].id).not.toBe('shared')
     })
+  })
+})
+
+describe('releaseActiveTiles', () => {
+  const makeBoard = (states: Array<'available' | 'active' | 'answered'>) => [
+    {
+      id: 'c1',
+      filmId: 'f1',
+      film: 'F',
+      tiles: states.map((state, i) => ({
+        id: `q${i}`,
+        film: 'F',
+        points: 10,
+        state,
+        question: 'Q',
+        answer: 'A',
+      })),
+    },
+  ]
+
+  it('solta cartas presas em active para available', () => {
+    const session = { board: makeBoard(['active', 'answered', 'available']) }
+    const healed = releaseActiveTiles(session)
+    expect(healed.board[0].tiles.map((t) => t.state)).toEqual(['available', 'answered', 'available'])
+  })
+
+  it('preserva answered e available intactos', () => {
+    const session = { board: makeBoard(['answered', 'available']) }
+    const healed = releaseActiveTiles(session)
+    expect(healed.board[0].tiles.map((t) => t.state)).toEqual(['answered', 'available'])
+  })
+
+  it('retorna a MESMA referência quando nada muda (não dispara re-render)', () => {
+    const session = { board: makeBoard(['answered', 'available']) }
+    expect(releaseActiveTiles(session)).toBe(session)
+  })
+
+  it('só recria as colunas que tinham carta active', () => {
+    const session = {
+      board: [...makeBoard(['active']), ...makeBoard(['available']).map((c) => ({ ...c, id: 'c2' }))],
+    }
+    const healed = releaseActiveTiles(session)
+    expect(healed.board[0]).not.toBe(session.board[0])
+    expect(healed.board[1]).toBe(session.board[1])
   })
 })
