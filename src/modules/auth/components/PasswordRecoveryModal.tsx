@@ -9,7 +9,7 @@
 
 import { useEffect, useState } from 'react'
 import { toast } from 'sonner'
-import { KeyRound } from 'lucide-react'
+import { Eye, EyeOff, KeyRound } from 'lucide-react'
 import { onAuthStateChange, updatePassword } from '../services/auth.service'
 
 const MIN_PASSWORD_LENGTH = 8
@@ -20,6 +20,8 @@ export function PasswordRecoveryModal() {
   const [confirm, setConfirm] = useState('')
   const [error, setError] = useState<string | null>(null)
   const [saving, setSaving] = useState(false)
+  // Um toggle só para os dois campos: o objetivo é conferir o que digitou.
+  const [showPasswords, setShowPasswords] = useState(false)
 
   useEffect(() => {
     return onAuthStateChange((event) => {
@@ -74,16 +76,26 @@ export function PasswordRecoveryModal() {
         <form onSubmit={handleSubmit} noValidate className="flex flex-col gap-3">
           <div>
             <label htmlFor="recovery-password" className="mb-1 block text-xs text-zinc-400">Nova senha</label>
-            <input
-              id="recovery-password"
-              name="new-password"
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              placeholder={`Mínimo ${MIN_PASSWORD_LENGTH} caracteres`}
-              autoComplete="new-password"
-              className="w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm text-zinc-100 placeholder-zinc-500 outline-none transition-colors focus:border-[var(--color-primary)]/50 focus:bg-white/8"
-            />
+            <div className="relative">
+              <input
+                id="recovery-password"
+                name="new-password"
+                type={showPasswords ? 'text' : 'password'}
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                placeholder={`Mínimo ${MIN_PASSWORD_LENGTH} caracteres`}
+                autoComplete="new-password"
+                className="w-full rounded-lg border border-white/10 bg-white/5 py-2 pl-3 pr-10 text-sm text-zinc-100 placeholder-zinc-500 outline-none transition-colors focus:border-[var(--color-primary)]/50 focus:bg-white/8"
+              />
+              <button
+                type="button"
+                aria-label={showPasswords ? 'Ocultar senhas' : 'Mostrar senhas'}
+                onClick={() => setShowPasswords((v) => !v)}
+                className="absolute right-2.5 top-1/2 -translate-y-1/2 text-zinc-400 transition-colors hover:text-zinc-100"
+              >
+                {showPasswords ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+              </button>
+            </div>
           </div>
 
           <div>
@@ -91,7 +103,7 @@ export function PasswordRecoveryModal() {
             <input
               id="recovery-confirm"
               name="confirm-password"
-              type="password"
+              type={showPasswords ? 'text' : 'password'}
               value={confirm}
               onChange={(e) => setConfirm(e.target.value)}
               placeholder="Repita a nova senha"
