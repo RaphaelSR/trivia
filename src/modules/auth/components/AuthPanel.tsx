@@ -106,11 +106,11 @@ function LoggedInPanel({ user, loading, onLogout, onClose }: LoggedInPanelProps)
   }
 
   return (
-    <div className="relative w-full max-w-sm rounded-2xl border border-white/10 bg-black/60 p-6 shadow-2xl backdrop-blur-xl">
+    <div className="relative w-full max-w-sm rounded-2xl border border-white/10 bg-zinc-900/95 p-6 shadow-2xl backdrop-blur-xl">
       <button
         aria-label="Fechar"
         onClick={onClose}
-        className="absolute right-4 top-4 text-[var(--color-muted)] transition-colors hover:text-[var(--color-text)]"
+        className="absolute right-4 top-4 text-zinc-400 transition-colors hover:text-zinc-100"
       >
         <X className="h-4 w-4" />
       </button>
@@ -120,12 +120,12 @@ function LoggedInPanel({ user, loading, onLogout, onClose }: LoggedInPanelProps)
         <div className="flex h-12 w-12 items-center justify-center rounded-full bg-[var(--color-primary)]/20 text-lg font-semibold text-[var(--color-primary)]">
           {name.charAt(0).toUpperCase()}
         </div>
-        <p className="text-sm font-medium text-[var(--color-text)]">{name}</p>
-        <p className="text-xs text-[var(--color-muted)]">{user.email}</p>
+        <p className="text-sm font-medium text-zinc-100">{name}</p>
+        <p className="text-xs text-zinc-400">{user.email}</p>
         <button
           onClick={onLogout}
           disabled={loading}
-          className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-4 py-2 text-sm text-[var(--color-muted)] transition-colors hover:border-white/20 hover:text-[var(--color-text)] disabled:opacity-50"
+          className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-4 py-2 text-sm text-zinc-400 transition-colors hover:border-white/20 hover:text-zinc-100 disabled:opacity-50"
         >
           <LogOut className="h-3.5 w-3.5" />
           {loading ? 'Saindo…' : 'Sair'}
@@ -143,24 +143,24 @@ function LoggedInPanel({ user, loading, onLogout, onClose }: LoggedInPanelProps)
 
       {/* Seção: Minhas partidas */}
       <section aria-label="Minhas partidas">
-        <p className="mb-3 text-xs font-semibold uppercase tracking-wider text-[var(--color-muted)]">
+        <p className="mb-3 text-xs font-semibold uppercase tracking-wider text-zinc-400">
           Minhas partidas
         </p>
 
         {historyLoading && (
-          <p className="text-xs text-[var(--color-muted)]" aria-live="polite">
+          <p className="text-xs text-zinc-400" aria-live="polite">
             Carregando…
           </p>
         )}
 
         {!historyLoading && historyError && (
-          <p className="text-xs text-[var(--color-muted)]" aria-live="polite">
+          <p className="text-xs text-zinc-400" aria-live="polite">
             Não foi possível carregar o histórico.
           </p>
         )}
 
         {!historyLoading && !historyError && history.length === 0 && (
-          <p className="text-xs text-[var(--color-muted)]" aria-live="polite">
+          <p className="text-xs text-zinc-400" aria-live="polite">
             Nenhuma partida registrada ainda.
           </p>
         )}
@@ -175,17 +175,17 @@ function LoggedInPanel({ user, loading, onLogout, onClose }: LoggedInPanelProps)
                   aria-label={`Ver detalhes de ${entry.title}`}
                 >
                   <div className="flex items-center gap-2">
-                    <p className="min-w-0 flex-1 truncate text-xs font-medium text-[var(--color-text)]">
+                    <p className="min-w-0 flex-1 truncate text-xs font-medium text-zinc-100">
                       {entry.title}
                     </p>
                     {entry.source === 'import' && (
-                      <span className="shrink-0 rounded px-1.5 py-0.5 text-[10px] font-medium bg-white/10 text-[var(--color-muted)]">
+                      <span className="shrink-0 rounded px-1.5 py-0.5 text-[10px] font-medium bg-white/10 text-zinc-400">
                         importado
                       </span>
                     )}
                   </div>
                   <div className="mt-0.5 flex flex-wrap items-center gap-x-2 gap-y-0.5">
-                    <span className="text-xs text-[var(--color-muted)]">
+                    <span className="text-xs text-zinc-400">
                       {formatDatePtBR(entry.playedAt ?? entry.endedAt ?? '')}
                     </span>
                     {entry.winner != null && (
@@ -194,11 +194,11 @@ function LoggedInPanel({ user, loading, onLogout, onClose }: LoggedInPanelProps)
                       </span>
                     )}
                     {entry.winner == null && (
-                      <span className="text-xs text-[var(--color-muted)]">Empate</span>
+                      <span className="text-xs text-zinc-400">Empate</span>
                     )}
                   </div>
                   {buildScoreLine(entry) && (
-                    <p className="mt-0.5 truncate text-xs text-[var(--color-muted)]">
+                    <p className="mt-0.5 truncate text-xs text-zinc-400">
                       {buildScoreLine(entry)}
                     </p>
                   )}
@@ -207,7 +207,7 @@ function LoggedInPanel({ user, loading, onLogout, onClose }: LoggedInPanelProps)
                 <button
                   onClick={() => setDeleteTarget({ id: entry.id, title: entry.title })}
                   aria-label={`Excluir partida ${entry.title}`}
-                  className="flex shrink-0 items-center justify-center rounded-lg border border-white/5 bg-white/5 px-2 text-[var(--color-muted)] transition-colors hover:border-red-500/30 hover:bg-red-500/10 hover:text-red-400"
+                  className="flex shrink-0 items-center justify-center rounded-lg border border-white/5 bg-white/5 px-2 text-zinc-400 transition-colors hover:border-red-500/30 hover:bg-red-500/10 hover:text-red-400"
                 >
                   <Trash2 className="h-3.5 w-3.5" />
                 </button>
@@ -280,20 +280,20 @@ function ConfirmationPendingPanel({ email, onClose, onResend }: ConfirmationPend
   }
 
   return (
-    <div className="relative w-full max-w-sm rounded-2xl border border-white/10 bg-black/60 p-6 shadow-2xl backdrop-blur-xl">
+    <div className="relative w-full max-w-sm rounded-2xl border border-white/10 bg-zinc-900/95 p-6 shadow-2xl backdrop-blur-xl">
       <button
         aria-label="Fechar"
         onClick={onClose}
-        className="absolute right-4 top-4 text-[var(--color-muted)] transition-colors hover:text-[var(--color-text)]"
+        className="absolute right-4 top-4 text-zinc-400 transition-colors hover:text-zinc-100"
       >
         <X className="h-4 w-4" />
       </button>
 
       <div className="flex flex-col gap-4 pt-2">
-        <p className="text-sm font-semibold text-[var(--color-text)]">Confirme seu e-mail</p>
-        <p className="text-xs leading-relaxed text-[var(--color-muted)]">
+        <p className="text-sm font-semibold text-zinc-100">Confirme seu e-mail</p>
+        <p className="text-sm leading-relaxed text-zinc-400">
           Conta criada! Enviamos um link de confirmação para{' '}
-          <span className="font-medium text-[var(--color-text)]">{email}</span>. Clique no link para
+          <span className="font-medium text-zinc-100">{email}</span>. Clique no link para
           entrar.
         </p>
 
@@ -306,7 +306,7 @@ function ConfirmationPendingPanel({ email, onClose, onResend }: ConfirmationPend
         <button
           onClick={() => void handleResend()}
           disabled={cooldown > 0}
-          className="w-full rounded-lg border border-white/10 bg-white/5 py-2 text-sm text-[var(--color-muted)] transition-colors hover:border-white/20 hover:text-[var(--color-text)] disabled:cursor-not-allowed disabled:opacity-50"
+          className="w-full rounded-lg border border-white/10 bg-white/5 py-2 text-sm text-zinc-400 transition-colors hover:border-white/20 hover:text-zinc-100 disabled:cursor-not-allowed disabled:opacity-50"
         >
           {cooldown > 0
             ? `Reenviado ✓ (aguarde ${cooldown}s)`
@@ -388,32 +388,32 @@ function ForgotPasswordPanel({ initialEmail, onBack, onClose, onRequestReset }: 
       : 'Enviar link de redefinição'
 
   return (
-    <div className="relative w-full max-w-sm rounded-2xl border border-white/10 bg-black/60 p-6 shadow-2xl backdrop-blur-xl">
+    <div className="relative w-full max-w-sm rounded-2xl border border-white/10 bg-zinc-900/95 p-6 shadow-2xl backdrop-blur-xl">
       <button
         aria-label="Fechar"
         onClick={onClose}
-        className="absolute right-4 top-4 text-[var(--color-muted)] transition-colors hover:text-[var(--color-text)]"
+        className="absolute right-4 top-4 text-zinc-400 transition-colors hover:text-zinc-100"
       >
         <X className="h-4 w-4" />
       </button>
 
       <button
         onClick={onBack}
-        className="mb-4 flex items-center gap-1.5 text-xs text-[var(--color-muted)] transition-colors hover:text-[var(--color-text)]"
+        className="mb-4 flex items-center gap-1.5 text-xs text-zinc-400 transition-colors hover:text-zinc-100"
       >
         <ArrowLeft className="h-3.5 w-3.5" />
         Voltar para entrar
       </button>
 
-      <h2 className="text-base font-semibold text-[var(--color-text)]">Redefinir senha</h2>
-      <p className="mt-1.5 mb-4 text-xs leading-relaxed text-[var(--color-muted)]">
+      <h2 className="text-lg font-semibold text-zinc-100">Redefinir senha</h2>
+      <p className="mt-1.5 mb-4 text-sm leading-relaxed text-zinc-400">
         Informe o e-mail da sua conta e enviaremos um link para criar uma nova senha. Não precisa
         lembrar a senha atual.
       </p>
 
       <form onSubmit={handleSubmit} noValidate className="flex flex-col gap-3">
         <div>
-          <label htmlFor="forgot-email" className="mb-1 block text-xs text-[var(--color-muted)]">
+          <label htmlFor="forgot-email" className="mb-1 block text-xs text-zinc-400">
             Email
           </label>
           <input
@@ -424,7 +424,7 @@ function ForgotPasswordPanel({ initialEmail, onBack, onClose, onRequestReset }: 
             onChange={(e) => setEmail(e.target.value)}
             placeholder="seu@email.com"
             autoComplete="email"
-            className="w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm text-[var(--color-text)] placeholder-[var(--color-muted)] outline-none transition-colors focus:border-[var(--color-primary)]/50 focus:bg-white/8"
+            className="w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm text-zinc-100 placeholder-zinc-500 outline-none transition-colors focus:border-[var(--color-primary)]/50 focus:bg-white/8"
           />
         </div>
 
@@ -548,11 +548,11 @@ export function AuthPanel({ onClose, initialTab = 'signin' }: AuthPanelProps) {
 
   // Painel de login / cadastro
   return (
-    <div className="relative w-full max-w-sm rounded-2xl border border-white/10 bg-black/60 p-6 shadow-2xl backdrop-blur-xl">
+    <div className="relative w-full max-w-sm rounded-2xl border border-white/10 bg-zinc-900/95 p-6 shadow-2xl backdrop-blur-xl">
       <button
         aria-label="Fechar"
         onClick={onClose}
-        className="absolute right-4 top-4 text-[var(--color-muted)] transition-colors hover:text-[var(--color-text)]"
+        className="absolute right-4 top-4 text-zinc-400 transition-colors hover:text-zinc-100"
       >
         <X className="h-4 w-4" />
       </button>
@@ -566,8 +566,8 @@ export function AuthPanel({ onClose, initialTab = 'signin' }: AuthPanelProps) {
             className={[
               'flex-1 rounded-lg py-1.5 text-sm font-medium transition-all',
               tab === t
-                ? 'bg-white/10 text-[var(--color-text)] shadow-sm'
-                : 'text-[var(--color-muted)] hover:text-[var(--color-text)]',
+                ? 'bg-white/10 text-zinc-100 shadow-sm'
+                : 'text-zinc-400 hover:text-zinc-100',
             ].join(' ')}
           >
             {t === 'signin' ? 'Entrar' : 'Criar conta'}
@@ -578,7 +578,7 @@ export function AuthPanel({ onClose, initialTab = 'signin' }: AuthPanelProps) {
       <form onSubmit={handleSubmit} noValidate className="flex flex-col gap-3">
         {tab === 'signup' && (
           <div>
-            <label htmlFor="auth-display-name" className="mb-1 block text-xs text-[var(--color-muted)]">Nome de exibição</label>
+            <label htmlFor="auth-display-name" className="mb-1 block text-xs text-zinc-400">Nome de exibição</label>
             <input
               id="auth-display-name"
               name="name"
@@ -588,13 +588,13 @@ export function AuthPanel({ onClose, initialTab = 'signin' }: AuthPanelProps) {
               placeholder="Como você quer ser chamado"
               maxLength={40}
               autoComplete="name"
-              className="w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm text-[var(--color-text)] placeholder-[var(--color-muted)] outline-none transition-colors focus:border-[var(--color-primary)]/50 focus:bg-white/8"
+              className="w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm text-zinc-100 placeholder-zinc-500 outline-none transition-colors focus:border-[var(--color-primary)]/50 focus:bg-white/8"
             />
           </div>
         )}
 
         <div>
-          <label htmlFor="auth-email" className="mb-1 block text-xs text-[var(--color-muted)]">Email</label>
+          <label htmlFor="auth-email" className="mb-1 block text-xs text-zinc-400">Email</label>
           <input
             id="auth-email"
             name="email"
@@ -603,13 +603,13 @@ export function AuthPanel({ onClose, initialTab = 'signin' }: AuthPanelProps) {
             onChange={(e) => setEmail(e.target.value)}
             placeholder="seu@email.com"
             autoComplete={tab === 'signin' ? 'username' : 'email'}
-            className="w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm text-[var(--color-text)] placeholder-[var(--color-muted)] outline-none transition-colors focus:border-[var(--color-primary)]/50 focus:bg-white/8"
+            className="w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm text-zinc-100 placeholder-zinc-500 outline-none transition-colors focus:border-[var(--color-primary)]/50 focus:bg-white/8"
           />
         </div>
 
         <div>
           <div className="mb-1 flex items-center justify-between">
-            <label htmlFor="auth-password" className="block text-xs text-[var(--color-muted)]">Senha</label>
+            <label htmlFor="auth-password" className="block text-xs text-zinc-400">Senha</label>
             {tab === 'signin' && (
               <button
                 type="button"
@@ -617,7 +617,7 @@ export function AuthPanel({ onClose, initialTab = 'signin' }: AuthPanelProps) {
                   setError(null)
                   setForgotOpen(true)
                 }}
-                className="text-xs text-[var(--color-muted)] underline-offset-2 transition-colors hover:text-[var(--color-text)] hover:underline"
+                className="text-xs text-zinc-400 underline-offset-2 transition-colors hover:text-zinc-100 hover:underline"
               >
                 Esqueci minha senha
               </button>
@@ -632,13 +632,13 @@ export function AuthPanel({ onClose, initialTab = 'signin' }: AuthPanelProps) {
               onChange={(e) => setPassword(e.target.value)}
               placeholder={tab === 'signin' ? '••••••••' : 'Mínimo 8 caracteres'}
               autoComplete={tab === 'signin' ? 'current-password' : 'new-password'}
-              className="w-full rounded-lg border border-white/10 bg-white/5 py-2 pl-3 pr-10 text-sm text-[var(--color-text)] placeholder-[var(--color-muted)] outline-none transition-colors focus:border-[var(--color-primary)]/50 focus:bg-white/8"
+              className="w-full rounded-lg border border-white/10 bg-white/5 py-2 pl-3 pr-10 text-sm text-zinc-100 placeholder-zinc-500 outline-none transition-colors focus:border-[var(--color-primary)]/50 focus:bg-white/8"
             />
             <button
               type="button"
               aria-label={showPassword ? 'Ocultar senha' : 'Mostrar senha'}
               onClick={() => setShowPassword((v) => !v)}
-              className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[var(--color-muted)] transition-colors hover:text-[var(--color-text)]"
+              className="absolute right-2.5 top-1/2 -translate-y-1/2 text-zinc-400 transition-colors hover:text-zinc-100"
             >
               {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
             </button>
