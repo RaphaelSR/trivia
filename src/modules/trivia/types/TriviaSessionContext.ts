@@ -24,6 +24,8 @@ export type TriviaSessionContextValue = {
   addFilmColumn: (displayName?: string) => string;
   removeFilmColumn: (columnId: string) => void;
   replaceColumnTiles: (columnId: string, defaults: Array<Partial<TriviaQuestionTile>>) => void
+  /** Atualiza título/data da sessão no estado (o autosave persiste em seguida). */
+  updateSessionInfo: (updates: Partial<Pick<TriviaSession, "title" | "scheduledAt">>) => void
   addQuestionTile: (
     columnId: string,
     defaults?: Partial<TriviaQuestionTile>
