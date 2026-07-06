@@ -319,7 +319,7 @@ export function ControlDashboard() {
   const syncEnabled = gameMode !== 'demo' && Boolean(user) && isSupabaseConfigured()
   // Conflito detectado pelo reconcile (local x nuvem divergem de forma ambígua).
   const [sessionConflict, setSessionConflict] = useState<CloudSyncConflict | null>(null)
-  const { status: syncStatus, forceSync } = useCloudSync({
+  const { status: syncStatus, forceSync, snapshotFailing } = useCloudSync({
     session,
     enabled: syncEnabled,
     title: session.title,
@@ -335,6 +335,20 @@ export function ControlDashboard() {
   // Outra aba deste navegador com a mesma sessão aberta? Duas abas se
   // sobrescrevem no localStorage — a UI avisa para jogar em uma só.
   const otherTabOpen = useTabGuard(session.id, gameMode !== 'demo')
+
+  // Snapshots (T4) falhando em sequência: avisa uma vez por transição — o
+  // jogo continua salvo, mas o histórico de versões parou de ganhar pontos
+  // de restauração.
+  useEffect(() => {
+    if (snapshotFailing) {
+      toast.warning('Não consegui gravar pontos de restauração na nuvem.', {
+        id: 'snapshot-failing',
+        description:
+          'O jogo continua salvo normalmente, mas o histórico de versões pode não ter versões novas.',
+        duration: 8000,
+      })
+    }
+  }, [snapshotFailing])
 
   // T9 — configurações de som.
   const [soundSettingsOpen, setSoundSettingsOpen] = useState(false)
