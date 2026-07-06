@@ -9,7 +9,7 @@ jest.mock('@/shared/services/supabase.client', () => ({
 }))
 
 import { isSupabaseConfigured, getSupabaseClient } from '@/shared/services/supabase.client'
-import { signUp, signIn, signOut, getSession, onAuthStateChange, resendConfirmation } from '@/modules/auth/services/auth.service'
+import { signUp, signIn, signOut, getSession, onAuthStateChange, requestPasswordReset, resendConfirmation, updatePassword } from '@/modules/auth/services/auth.service'
 
 const mockIsConfigured = isSupabaseConfigured as jest.Mock
 const mockGetClient = getSupabaseClient as jest.Mock
@@ -200,5 +200,61 @@ describe('auth.service — não apaga dados locais existentes', () => {
   it('signOut preserva a sessão local no localStorage', async () => {
     await signOut()
     expect(localStorage.getItem(OFFLINE_KEY)).toBe(OFFLINE_VALUE)
+  })
+})
+
+describe('auth.service — redefinição de senha', () => {
+  it('requestPasswordReset é no-op (error: null) sem configuração', async () => {
+    mockIsConfigured.mockReturnValue(false)
+    expect(await requestPasswordReset('a@b.com')).toEqual({ error: null })
+  })
+
+  it('updatePassword é no-op (error: null) sem configuração', async () => {
+    mockIsConfigured.mockReturnValue(false)
+    expect(await updatePassword('novaSenha123')).toEqual({ error: null })
+  })
+
+  it('requestPasswordReset chama resetPasswordForEmail com redirectTo do app', async () => {
+    mockIsConfigured.mockReturnValue(true)
+    const resetPasswordForEmail = jest.fn().mockResolvedValue({ data: {}, error: null })
+    mockGetClient.mockReturnValue({ auth: { resetPasswordForEmail } })
+
+    const result = await requestPasswordReset('a@b.com')
+
+    expect(result).toEqual({ error: null })
+    expect(resetPasswordForEmail).toHaveBeenCalledWith('a@b.com', {
+      redirectTo: window.location.origin + '/',
+    })
+  })
+
+  it('requestPasswordReset retorna mensagem genérica em pt-BR quando falha', async () => {
+    mockIsConfigured.mockReturnValue(true)
+    const resetPasswordForEmail = jest
+      .fn()
+      .mockResolvedValue({ data: null, error: { message: 'rate limit' } })
+    mockGetClient.mockReturnValue({ auth: { resetPasswordForEmail } })
+
+    const result = await requestPasswordReset('a@b.com')
+
+    expect(result.error).toMatch(/Não foi possível enviar/)
+    expect(result.error).not.toContain('rate limit')
+  })
+
+  it('updatePassword chama auth.updateUser com a nova senha', async () => {
+    mockIsConfigured.mockReturnValue(true)
+    const updateUser = jest.fn().mockResolvedValue({ data: {}, error: null })
+    mockGetClient.mockReturnValue({ auth: { updateUser } })
+
+    expect(await updatePassword('novaSenha123')).toEqual({ error: null })
+    expect(updateUser).toHaveBeenCalledWith({ password: 'novaSenha123' })
+  })
+
+  it('updatePassword retorna mensagem genérica quando falha', async () => {
+    mockIsConfigured.mockReturnValue(true)
+    const updateUser = jest.fn().mockResolvedValue({ data: null, error: { message: 'weak' } })
+    mockGetClient.mockReturnValue({ auth: { updateUser } })
+
+    const result = await updatePassword('novaSenha123')
+    expect(result.error).toMatch(/Não foi possível atualizar/)
   })
 })

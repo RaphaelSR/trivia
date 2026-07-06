@@ -65,6 +65,7 @@ const defaultAuthState = {
   register: jest.fn().mockResolvedValue(null),
   logout: jest.fn().mockResolvedValue(undefined),
   resend: jest.fn().mockResolvedValue(null),
+  requestReset: jest.fn().mockResolvedValue(null),
 }
 
 /** Encontra o botão de submit do formulário (type="submit") */
@@ -318,5 +319,59 @@ describe('AuthPanel — estado pós-cadastro (confirmação pendente)', () => {
     // Deve mostrar o painel logado, não o de confirmação
     expect(screen.getByText('Teste')).toBeInTheDocument()
     expect(screen.queryByText(/link de confirmação/i)).not.toBeInTheDocument()
+  })
+})
+
+describe('AuthPanel — esqueci minha senha', () => {
+  beforeEach(() => {
+    jest.clearAllMocks()
+    mockUseAuth.mockReturnValue(defaultAuthState)
+  })
+
+  it('mostra o link apenas na aba Entrar', () => {
+    render(<AuthPanel onClose={() => {}} />)
+    expect(screen.getByRole('button', { name: 'Esqueci minha senha' })).toBeInTheDocument()
+
+    fireEvent.click(screen.getByRole('button', { name: 'Criar conta' }))
+    expect(screen.queryByRole('button', { name: 'Esqueci minha senha' })).not.toBeInTheDocument()
+  })
+
+  it('exige e-mail válido antes de enviar', async () => {
+    render(<AuthPanel onClose={() => {}} />)
+    await act(async () => {
+      fireEvent.click(screen.getByRole('button', { name: 'Esqueci minha senha' }))
+    })
+    expect(screen.getByText(/Informe seu e-mail no campo acima/)).toBeInTheDocument()
+    expect(defaultAuthState.requestReset).not.toHaveBeenCalled()
+  })
+
+  it('envia o link e mostra a confirmação', async () => {
+    render(<AuthPanel onClose={() => {}} />)
+    fireEvent.change(screen.getByPlaceholderText('seu@email.com'), {
+      target: { value: 'rrocha@teste.com' },
+    })
+    await act(async () => {
+      fireEvent.click(screen.getByRole('button', { name: 'Esqueci minha senha' }))
+    })
+
+    expect(defaultAuthState.requestReset).toHaveBeenCalledWith('rrocha@teste.com')
+    expect(screen.getByText(/Enviamos um link de redefinição para rrocha@teste.com/)).toBeInTheDocument()
+    // o link some depois do envio (evita spam de cliques)
+    expect(screen.queryByRole('button', { name: 'Esqueci minha senha' })).not.toBeInTheDocument()
+  })
+
+  it('mostra erro quando o serviço falha', async () => {
+    mockUseAuth.mockReturnValue({
+      ...defaultAuthState,
+      requestReset: jest.fn().mockResolvedValue('Não foi possível enviar o e-mail agora. Tente novamente em instantes.'),
+    })
+    render(<AuthPanel onClose={() => {}} />)
+    fireEvent.change(screen.getByPlaceholderText('seu@email.com'), {
+      target: { value: 'rrocha@teste.com' },
+    })
+    await act(async () => {
+      fireEvent.click(screen.getByRole('button', { name: 'Esqueci minha senha' }))
+    })
+    expect(screen.getByText(/Não foi possível enviar o e-mail/)).toBeInTheDocument()
   })
 })

@@ -136,6 +136,43 @@ export async function verifyPassword(password: string): Promise<boolean> {
 }
 
 /**
+ * Envia o e-mail de redefinição de senha. O link redireciona para o app
+ * (mesma URL dos e-mails de confirmação); ao abrir, o supabase-js dispara o
+ * evento PASSWORD_RECOVERY e o PasswordRecoveryModal assume.
+ * No-op quando Supabase não está configurado. Mensagem de erro genérica em
+ * pt-BR para não vazar se o e-mail existe ou não.
+ */
+export async function requestPasswordReset(email: string): Promise<{ error: string | null }> {
+  if (!isSupabaseConfigured()) return { error: null }
+
+  const client = getSupabaseClient()!
+  const { error } = await client.auth.resetPasswordForEmail(email, {
+    redirectTo: getEmailRedirectTo(),
+  })
+
+  if (error) {
+    return { error: 'Não foi possível enviar o e-mail agora. Tente novamente em instantes.' }
+  }
+  return { error: null }
+}
+
+/**
+ * Define uma nova senha para o usuário da sessão atual (inclusive a sessão
+ * temporária criada pelo link de recuperação). No-op quando não configurado.
+ */
+export async function updatePassword(newPassword: string): Promise<{ error: string | null }> {
+  if (!isSupabaseConfigured()) return { error: null }
+
+  const client = getSupabaseClient()!
+  const { error } = await client.auth.updateUser({ password: newPassword })
+
+  if (error) {
+    return { error: 'Não foi possível atualizar a senha. Tente novamente.' }
+  }
+  return { error: null }
+}
+
+/**
  * Assina mudanças de estado de autenticação.
  * Retorna uma função de cancelamento. No-op quando Supabase não está configurado.
  */

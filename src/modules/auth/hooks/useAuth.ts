@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from 'react'
 import type { User } from '@supabase/supabase-js'
 import { isSupabaseConfigured } from '../../../shared/services/supabase.client'
-import { getSession, onAuthStateChange, resendConfirmation, signIn, signOut, signUp } from '../services/auth.service'
+import { getSession, onAuthStateChange, requestPasswordReset, resendConfirmation, signIn, signOut, signUp } from '../services/auth.service'
 import { claimParticipation, linkMyParticipations } from '../services/normalized-history.service'
 
 export interface AuthState {
@@ -16,6 +16,8 @@ export interface AuthActions {
   register: (email: string, password: string, displayName: string) => Promise<string | null>
   logout: () => Promise<void>
   resend: (email: string) => Promise<string | null>
+  /** Envia o e-mail de redefinição de senha. Retorna mensagem de erro ou null. */
+  requestReset: (email: string) => Promise<string | null>
   /** Reivindica uma participação por token de claim. Retorna gameId ou erro. */
   claim: (token: string) => Promise<{ gameId: string | null; error: string | null }>
 }
@@ -90,6 +92,11 @@ export function useAuth(): AuthState & AuthActions {
     return result.error
   }, [])
 
+  const requestReset = useCallback(async (email: string): Promise<string | null> => {
+    const result = await requestPasswordReset(email)
+    return result.error
+  }, [])
+
   const claim = useCallback(
     async (token: string): Promise<{ gameId: string | null; error: string | null }> => {
       return claimParticipation(token)
@@ -97,5 +104,5 @@ export function useAuth(): AuthState & AuthActions {
     [],
   )
 
-  return { user, loading, configured, login, register, logout, resend, claim }
+  return { user, loading, configured, login, register, logout, resend, requestReset, claim }
 }
