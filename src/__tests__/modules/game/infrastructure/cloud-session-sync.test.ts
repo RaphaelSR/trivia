@@ -12,7 +12,12 @@ jest.mock('@/shared/services/supabase.client', () => ({
   getSupabaseClient: jest.fn(),
 }))
 
+jest.mock('@/modules/game/infrastructure/keepalive-flush', () => ({
+  sendKeepaliveSessionPatch: jest.fn().mockReturnValue(true),
+}))
+
 import { isSupabaseConfigured, getSupabaseClient } from '@/shared/services/supabase.client'
+import { sendKeepaliveSessionPatch } from '@/modules/game/infrastructure/keepalive-flush'
 import { createCloudSessionSync } from '@/modules/game/infrastructure/cloud-session-sync'
 import type { CloudSessionSync } from '@/modules/game/infrastructure/cloud-session-sync'
 import type { TriviaSession } from '@/modules/trivia/types'
@@ -705,6 +710,66 @@ describe('CloudSessionSync — dispose removes window listeners', () => {
     expect(fromFn).not.toHaveBeenCalled()
 
     jest.useRealTimers()
+  })
+})
+
+// ── Suite: emergency flush (pagehide / beforeunload) ─────────────────────────
+
+describe('CloudSessionSync — emergency flush on page exit', () => {
+  const mockKeepalive = sendKeepaliveSessionPatch as jest.Mock
+  let sync: CloudSessionSync
+  let fromFn: jest.Mock
+
+  beforeEach(() => {
+    jest.useFakeTimers()
+    jest.clearAllMocks()
+    mockIsConfigured.mockReturnValue(true)
+    const mocks = buildSuccessFromMock()
+    fromFn = mocks.fromFn
+    mockGetClient.mockReturnValue({ auth: buildAuthMock(), from: fromFn })
+    sync = createCloudSessionSync()
+  })
+
+  afterEach(() => {
+    sync.dispose()
+    jest.useRealTimers()
+  })
+
+  it('pagehide fires the keepalive PATCH with the pending snapshot', () => {
+    sync.pushSnapshot(makeSession(), { title: 'Sessão do teste' })
+    window.dispatchEvent(new Event('pagehide'))
+    expect(mockKeepalive).toHaveBeenCalledTimes(1)
+    expect(mockKeepalive.mock.calls[0][0]).toMatchObject({
+      title: 'Sessão do teste',
+      mode: 'cloud',
+    })
+  })
+
+  it('beforeunload fires the keepalive PATCH when there is a pending snapshot', () => {
+    sync.pushSnapshot(makeSession())
+    window.dispatchEvent(new Event('beforeunload'))
+    expect(mockKeepalive).toHaveBeenCalledTimes(1)
+  })
+
+  it('does not fire the keepalive PATCH when nothing is pending', async () => {
+    sync.pushSnapshot(makeSession())
+    await sync.flushNow() // clears pending
+    window.dispatchEvent(new Event('pagehide'))
+    expect(mockKeepalive).not.toHaveBeenCalled()
+  })
+
+  it('pagehide also triggers the async flush (page may survive)', async () => {
+    sync.pushSnapshot(makeSession())
+    window.dispatchEvent(new Event('pagehide'))
+    for (let i = 0; i < 5; i++) await Promise.resolve()
+    expect(fromFn).toHaveBeenCalled()
+  })
+
+  it('pagehide is ignored after dispose', () => {
+    sync.pushSnapshot(makeSession())
+    sync.dispose()
+    window.dispatchEvent(new Event('pagehide'))
+    expect(mockKeepalive).not.toHaveBeenCalled()
   })
 })
 

@@ -12,7 +12,7 @@ import {
   Theater,
   Volume2,
 } from 'lucide-react'
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { toast } from 'sonner'
 import { Button } from '@/components/ui/Button'
 import { FilmRoulette } from '@/components/ui/FilmRoulette'
@@ -285,9 +285,22 @@ export function ControlDashboard() {
     }
   }, [gameMode, orderedTeams.length, showOnboardingSuggestion, setShowOnboardingSuggestion])
 
-  // Salva sessão automaticamente quando há mudanças (modo offline e online; demo fica fora)
+  // Salva sessão automaticamente quando há mudanças (modo offline e online; demo fica fora).
+  // Jogadas (carta respondida / placar) salvam NA HORA — fechar a aba logo após
+  // um lance não pode perdê-lo; o debounce de 1s fica para edições cosméticas.
+  const lastSavedProgressRef = useRef<string | null>(null)
   useEffect(() => {
     if ((gameMode === 'offline' || gameMode === 'online') && orderedTeams.length > 0) {
+      const progressSignature = `${countAnsweredTiles(session.board)}:${session.teams.reduce((sum, team) => sum + team.score, 0)}`
+      const significantChange =
+        lastSavedProgressRef.current !== null && progressSignature !== lastSavedProgressRef.current
+      lastSavedProgressRef.current = progressSignature
+
+      if (significantChange) {
+        saveSession(session, session.title)
+        return
+      }
+
       const timer = setTimeout(() => {
         saveSession(session, session.title);
       }, 1000); // Debounce de 1 segundo

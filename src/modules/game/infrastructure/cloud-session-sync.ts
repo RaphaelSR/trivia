@@ -22,6 +22,7 @@
  */
 
 import { getSupabaseClient, isSupabaseConfigured } from '../../../shared/services/supabase.client'
+import { sendKeepaliveSessionPatch } from './keepalive-flush'
 import { countAnsweredTiles } from '../domain/board.utils'
 import type { TriviaColumn, TriviaSession } from '../../trivia/types'
 
@@ -134,10 +135,13 @@ class CloudSessionSyncImpl implements CloudSessionSync {
       this._handleOnline = this._handleOnline.bind(this)
       this._handleVisibilityChange = this._handleVisibilityChange.bind(this)
       this._handleBeforeUnload = this._handleBeforeUnload.bind(this)
+      this._handlePageHide = this._handlePageHide.bind(this)
 
       window.addEventListener('online', this._handleOnline)
       window.addEventListener('visibilitychange', this._handleVisibilityChange)
       window.addEventListener('beforeunload', this._handleBeforeUnload)
+      // pagehide é mais confiável que beforeunload (Safari/mobile e bfcache).
+      window.addEventListener('pagehide', this._handlePageHide)
     }
   }
 
@@ -253,6 +257,7 @@ class CloudSessionSyncImpl implements CloudSessionSync {
       window.removeEventListener('online', this._handleOnline)
       window.removeEventListener('visibilitychange', this._handleVisibilityChange)
       window.removeEventListener('beforeunload', this._handleBeforeUnload)
+      window.removeEventListener('pagehide', this._handlePageHide)
     }
     if (this.timer !== null) {
       clearTimeout(this.timer)
@@ -350,11 +355,33 @@ class CloudSessionSyncImpl implements CloudSessionSync {
 
   private _handleVisibilityChange(): void {
     if (typeof document !== 'undefined' && document.visibilityState === 'hidden') {
-      void this.flushNow()
+      this._emergencyFlush()
     }
   }
 
   private _handleBeforeUnload(): void {
+    this._emergencyFlush()
+  }
+
+  private _handlePageHide(): void {
+    this._emergencyFlush()
+  }
+
+  /**
+   * Caminho de saída da página: dispara o PATCH keepalive (sobrevive ao
+   * unload) e, em paralelo, o flush assíncrono normal — se a página continuar
+   * viva (beforeunload cancelado, aba apenas oculta), ele confirma o envio e
+   * limpa o pendente. O keepalive não limpa `pending` porque não há como
+   * confirmar sucesso.
+   */
+  private _emergencyFlush(): void {
+    if (this.pending) {
+      sendKeepaliveSessionPatch({
+        title: this.pending.title,
+        mode: 'cloud',
+        session: this.pending.session,
+      })
+    }
     void this.flushNow()
   }
 }
