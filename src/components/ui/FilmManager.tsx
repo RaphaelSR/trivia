@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react'
 import { Edit, Film, Grid2X2, List, Plus, Search, SlidersHorizontal, Trash2, X } from 'lucide-react'
 import { Button } from './Button'
+import { ConfirmActionModal } from './ConfirmActionModal'
 import { FilmForm } from './FilmForm'
 import { filmGenres, getStreamingPlatformInfo, getFilmGenreInfo, streamingPlatforms, type CustomFilm, type StreamingPlatform, type FilmGenre } from '../../data/customFilms'
 import type { TriviaParticipant } from '../../modules/trivia/types'
@@ -128,10 +129,10 @@ export function FilmManager({
     setEditingFilm(null)
   }
 
+  const [confirmRemove, setConfirmRemove] = useState<CustomFilm | null>(null)
+
   const handleRemoveFilm = (film: CustomFilm) => {
-    if (window.confirm(`Remover o filme "${film.name}"?`)) {
-      onRemoveFilm(film.id)
-    }
+    setConfirmRemove(film)
   }
 
   if (showForm) {
@@ -322,10 +323,10 @@ export function FilmManager({
                       <Film size={18} />
                     </div>
                     <div className="flex gap-2">
-                      <Button variant="ghost" size="icon" onClick={() => handleEditFilm(film)} title="Editar filme">
+                      <Button variant="ghost" size="icon" onClick={() => handleEditFilm(film)} title="Editar filme" aria-label={`Editar o filme ${film.name}`}>
                         <Edit size={16} />
                       </Button>
-                      <Button variant="ghost" size="icon" onClick={() => handleRemoveFilm(film)} title="Remover filme">
+                      <Button variant="ghost" size="icon" onClick={() => handleRemoveFilm(film)} title="Remover filme" aria-label={`Remover o filme ${film.name}`}>
                         <Trash2 size={16} />
                       </Button>
                     </div>
@@ -343,7 +344,7 @@ export function FilmManager({
                       {film.year ? <span className="rounded-full border border-white/10 bg-black/20 px-2.5 py-1 text-xs text-[var(--color-muted)]">{film.year}</span> : null}
                       {genreInfo ? <span className="rounded-full bg-[var(--color-primary)]/10 px-2.5 py-1 text-xs font-semibold text-[var(--color-primary)]">{genreInfo.name}</span> : null}
                       {streamingInfo ? <span className="rounded-full px-2.5 py-1 text-xs font-semibold text-white" style={{ backgroundColor: streamingInfo.color }}>{streamingInfo.name}</span> : null}
-                      {isInSession ? <span className="rounded-full bg-[var(--color-secondary)]/90 px-2.5 py-1 text-xs font-semibold text-black">No board</span> : null}
+                      {isInSession ? <span className="rounded-full bg-[var(--color-secondary)]/90 px-2.5 py-1 text-xs font-semibold text-black">Já no board</span> : null}
                     </div>
 
                     {film.notes ? <p className="line-clamp-3 text-sm leading-6 text-[var(--color-muted)]">{film.notes}</p> : null}
@@ -368,16 +369,16 @@ export function FilmManager({
                         {film.year ? <span className="rounded-full border border-white/10 bg-black/20 px-2.5 py-1 text-xs text-[var(--color-muted)]">{film.year}</span> : null}
                         {genreInfo ? <span className="rounded-full bg-[var(--color-primary)]/10 px-2.5 py-1 text-xs font-semibold text-[var(--color-primary)]">{genreInfo.name}</span> : null}
                         {streamingInfo ? <span className="rounded-full px-2.5 py-1 text-xs font-semibold text-white" style={{ backgroundColor: streamingInfo.color }}>{streamingInfo.name}</span> : null}
-                        {isInSession ? <span className="rounded-full bg-[var(--color-secondary)]/90 px-2.5 py-1 text-xs font-semibold text-black">No board</span> : null}
+                        {isInSession ? <span className="rounded-full bg-[var(--color-secondary)]/90 px-2.5 py-1 text-xs font-semibold text-black">Já no board</span> : null}
                       </div>
                       {film.notes ? <p className="mt-2 text-sm leading-6 text-[var(--color-muted)]">{film.notes}</p> : null}
                       <p className="mt-2 text-xs text-[var(--color-muted)]">{film.addedBy ? `Adicionado por ${film.addedBy}` : 'Sem responsável definido'} · {new Date(film.addedAt).toLocaleDateString('pt-BR')}</p>
                     </div>
                     <div className="flex gap-2">
-                      <Button variant="ghost" size="icon" onClick={() => handleEditFilm(film)} title="Editar filme">
+                      <Button variant="ghost" size="icon" onClick={() => handleEditFilm(film)} title="Editar filme" aria-label={`Editar o filme ${film.name}`}>
                         <Edit size={16} />
                       </Button>
-                      <Button variant="ghost" size="icon" onClick={() => handleRemoveFilm(film)} title="Remover filme">
+                      <Button variant="ghost" size="icon" onClick={() => handleRemoveFilm(film)} title="Remover filme" aria-label={`Remover o filme ${film.name}`}>
                         <Trash2 size={16} />
                       </Button>
                     </div>
@@ -402,6 +403,17 @@ export function FilmManager({
           </div>
         ) : null}
       </section>
+      <ConfirmActionModal
+        isOpen={confirmRemove !== null}
+        onClose={() => setConfirmRemove(null)}
+        onConfirm={() => {
+          if (confirmRemove) onRemoveFilm(confirmRemove.id)
+        }}
+        title="Remover filme do catálogo"
+        description={`Remover "${confirmRemove?.name ?? ''}" do catálogo? Isso não afeta o board da partida atual.`}
+        confirmLabel="Remover"
+        variant="danger"
+      />
     </div>
   )
 }

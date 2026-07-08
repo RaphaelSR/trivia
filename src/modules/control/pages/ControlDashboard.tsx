@@ -717,13 +717,19 @@ export function ControlDashboard() {
   }
 
   const handleRemoveFilm = (columnId: string, filmName: string) => {
-    if (window.confirm(`Remover o filme "${filmName}" e todas as suas perguntas?`)) {
-      if (gameMode !== 'demo') {
-        saveCheckpoint(releaseActiveTiles(session), `Antes de remover ${filmName}`)
-      }
-      removeFilmColumn(columnId)
-      toast.success('Filme removido da biblioteca')
-    }
+    setConfirmActionConfig({
+      title: 'Remover filme',
+      description: `Remover "${filmName}" e todas as suas perguntas do board? Um ponto de retorno fica no histórico de versões.`,
+      variant: 'danger',
+      onConfirm: () => {
+        if (gameMode !== 'demo') {
+          saveCheckpoint(releaseActiveTiles(session), `Antes de remover ${filmName}`)
+        }
+        removeFilmColumn(columnId)
+        toast.success('Filme removido da biblioteca')
+      },
+    })
+    setConfirmActionOpen(true)
   }
 
   const handleAddQuestion = (columnId: string) => {
@@ -736,14 +742,20 @@ export function ControlDashboard() {
   }
 
   const handleRemoveQuestion = (columnId: string, tileId: string) => {
-    if (window.confirm('Remover esta pergunta?')) {
-      if (gameMode !== 'demo') {
-        const film = session.board.find((column) => column.id === columnId)?.film ?? 'um filme'
-        saveCheckpoint(releaseActiveTiles(session), `Antes de remover uma pergunta de ${film}`)
-      }
-      removeQuestionTile(columnId, tileId)
-      toast.success('Pergunta removida')
-    }
+    const film = session.board.find((column) => column.id === columnId)?.film ?? 'um filme'
+    setConfirmActionConfig({
+      title: 'Remover pergunta',
+      description: `Remover esta pergunta de "${film}"? Um ponto de retorno fica no histórico de versões.`,
+      variant: 'danger',
+      onConfirm: () => {
+        if (gameMode !== 'demo') {
+          saveCheckpoint(releaseActiveTiles(session), `Antes de remover uma pergunta de ${film}`)
+        }
+        removeQuestionTile(columnId, tileId)
+        toast.success('Pergunta removida')
+      },
+    })
+    setConfirmActionOpen(true)
   }
 
   const handleCloseMobileSidebar = () => setMobileSidebarOpen(false)
