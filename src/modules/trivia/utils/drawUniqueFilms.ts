@@ -89,7 +89,7 @@ export function drawUniqueFilms(
 
     const personName = film.addedBy?.toLowerCase().trim() || ''
     const participantId = Array.from(participants.entries()).find(
-      ([_, p]) => p.name.toLowerCase().trim() === personName
+      (entry) => entry[1].name.toLowerCase().trim() === personName
     )?.[0] || ''
 
     const participant = participants.get(participantId) || {

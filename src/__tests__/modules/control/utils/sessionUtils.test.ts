@@ -4,7 +4,7 @@ import {
   convertDraftsToTeams,
   convertDraftsToParticipants,
 } from '../../../../modules/control/utils/sessionUtils'
-import type { TriviaColumn, TriviaTeam } from '../../../../modules/trivia/types'
+import type { TriviaColumn, TriviaTeam, TriviaQuestionTile } from '../../../../modules/trivia/types'
 import { createBalancedTurnSequence } from '../../../../modules/trivia/utils/createBalancedTurnSequence'
 import { createAlternatingTurnSequence } from '../../../../modules/trivia/utils/createAlternatingTurnSequence'
 
@@ -15,8 +15,8 @@ describe('sessionUtils', () => {
   describe('calculateTotalQuestions', () => {
     it('deve somar tiles de todas as colunas', () => {
       const board: TriviaColumn[] = [
-        { id: 'col-1', film: 'Filme 1', filmId: 'film-1', tiles: [{ id: 'tile-1' } as any, { id: 'tile-2' } as any] },
-        { id: 'col-2', film: 'Filme 2', filmId: 'film-2', tiles: [{ id: 'tile-3' } as any] },
+        { id: 'col-1', film: 'Filme 1', filmId: 'film-1', tiles: [{ id: 'tile-1' } as TriviaQuestionTile, { id: 'tile-2' } as TriviaQuestionTile] },
+        { id: 'col-2', film: 'Filme 2', filmId: 'film-2', tiles: [{ id: 'tile-3' } as TriviaQuestionTile] },
         { id: 'col-3', film: 'Filme 3', filmId: 'film-3', tiles: [] },
       ]
 
@@ -50,7 +50,7 @@ describe('sessionUtils', () => {
         { id: 'team-1', name: 'Team 1', color: '#000', order: 0, members: ['p1'], score: 0 },
       ]
       const board: TriviaColumn[] = [
-        { id: 'col-1', film: 'Filme 1', filmId: 'film-1', tiles: [{ id: 'tile-1' } as any] },
+        { id: 'col-1', film: 'Filme 1', filmId: 'film-1', tiles: [{ id: 'tile-1' } as TriviaQuestionTile] },
       ]
 
       mockCreateBalancedTurnSequence.mockReturnValue(['p1'])

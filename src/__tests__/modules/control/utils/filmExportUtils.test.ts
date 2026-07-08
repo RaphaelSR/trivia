@@ -7,7 +7,6 @@ import {
   type FilmExportData,
 } from '../../../../modules/control/utils/filmExportUtils'
 import type { TriviaColumn } from '../../../../modules/trivia/types'
-import { createQuestionTileId } from '../../../../modules/control/utils/questionUtils'
 
 describe('filmExportUtils', () => {
   const mockBoard: TriviaColumn[] = [
@@ -251,7 +250,7 @@ describe('filmExportUtils', () => {
       let columnIdCounter = 0
       const createColumnId = () => `col-${++columnIdCounter}`
 
-      const result = convertImportToColumns(importResult, createColumnId, createQuestionTileId)
+      const result = convertImportToColumns(importResult, createColumnId)
 
       expect(result).toHaveLength(1)
       expect(result[0].column.film).toBe('Filme 1')
@@ -282,7 +281,7 @@ describe('filmExportUtils', () => {
       let columnIdCounter = 0
       const createColumnId = () => `col-${++columnIdCounter}`
 
-      const result = convertImportToColumns(importResult, createColumnId, createQuestionTileId)
+      const result = convertImportToColumns(importResult, createColumnId)
 
       expect(result).toHaveLength(2)
       expect(result[0].column.film).toBe('Filme 1')

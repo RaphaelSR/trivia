@@ -159,7 +159,6 @@ export function importFilmsWithQuestions(
 export function convertImportToColumns(
   importData: FilmImportResult,
   createColumnId: () => string,
-  _createTileId: (columnId: string, points: number) => string
 ): Array<{
   column: Omit<TriviaColumn, 'id' | 'tiles'>
   tiles: Array<Omit<TriviaQuestionTile, 'id'>>

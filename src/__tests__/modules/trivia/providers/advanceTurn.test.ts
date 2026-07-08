@@ -170,7 +170,7 @@ describe("advanceTurn - Wrap-around e Regeneração Automática", () => {
         }
       ];
 
-      testCases.forEach(({ name: _name, teams }) => {
+      testCases.forEach(({ teams }) => {
         // Cria participantes para todos os times
         const participants: TriviaParticipant[] = teams.flatMap((team) =>
           team.members.map((memberId) =>

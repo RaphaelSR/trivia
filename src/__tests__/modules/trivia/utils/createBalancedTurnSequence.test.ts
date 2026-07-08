@@ -257,7 +257,7 @@ describe('createBalancedTurnSequence', () => {
         ], totalQuestions: 20 },
       ]
 
-      testCases.forEach(({ name: _name, teams, totalQuestions }) => {
+      testCases.forEach(({ teams, totalQuestions }) => {
         const sequence = createBalancedTurnSequence(teams, totalQuestions)
         const teamIds = getTeamIdFromParticipant(sequence, teams)
         

@@ -27,7 +27,6 @@ export function ScoreDetailView({
   team,
   board,
   mimicaScores,
-  allParticipants: _allParticipants,
   allTeams,
 }: ScoreDetailViewProps) {
   const [activeTab, setActiveTab] = useState<TabType>('summary')
