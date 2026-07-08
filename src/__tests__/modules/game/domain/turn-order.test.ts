@@ -112,13 +112,15 @@ describe('construção de sequência', () => {
   })
 
   // Caso 8 / BUG-1 / Bloco H caso 46
-  it('documenta comportamento atual BUG-1: times [2,2,0] total 9 — sequência menor que totalQuestions', () => {
+  it('INV-1 preservada com time vazio: times [2,2,0] total 9 → 9 turnos só entre A e B', () => {
     // BUG-1: createBalancedTurnSequence.ts:59-61 — `continue` em time vazio pula o turno
     // sem repor o índice, resultando em sequência com length < totalQuestions (viola INV-1).
     const t = createTeamsFromSizes([2, 2, 0])
     const seq = buildTurnSequence(t, 9)
-    // comportamento real: time vazio encolhe a sequência — 9 turnos mas 3 pulados = 6
-    expect(seq).toHaveLength(6)
+    // BUG-1 corrigido: time vazio sai da ROTAÇÃO em vez de furar a sequência —
+    // a sequência mantém exatamente totalQuestions elementos (INV-1).
+    expect(seq).toHaveLength(9)
+    seq.forEach((id) => expect(id).toMatch(/^[ab]/))
   })
 
   // Caso 9: buildTurnSequence [2,2] total 0 → roteia para alternating

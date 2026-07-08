@@ -254,15 +254,19 @@ describe('regressões documentadas', () => {
   })
 
   // Caso 46 / Caso 8 (alias)
-  it('documenta comportamento atual BUG-1: times [2,2,0] total 9 — length === 6 (sequência encolhe com time vazio, viola INV-1)', () => {
+  it('BUG-1 corrigido: times [2,2,0] total 9 — 9 turnos, alternância perfeita entre A e B (INV-1)', () => {
     // BUG-1: createBalancedTurnSequence.ts:59-61 — `continue` em time vazio pula o turno
     // sem decrementar o índice de sequência, fazendo o tamanho final < totalQuestions.
     const t = createTeamsFromSizes([2, 2, 0])
     const seq = buildTurnSequence(t, 9)
-    // Comportamento atual: 9 iterações, 3 com continue → 6 elementos em vez de 9
-    expect(seq).toHaveLength(6)
-    // E a sequência só contém membros de times A e B (time C está vazio)
+    // Time vazio sai da rotação; a sequência mantém totalQuestions elementos
+    // e alterna apenas entre os times jogáveis.
+    expect(seq).toHaveLength(9)
     seq.forEach((id) => expect(id).toMatch(/^[ab]/))
+    // alternância perfeita entre A e B: nunca dois turnos seguidos do mesmo time
+    for (let i = 1; i < seq.length; i++) {
+      expect(seq[i][0]).not.toBe(seq[i - 1][0])
+    }
   })
 })
 
