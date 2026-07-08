@@ -14,6 +14,7 @@
  */
 
 import { useEffect, useRef } from 'react'
+import { toast } from 'sonner'
 import type { User } from '@supabase/supabase-js'
 import { isSupabaseConfigured } from '../../../shared/services/supabase.client'
 import { saveNormalizedGame } from '../services/normalized-history.service'
@@ -47,6 +48,8 @@ export function useGameHistorySync({
    * da página depois do fim do jogo geraria uma entrada duplicada).
    */
   const prevFinishedRef = useRef<boolean | null>(null)
+  /** Última tentativa falhou: tenta de novo na próxima mudança da sessão. */
+  const retryPendingRef = useRef(false)
 
   useEffect(() => {
     // Guard: qualquer modo que não seja demo + supabase configurado + usuário logado
@@ -56,16 +59,23 @@ export function useGameHistorySync({
 
     const finished = isGameFinished(session.board)
 
-    // Transição: não-terminado → terminado (primeiro run nunca conta)
+    // Transição: não-terminado → terminado (primeiro run nunca conta).
+    // retryPendingRef reabre a janela após uma falha de rede — sem ele, a
+    // transição só acontece uma vez e a falha queimava a única tentativa.
     const justFinished = finished && prevFinishedRef.current === false
+    const shouldRetry = finished && retryPendingRef.current
 
     // Atualiza o ref para a próxima render
     prevFinishedRef.current = finished
 
-    if (!justFinished) return
+    if (!justFinished && !shouldRetry) return
+    retryPendingRef.current = false
 
     // Proteção: não salvar a mesma sessão duas vezes
     if (savedSessionIdRef.current === session.id) return
+    // Marca ANTES para bloquear re-entradas concorrentes; em falha, limpamos
+    // abaixo para o próximo evento tentar de novo (antes, uma falha de rede
+    // queimava a única tentativa em silêncio).
     savedSessionIdRef.current = session.id
 
     // Monta mapa clientId → e-mail para participantes que têm e-mail preenchido
@@ -79,8 +89,21 @@ export function useGameHistorySync({
     saveNormalizedGame(session, {
       source: 'live',
       ...(Object.keys(emailsByClientId).length > 0 ? { emailsByClientId } : {}),
+    }).then((gameId) => {
+      if (gameId) return
+      // null = RPC falhou (rede/RLS). Libera para nova tentativa e avisa —
+      // o host precisa saber que o histórico da partida não subiu.
+      savedSessionIdRef.current = null
+      retryPendingRef.current = true
+      toast.error('A partida terminou, mas não consegui salvar no seu histórico.', {
+        id: 'history-save-failed',
+        description: 'Confira a conexão — tento de novo automaticamente.',
+        duration: 10000,
+      })
     }).catch((err: unknown) => {
       console.warn('[useGameHistorySync] Falha ao salvar histórico:', err)
+      savedSessionIdRef.current = null
+      retryPendingRef.current = true
     })
   }, [session, gameMode, user])
 }

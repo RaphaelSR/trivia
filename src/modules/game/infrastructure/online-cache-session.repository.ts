@@ -48,12 +48,23 @@ export class OnlineCacheSessionRepository implements SessionRepository {
       },
     }
 
-    storageService.setJson(STORAGE_KEYS.onlineActiveSession, sessionData)
-    storageService.setJson(STORAGE_KEYS.onlineSessionById(sessionId), sessionData)
+    // Mesmo endurecimento do LocalSessionRepository: falha de quota não pode
+    // passar em silêncio, e sessões podadas do índice não deixam arquivo órfão.
+    const savedActive = storageService.setJson(STORAGE_KEYS.onlineActiveSession, sessionData)
+    const savedById = storageService.setJson(STORAGE_KEYS.onlineSessionById(sessionId), sessionData)
 
     const nextHistory = this.loadSessionHistory().filter((item) => item.id !== sessionId)
     nextHistory.unshift(sessionData.metadata)
-    storageService.setJson(STORAGE_KEYS.onlineSessionHistory, nextHistory.slice(0, MAX_SESSION_HISTORY))
+    const keptHistory = nextHistory.slice(0, MAX_SESSION_HISTORY)
+    const savedHistory = storageService.setJson(STORAGE_KEYS.onlineSessionHistory, keptHistory)
+
+    for (const pruned of nextHistory.slice(MAX_SESSION_HISTORY)) {
+      storageService.remove(STORAGE_KEYS.onlineSessionById(pruned.id))
+    }
+
+    if (!savedActive || !savedById || !savedHistory) {
+      return null
+    }
 
     return sessionData
   }
