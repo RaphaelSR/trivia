@@ -288,7 +288,9 @@ describe('FilmManager', () => {
       expect(matrixCard).not.toBeNull()
       fireEvent.click(within(matrixCard as HTMLElement).getByTitle('Remover filme'))
 
-      expect(window.confirm).toHaveBeenCalledWith(expect.stringContaining('Matrix'))
+      // Confirmação agora é via ConfirmActionModal (padrão do app), não window.confirm
+      expect(screen.getByText(/Remover "Matrix" do catálogo\?/)).toBeInTheDocument()
+      fireEvent.click(screen.getByRole('button', { name: 'Remover' }))
       expect(mockOnRemoveFilm).toHaveBeenCalledWith('film-1')
     })
 
@@ -310,7 +312,8 @@ describe('FilmManager', () => {
       expect(matrixCard).not.toBeNull()
       fireEvent.click(within(matrixCard as HTMLElement).getByTitle('Remover filme'))
 
-      expect(window.confirm).toHaveBeenCalled()
+      // Cancelar no modal não remove
+      fireEvent.click(screen.getByRole('button', { name: 'Cancelar' }))
       expect(mockOnRemoveFilm).not.toHaveBeenCalled()
     })
   })

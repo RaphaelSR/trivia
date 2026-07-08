@@ -148,7 +148,7 @@ export function Timer({
           </button>
         )}
       </div>
-      <div className="h-1.5 w-full overflow-hidden rounded-full bg-slate-200">
+      <div className="h-1.5 w-full overflow-hidden rounded-full bg-[var(--color-border)]">
         <div
           className="h-full rounded-full bg-[var(--color-primary)] transition-all"
           style={{ width: `${Math.min(100, Math.max(0, progress))}%` }}

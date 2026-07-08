@@ -1,6 +1,7 @@
 import { X } from 'lucide-react'
 import { createPortal } from 'react-dom'
 import { Button } from './Button'
+import { useEffect } from 'react'
 import type { ReactNode } from 'react'
 
 if (typeof document !== 'undefined' && !document.getElementById('trivia-portal')) {
@@ -26,6 +27,16 @@ type ModalProps = {
 }
 
 export function Modal({ isOpen, title, description, children, onClose, size = 'md' }: ModalProps) {
+  // Esc fecha — padrão de teclado esperado em qualquer modal.
+  useEffect(() => {
+    if (!isOpen) return
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') onClose()
+    }
+    document.addEventListener('keydown', handleKeyDown)
+    return () => document.removeEventListener('keydown', handleKeyDown)
+  }, [isOpen, onClose])
+
   if (!isOpen) return null
 
   const content = (
