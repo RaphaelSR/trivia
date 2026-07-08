@@ -37,7 +37,7 @@ export function rebuildSessionTurnState(
     teams,
     participants,
     turnSequence: finalTurnSequence,
-    activeTurnIndex: activeParticipantId ? 0 : 0,
+    activeTurnIndex: 0,
     activeParticipantId,
     activeTeamId,
   }
