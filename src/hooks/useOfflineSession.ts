@@ -6,8 +6,8 @@ import { useGameMode } from './useGameMode'
 import { useAuth } from '../modules/auth/hooks/useAuth'
 import type { TriviaSession } from '../modules/trivia/types'
 
-export interface OfflineSessionMetadata extends SessionHistoryMetadata {}
-export interface OfflineSessionData extends SessionRecord {}
+export type OfflineSessionMetadata = SessionHistoryMetadata
+export type OfflineSessionData = SessionRecord
 
 /**
  * Hook para gerenciar persistência de sessões offline/online

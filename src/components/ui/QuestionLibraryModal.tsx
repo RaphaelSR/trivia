@@ -12,7 +12,6 @@ import {
   convertImportToColumns,
   type FilmImportResult,
 } from '@/modules/control/utils/filmExportUtils'
-import { createQuestionTileId } from '@/modules/control/utils/questionUtils'
 import { toast } from 'sonner'
 
 type QuestionLibraryModalProps = {
@@ -586,7 +585,7 @@ export function QuestionLibraryModal({
                       if (!importPreview.success || !onImportFilms) return
 
                       const createColumnId = () => `import-${Date.now()}-${Math.random().toString(16).slice(2)}`
-                      const columns = convertImportToColumns(importPreview, createColumnId, createQuestionTileId)
+                      const columns = convertImportToColumns(importPreview, createColumnId)
                       // O toast fica por conta do handler do dashboard, que sabe
                       // quantos filmes foram ADICIONADOS vs ATUALIZADOS.
                       onImportFilms(columns)
