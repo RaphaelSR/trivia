@@ -48,12 +48,25 @@ export class LocalSessionRepository implements SessionRepository {
       },
     }
 
-    storageService.setJson(STORAGE_KEYS.activeSession, sessionData)
-    storageService.setJson(STORAGE_KEYS.sessionById(sessionId), sessionData)
+    // Quota do localStorage é finita: escrita falhando NÃO pode passar em
+    // silêncio (o usuário acharia que salvou). null sinaliza ao chamador.
+    const savedActive = storageService.setJson(STORAGE_KEYS.activeSession, sessionData)
+    const savedById = storageService.setJson(STORAGE_KEYS.sessionById(sessionId), sessionData)
 
     const nextHistory = this.loadSessionHistory().filter((item) => item.id !== sessionId)
     nextHistory.unshift(sessionData.metadata)
-    storageService.setJson(STORAGE_KEYS.sessionHistory, nextHistory.slice(0, MAX_SESSION_HISTORY))
+    const keptHistory = nextHistory.slice(0, MAX_SESSION_HISTORY)
+    const savedHistory = storageService.setJson(STORAGE_KEYS.sessionHistory, keptHistory)
+
+    // Sessões que saíram do índice pelo limite deixavam o arquivo
+    // trivia-session-{id} órfão para sempre — remove junto.
+    for (const pruned of nextHistory.slice(MAX_SESSION_HISTORY)) {
+      storageService.remove(STORAGE_KEYS.sessionById(pruned.id))
+    }
+
+    if (!savedActive || !savedById || !savedHistory) {
+      return null
+    }
 
     return sessionData
   }

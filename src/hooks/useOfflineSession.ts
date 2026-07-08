@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback, useMemo } from 'react'
+import { toast } from 'sonner'
 import { createSessionRepository } from '../modules/game/infrastructure/repository.factory'
 import type { SessionHistoryMetadata, SessionRecord } from '../modules/game/infrastructure/session.repository'
 import { MAX_SESSION_HISTORY } from '../shared/constants/game'
@@ -50,6 +51,15 @@ export function useOfflineSession() {
     if (sessionData) {
       setCurrentSession(sessionData)
       updateSessionHistory(sessionData.metadata)
+    } else if (gameMode !== 'demo') {
+      // Quota do navegador cheia (ou storage indisponível): o pior erro é o
+      // silencioso — o host acharia que salvou. id fixo evita empilhar toasts
+      // a cada autosave.
+      toast.error('Não consegui salvar neste navegador — espaço cheio.', {
+        id: 'local-save-failed',
+        description: 'Exclua sessões antigas em Gerenciar sessões para liberar espaço.',
+        duration: 10000,
+      })
     }
     return sessionData
   }, [currentSession, gameMode, sessionRepository, updateSessionHistory])
