@@ -611,7 +611,7 @@ export function ControlDashboard() {
   const handleOfflineOnboardingComplete = (config: OnboardingConfig) => {
     try {
       // Aplica o tema selecionado
-      setTheme(config.theme as "light" | "dark" | "cinema" | "retro" | "matrix" | "brazil" | "easter")
+      setTheme(config.theme)
       
       // Salva PIN apenas se o host quiser usar protecao
       if (config.pin.trim()) {

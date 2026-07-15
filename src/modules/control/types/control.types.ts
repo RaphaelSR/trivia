@@ -1,5 +1,6 @@
 import type { TriviaParticipant } from '../../trivia/types'
 import type { FlexibleScoreValue } from '../../game/domain/scoring'
+import type { ThemeMode } from '@/shared/types/game'
 
 export type ParticipantDraft = {
   id: string
@@ -61,7 +62,7 @@ export type ResetGameOptions = {
 }
 
 export type OnboardingConfig = {
-  theme: string
+  theme: ThemeMode
   pin: string
   sessionTitle: string
   sessionDate: string
