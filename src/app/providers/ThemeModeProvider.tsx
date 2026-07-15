@@ -25,8 +25,8 @@ export function ThemeModeProvider({ children }: { children: ReactNode }) {
     applyTheme(theme)
   }, [theme])
 
-  // Persiste apenas escolhas explicitas: quem nunca escolheu tema acompanha o
-  // padrão sazonal e volta ao padrão normal quando a regra temporária expirar.
+  // Persiste apenas escolhas explicitas; sem preferencia salva, o provider usa
+  // o default compartilhado do produto.
   const setTheme = useCallback((nextTheme: ThemeMode) => {
     setThemeState(nextTheme)
     storageService.set(STORAGE_KEYS.themeMode, nextTheme)

@@ -4,6 +4,7 @@ import { Modal } from "./Modal";
 import { Palette, Lock, Users, Check, CheckCircle, Plus, Trash2, X, Info } from "lucide-react";
 import { useThemeMode } from "../../app/providers/useThemeMode";
 import type { OnboardingConfig } from "@/modules/control/types/control.types";
+import type { ThemeMode } from "@/shared/types/game";
 
 interface OfflineOnboardingModalProps {
   isOpen: boolean;
@@ -12,7 +13,7 @@ interface OfflineOnboardingModalProps {
   onSkip?: () => void;
 }
 
-const themeOptions = [
+const themeOptions: Array<{ id: ThemeMode; name: string; description: string }> = [
   { id: "dark", name: "Tema Escuro", description: "Cores escuras e elegantes" },
   { id: "light", name: "Tema Claro", description: "Cores claras e vibrantes" },
   { id: "cinema", name: "Tema Cinema", description: "Atmosfera cinematográfica" },
@@ -26,25 +27,27 @@ const teamColors = [
   "#4f46e5", "#22d3ee", "#f97316", "#ef4444", "#10b981", "#8b5cf6", "#f59e0b", "#ec4899"
 ];
 
+const createInitialConfig = (theme: ThemeMode): OnboardingConfig => ({
+  theme,
+  pin: "",
+  sessionTitle: `Partida de ${new Date().toLocaleDateString("pt-BR")}`,
+  sessionDate: new Date().toISOString().split('T')[0],
+  customFilms: [],
+  teams: [],
+});
+
 export function OfflineOnboardingModal({
   isOpen,
   onClose,
   onComplete,
   onSkip,
 }: OfflineOnboardingModalProps) {
-  const { setTheme } = useThemeMode();
+  const { theme, setTheme } = useThemeMode();
   const [currentStep, setCurrentStep] = useState(1);
-  const [config, setConfig] = useState<OnboardingConfig>({
-    theme: "brazil",
-    pin: "",
-    sessionTitle: `Partida de ${new Date().toLocaleDateString("pt-BR")}`,
-    sessionDate: new Date().toISOString().split('T')[0],
-    customFilms: [],
-    teams: [],
-  });
-  const handleThemeSelect = (themeId: string) => {
+  const [config, setConfig] = useState<OnboardingConfig>(() => createInitialConfig(theme));
+  const handleThemeSelect = (themeId: ThemeMode) => {
     setConfig((prev) => ({ ...prev, theme: themeId }));
-    setTheme(themeId as "light" | "dark" | "cinema" | "retro" | "matrix" | "brazil" | "easter");
+    setTheme(themeId);
   };
 
   const handlePinChange = (pin: string) => {
@@ -111,7 +114,7 @@ export function OfflineOnboardingModal({
       setCurrentStep(currentStep + 1);
     } else {
       onComplete(config);
-      handleClose(); // Fecha o modal após completar
+      resetState();
     }
   };
 
@@ -121,24 +124,20 @@ export function OfflineOnboardingModal({
     }
   };
 
-  const handleClose = () => {
-    // Reset do estado quando fechar
+  const resetState = () => {
     setCurrentStep(1);
-    setConfig({
-      theme: "brazil",
-      pin: "",
-      sessionTitle: `Partida de ${new Date().toLocaleDateString("pt-BR")}`,
-      sessionDate: new Date().toISOString().split('T')[0],
-      customFilms: [],
-      teams: [],
-    });
+    setConfig(createInitialConfig(theme));
+  };
+
+  const handleClose = () => {
+    resetState();
     onClose();
   };
 
   const isStepValid = () => {
     switch (currentStep) {
       case 1:
-        return config.theme !== "";
+        return true;
       case 2:
         return config.pin.length === 0 || config.pin.length >= 4;
       case 3:
