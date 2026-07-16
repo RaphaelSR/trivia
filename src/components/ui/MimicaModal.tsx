@@ -6,6 +6,8 @@ import { Modal } from './Modal'
 import { Timer } from './Timer'
 import { Tooltip } from './Tooltip'
 import type { TriviaParticipant, TriviaTeam } from '../../modules/trivia/types'
+import { ParticipantAvatar } from '../../shared/components/ParticipantAvatar'
+import type { ParticipantIdentity } from '../../modules/auth/services/profile-avatar.service'
 import {
   buildMimicaTurnSequence,
   getMimicaStartIndex,
@@ -20,6 +22,7 @@ type MimicaModalProps = {
   participants: TriviaParticipant[]
   triviaActiveParticipantId: string | null
   triviaActiveTurnIndex: number
+  participantIdentities?: Record<string, ParticipantIdentity>
   onScore: (
     participantId: string,
     mode: ScoringMode,
@@ -44,6 +47,7 @@ export function MimicaModal({
   participants,
   triviaActiveParticipantId,
   triviaActiveTurnIndex,
+  participantIdentities = {},
   onScore,
 }: MimicaModalProps) {
   const [scoringMode, setScoringMode] = useState<ScoringMode | null>(null)
@@ -185,6 +189,11 @@ export function MimicaModal({
         {/* Participante atual + próximo */}
         <div className="flex items-center justify-between rounded-xl border border-[var(--color-primary)]/30 bg-[var(--color-primary)]/5 px-4 py-3">
           <div className="flex items-center gap-3">
+            <ParticipantAvatar
+              name={activeParticipant?.name ?? 'Aguardando'}
+              src={activeParticipant ? participantIdentities[activeParticipant.id]?.avatarUrl : null}
+              size={38}
+            />
             <div
               className="h-3 w-3 rounded-full"
               style={{ backgroundColor: activeTeam?.color }}
@@ -200,7 +209,14 @@ export function MimicaModal({
               </p>
             </div>
           </div>
-          <div className="text-right text-xs text-[var(--color-muted)]">
+          <div className="flex items-center gap-2 text-right text-xs text-[var(--color-muted)]">
+            {nextParticipant ? (
+              <ParticipantAvatar
+                name={nextParticipant.name}
+                src={participantIdentities[nextParticipant.id]?.avatarUrl}
+                size={28}
+              />
+            ) : null}
             <span>Próximo: </span>
             <span className="font-medium text-[var(--color-text)]">{nextParticipant?.name ?? '—'}</span>
           </div>
@@ -426,6 +442,11 @@ export function MimicaModal({
                     }`}>
                       {index + 1}
                     </span>
+                    <ParticipantAvatar
+                      name={participant.name}
+                      src={participantIdentities[participant.id]?.avatarUrl}
+                      size={28}
+                    />
                     <span className="min-w-0 flex-1">
                       <span className="flex items-center gap-2 font-medium text-[var(--color-text)]">
                         <span

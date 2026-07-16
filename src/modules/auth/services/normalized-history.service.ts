@@ -762,6 +762,7 @@ export interface GameDetailQuestion {
 
 export interface ParticipantStat {
   participant_id: string
+  participant_client_id?: string
   display_name: string
   team_id: string | null
   team_name: string | null
@@ -1030,6 +1031,7 @@ export async function getGameDetail(gameId: string): Promise<GameDetail | null> 
         const team = p.team_id ? teamById.get(p.team_id) : null
         return {
           participant_id: p.id,
+          participant_client_id: p.client_id,
           display_name: p.display_name,
           team_id: p.team_id,
           team_name: team?.name ?? null,

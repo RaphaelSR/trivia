@@ -19,13 +19,19 @@ jest.mock('@/modules/auth/services/normalized-history.service', () => ({
   ),
 }))
 
+jest.mock('@/modules/auth/services/profile-avatar.service', () => ({
+  listGameParticipantIdentities: jest.fn().mockResolvedValue([]),
+}))
+
 import '@testing-library/jest-dom'
 import { render, screen, fireEvent, act, waitFor } from '@testing-library/react'
 import { GameDetailView } from '@/modules/auth/components/GameDetailView'
 import { getGameDetail } from '@/modules/auth/services/normalized-history.service'
 import type { GameDetail } from '@/modules/auth/services/normalized-history.service'
+import { listGameParticipantIdentities } from '@/modules/auth/services/profile-avatar.service'
 
 const mockGetGameDetail = getGameDetail as jest.Mock
+const mockListIdentities = listGameParticipantIdentities as jest.Mock
 
 // ---------------------------------------------------------------------------
 // Fixtures
@@ -60,8 +66,8 @@ function makeDetail(overrides?: Partial<GameDetail>): GameDetail {
       { id: 'q1', client_id: 'q1c', film_id: 'film-1', points: 10, question: 'P1?', answer: 'R1', state: 'answered' },
     ],
     ranking: [
-      { participant_id: 'p1', display_name: 'Alice', team_id: 'team-a', team_name: 'Time A', profile_id: 'profile-uuid', claim_token: null, trivia_points: 30, mimica_points: 0, total_points: 30 },
-      { participant_id: 'p2', display_name: 'Bob', team_id: 'team-b', team_name: 'Time B', profile_id: null, claim_token: 'token-bob-uuid', trivia_points: 0, mimica_points: 20, total_points: 20 },
+      { participant_id: 'p1', participant_client_id: 'c1', display_name: 'Alice', team_id: 'team-a', team_name: 'Time A', profile_id: 'profile-uuid', claim_token: null, trivia_points: 30, mimica_points: 0, total_points: 30 },
+      { participant_id: 'p2', participant_client_id: 'c2', display_name: 'Bob', team_id: 'team-b', team_name: 'Time B', profile_id: null, claim_token: 'token-bob-uuid', trivia_points: 0, mimica_points: 20, total_points: 20 },
     ],
     timeline: [
       {
@@ -116,6 +122,7 @@ describe('GameDetailView — erro', () => {
 describe('GameDetailView — render ok', () => {
   beforeEach(() => {
     jest.clearAllMocks()
+    mockListIdentities.mockResolvedValue([])
   })
 
   it('exibe título, vencedor e times no placar', async () => {
@@ -143,6 +150,26 @@ describe('GameDetailView — render ok', () => {
     expect(screen.getAllByText('Alice').length).toBeGreaterThan(0)
     expect(screen.getAllByText('Bob').length).toBeGreaterThan(0)
     expect(screen.getByText(/30 pts/i)).toBeInTheDocument()
+  })
+
+  it('exibe avatar escopado do participante no historico', async () => {
+    mockGetGameDetail.mockResolvedValue(makeDetail())
+    mockListIdentities.mockResolvedValue([
+      {
+        participantClientId: 'c1',
+        profileId: 'profile-uuid',
+        accountDisplayName: 'Alice conta',
+        avatarUrl: 'https://cdn.test/alice.webp',
+      },
+    ])
+    await act(async () => {
+      render(<GameDetailView gameId="game-1" onBack={jest.fn()} />)
+    })
+    expect(screen.getByRole('img', { name: 'Avatar de Alice' })).toHaveAttribute(
+      'src',
+      'https://cdn.test/alice.webp',
+    )
+    expect(mockListIdentities).toHaveBeenCalledWith('game-1')
   })
 
   it('exibe badge "vinculado" para participante com profile_id', async () => {

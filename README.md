@@ -29,6 +29,7 @@ npm run dev
 - Modo `offline` persiste sessoes localmente.
 - Modo `online` mantém o jogo local-first e já sincroniza sessão, snapshots e histórico com Supabase quando o host entra na conta.
 - Em sessões online autenticadas, um QR permanente permite que jogadores reivindiquem seus nomes sem interferir no fluxo do jogo.
+- Contas podem usar avatar opcional, exibido somente entre participantes de uma sessão ou partida compartilhada; o nome continua específico de cada jogo.
 - A interface esta em migracao para uma experiencia `dark glassmorphism` mais proxima de dashboard jogavel.
 
 ## Workspace local

@@ -46,6 +46,12 @@ jest.mock('@/modules/auth/components/AuthPanel', () => ({
   ),
 }))
 
+jest.mock('@/modules/auth/components/ProfileAvatarEditor', () => ({
+  ProfileAvatarEditor: ({ name }: { name: string }) => (
+    <div data-testid="profile-avatar-editor">Avatar opcional de {name}</div>
+  ),
+}))
+
 // Mock do vite-env para BASE_URL
 jest.mock('@/shared/services/vite-env', () => ({
   readViteEnv: jest.fn().mockReturnValue('/'),
@@ -164,7 +170,12 @@ describe('ClaimPage — modo ?session= permanente', () => {
     await waitFor(() => {
       expect(mockClaimLive).toHaveBeenCalledWith(VALID_TOKEN, 'a1')
       expect(screen.getByText(/partida vinculada à sua conta/i)).toBeInTheDocument()
+      expect(screen.getByTestId('profile-avatar-editor')).toBeInTheDocument()
+      expect(screen.getByRole('button', { name: /agora não/i })).toBeInTheDocument()
     })
+
+    fireEvent.click(screen.getByRole('button', { name: /agora não/i }))
+    expect(screen.queryByTestId('profile-avatar-editor')).not.toBeInTheDocument()
   })
 })
 

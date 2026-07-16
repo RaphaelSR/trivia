@@ -10,6 +10,8 @@ Jogar não exige conta. Sincronização remota, histórico pessoal e reivindica�
 
 O nome em `TriviaSession` é específico daquele jogo. `profile_id` liga esse participante a uma conta sem transformar o nome do jogo em cadastro global. Não existe diretório público de perfis.
 
+O avatar é opcional e pertence a `profiles`, não ao participante do snapshot. O navegador recorta e comprime a origem para `512x512` WebP de até 1 MB. O caminho opaco `uid/uuid.webp` não contém nome, e-mail ou filename original.
+
 ## Formas de vínculo
 
 - e-mail opcional informado pelo host: guardado em `participant_invites`, com RLS owner-only;
@@ -27,6 +29,9 @@ As três RPCs antigas permanecem com as mesmas assinaturas. A migration `0009` a
 - e-mail válido atua somente como comparação server-side com `auth.email()`;
 - e-mail vazio ou inválido não reserva slot e não bloqueia o jogo;
 - QR é gerado localmente com `qrcode`, sem request a geradores externos.
+- o bucket de avatar é público para servir a imagem por URL, mas upload, troca e remoção continuam restritos por RLS à pasta do próprio `auth.uid()`;
+- o host lista somente identidades com claim ativo em sua própria sessão; no histórico, somente o dono ou participantes vinculados ao jogo recebem identidades daquele jogo;
+- erro de imagem ou ausência de avatar usa iniciais locais, sem expor um diretório de perfis.
 
 ## Correcao e auditoria
 
@@ -34,4 +39,4 @@ Claims não são apagados. Uma correção muda o estado para `revoked`, grava da
 
 ## RLS
 
-RLS está habilitado em todas as tabelas. O host lê/escreve seus snapshots; leitores de um jogo são o host ou participantes vinculados; convites com PII são owner-only. O ledger não aceita escrita direta de `authenticated`, `anon` ou `public`.
+RLS está habilitado em todas as tabelas. O host lê/escreve seus snapshots; leitores de um jogo são o host ou participantes vinculados; convites com PII são owner-only. O ledger não aceita escrita direta de `authenticated`, `anon` ou `public`. Objetos de avatar aceitam escrita e remoção somente pelo dono; a API de Storage é usada para apagar arquivos.

@@ -8,6 +8,7 @@ import { ImportLocalSessions } from './ImportLocalSessions'
 import { GameDetailView } from './GameDetailView'
 import { isValidEmail } from '@/shared/utils/email'
 import { DeleteGameDialog } from './DeleteGameDialog'
+import { ProfileAvatarEditor } from './ProfileAvatarEditor'
 
 type Tab = 'signin' | 'signup'
 
@@ -117,9 +118,7 @@ function LoggedInPanel({ user, loading, onLogout, onClose }: LoggedInPanelProps)
 
       {/* Cabeçalho do usuário */}
       <div className="flex flex-col items-center gap-3 pb-4">
-        <div className="flex h-12 w-12 items-center justify-center rounded-full bg-[var(--color-primary)]/20 text-lg font-semibold text-[var(--color-primary)]">
-          {name.charAt(0).toUpperCase()}
-        </div>
+        <ProfileAvatarEditor name={name} />
         <p className="text-sm font-medium text-zinc-100">{name}</p>
         <p className="text-xs text-zinc-400">{user.email}</p>
         <button

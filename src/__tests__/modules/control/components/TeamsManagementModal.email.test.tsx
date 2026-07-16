@@ -95,6 +95,36 @@ describe('TeamsManagementModal — campo de e-mail (gate por gameMode)', () => {
   })
 })
 
+describe('TeamsManagementModal — avatar fora do estado do jogo', () => {
+  it.each(['demo', 'offline'])('usa apenas iniciais locais no modo %s', (gameMode) => {
+    render(<TeamsManagementModal {...baseProps} gameMode={gameMode} />)
+    expect(screen.getByRole('img', { name: 'Iniciais de Alice' })).toHaveTextContent('AL')
+  })
+
+  it('mostra URL escopada quando a identidade online foi carregada', () => {
+    render(
+      <TeamsManagementModal
+        {...baseProps}
+        gameMode="online"
+        participantIdentities={{
+          p1: {
+            participantClientId: 'p1',
+            profileId: 'u1',
+            accountDisplayName: 'Alice conta',
+            avatarPath: 'u1/avatar.webp',
+            avatarUpdatedAt: null,
+            avatarUrl: 'https://cdn.test/alice.webp',
+          },
+        }}
+      />,
+    )
+    expect(screen.getByRole('img', { name: 'Avatar de Alice' })).toHaveAttribute(
+      'src',
+      'https://cdn.test/alice.webp',
+    )
+  })
+})
+
 describe('TeamsManagementModal — datalist de autocomplete', () => {
   it('renderiza datalist#invite-contacts em modo online', () => {
     render(<TeamsManagementModal {...baseProps} gameMode="online" />)

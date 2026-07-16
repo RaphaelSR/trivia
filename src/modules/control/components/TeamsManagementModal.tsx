@@ -12,6 +12,8 @@ import {
 } from '@/modules/auth/services/normalized-history.service'
 import { TeamRandomizerModal } from './TeamRandomizerModal'
 import { LiveSessionInviteModal } from './LiveSessionInviteModal'
+import { ParticipantAvatar } from '@/shared/components/ParticipantAvatar'
+import type { ParticipantIdentity } from '@/modules/auth/services/profile-avatar.service'
 
 type TeamsManagementModalProps = {
   isOpen: boolean
@@ -41,6 +43,7 @@ type TeamsManagementModalProps = {
   hasUnsavedLiveRosterChanges?: boolean
   sessionClientId?: string
   onPrepareLiveInvite?: () => Promise<boolean>
+  participantIdentities?: Record<string, ParticipantIdentity>
   /** Modo de jogo atual — campo de e-mail só aparece quando gameMode === 'online' */
   gameMode: string
 }
@@ -72,6 +75,7 @@ export function TeamsManagementModal({
   hasUnsavedLiveRosterChanges = false,
   sessionClientId = '',
   onPrepareLiveInvite = async () => false,
+  participantIdentities = {},
   gameMode,
 }: TeamsManagementModalProps) {
   const isOnline = gameMode === 'online'
@@ -190,6 +194,11 @@ export function TeamsManagementModal({
                 {team.members.map((member, memberIndex) => (
                   <div key={member.id} className="space-y-2 rounded-xl border border-[var(--color-border)] bg-[var(--color-background)] p-3">
                     <div className="flex flex-wrap items-center justify-between gap-2">
+                      <ParticipantAvatar
+                        name={member.name || 'Participante'}
+                        src={participantIdentities[member.id]?.avatarUrl}
+                        size={34}
+                      />
                       <input
                         value={member.name}
                         onChange={(event) =>

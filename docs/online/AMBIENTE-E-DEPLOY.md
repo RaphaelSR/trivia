@@ -24,7 +24,7 @@ Frontend novo antes da migration degrada o painel de convite com retry e não bl
 
 ## Migrations
 
-Arquivos versionados: `supabase/migrations/0001_*.sql` até `0009_live_session_claims.sql`. `0009` é aditiva: não substitui RPCs históricas, não arquiva sessões e não executa backfill amplo.
+Arquivos versionados: `supabase/migrations/0001_*.sql` até `0010_profile_avatars.sql`. `0009` é aditiva: não substitui RPCs históricas, não arquiva sessões e não executa backfill amplo. `0010` também é aditiva e não modifica RPCs de claim/finalização.
 
 Como o projeto não mantém Supabase CLI/Docker local configurado, a validação SQL final deve ocorrer em uma transação ou ambiente de teste no painel autenticado. Antes da produção, validar especialmente:
 
@@ -33,6 +33,9 @@ Como o projeto não mantém Supabase CLI/Docker local configurado, a validação
 - jogos e claims históricos permanecem inalterados;
 - duas contas não ocupam o mesmo slot;
 - revogar registra ator/data e libera nova reivindicação.
+- o bucket `profile-avatars` é público, limitado a WebP de 1 MB, e as quatro políticas restringem metadados/upload/update/delete à pasta do próprio usuário;
+- as RPCs de identidade não retornam perfis fora da sessão ou do jogo compartilhado;
+- contas existentes permanecem com `avatar_path` nulo e jogos/claims não são alterados.
 
 ## Checks do frontend
 
@@ -42,7 +45,7 @@ npm run lint
 npm run build
 ```
 
-Também testar `demo`, `offline` e `online`, desktop e 375 px. `demo/offline` não podem chamar RPCs de convite.
+Também testar `demo`, `offline` e `online`, desktop e 375 px. `demo/offline` não podem chamar RPCs de convite ou avatar.
 
 ## Rollback
 

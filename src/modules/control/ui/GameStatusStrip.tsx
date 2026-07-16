@@ -1,6 +1,8 @@
 import { useState } from 'react'
 import { Eye, EyeOff } from 'lucide-react'
 import type { TriviaParticipant, TriviaTeam } from '@/modules/trivia/types'
+import { ParticipantAvatar } from '@/shared/components/ParticipantAvatar'
+import type { ParticipantIdentity } from '@/modules/auth/services/profile-avatar.service'
 
 interface ScoreboardItem {
   team: TriviaTeam
@@ -13,6 +15,9 @@ interface GameStatusStripProps {
   activeTeam: TriviaTeam | null
   currentTurnLabel: string
   scoreboard: ScoreboardItem[]
+  nextParticipant?: TriviaParticipant | null
+  nextTeam?: TriviaTeam | null
+  participantIdentities?: Record<string, ParticipantIdentity>
 }
 
 export function GameStatusStrip({
@@ -20,6 +25,9 @@ export function GameStatusStrip({
   activeTeam,
   currentTurnLabel,
   scoreboard,
+  nextParticipant = null,
+  nextTeam = null,
+  participantIdentities = {},
 }: GameStatusStripProps) {
   const [scoresVisible, setScoresVisible] = useState(true)
 
@@ -27,6 +35,13 @@ export function GameStatusStrip({
     <div className="flex h-10 shrink-0 items-center gap-3 overflow-x-auto border-b border-white/8 bg-[var(--glass-bg)]/80 px-3 text-xs backdrop-blur lg:px-4">
       {/* Turno atual */}
       <div className="flex shrink-0 items-center gap-1.5">
+        {activeParticipant ? (
+          <ParticipantAvatar
+            name={activeParticipant.name}
+            src={participantIdentities[activeParticipant.id]?.avatarUrl}
+            size={22}
+          />
+        ) : null}
         {activeTeam ? (
           <span
             className="h-2 w-2 shrink-0 rounded-full"
@@ -47,6 +62,21 @@ export function GameStatusStrip({
       <span className="shrink-0 font-mono text-[var(--color-muted)]">
         Turno {currentTurnLabel}
       </span>
+
+      {nextParticipant ? (
+        <>
+          <span className="shrink-0 text-white/20">|</span>
+          <div className="flex shrink-0 items-center gap-1.5 text-[var(--color-muted)]">
+            <ParticipantAvatar
+              name={nextParticipant.name}
+              src={participantIdentities[nextParticipant.id]?.avatarUrl}
+              size={20}
+            />
+            <span>Próximo: {nextParticipant.name}</span>
+            {nextTeam ? <span>· {nextTeam.name}</span> : null}
+          </div>
+        </>
+      ) : null}
 
       {scoreboard.length > 0 ? (
         <>
