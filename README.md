@@ -27,7 +27,8 @@ npm run dev
 - Fluxo principal ativo em `/` e `/control?mode=...`.
 - O modo `demo` pode simular sessao pequena, media ou grande sem precisar montar tudo manualmente.
 - Modo `offline` persiste sessoes localmente.
-- Modo `online` ja usa camada dedicada de repositorio e pode evoluir para sincronizacao remota sem acoplar a UI.
+- Modo `online` mantém o jogo local-first e já sincroniza sessão, snapshots e histórico com Supabase quando o host entra na conta.
+- Em sessões online autenticadas, um QR permanente permite que jogadores reivindiquem seus nomes sem interferir no fluxo do jogo.
 - A interface esta em migracao para uma experiencia `dark glassmorphism` mais proxima de dashboard jogavel.
 
 ## Workspace local

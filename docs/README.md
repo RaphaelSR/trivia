@@ -22,7 +22,7 @@ Central de navegacao dos documentos oficiais do `trivia`.
 
 ## O que entra no Git
 - Tudo dentro de `docs/` que descreve produto, regras, arquitetura, roadmap e planejamento tecnico.
-- `docs/online/` faz parte da documentacao oficial, mesmo quando estiver em status de planejamento.
+- `docs/online/` documenta a implementação e a operação atuais; itens ainda não entregues devem estar marcados explicitamente como planejados.
 
 ## O que nao entra no Git
 - `.obsidian/`: configuracao local do app Obsidian.

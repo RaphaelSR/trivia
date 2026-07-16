@@ -1,5 +1,5 @@
 /**
- * Testes para ClaimPage (/claim?token=... e /claim?game=...)
+ * Testes para ClaimPage (/claim?token=..., /claim?game=... e /claim?session=...)
  *
  * Cenários existentes (?token=):
  *  1. Supabase não configurado → "Indisponível"
@@ -26,6 +26,11 @@ jest.mock('@/shared/services/supabase.client', () => ({
 jest.mock('@/modules/auth/services/normalized-history.service', () => ({
   listClaimableParticipants: jest.fn(),
   claimParticipantByGame: jest.fn(),
+}))
+
+jest.mock('@/modules/auth/services/live-session-claim.service', () => ({
+  listLiveSessionParticipants: jest.fn(),
+  claimLiveSessionParticipant: jest.fn(),
 }))
 
 jest.mock('@/modules/auth/hooks/useAuth', () => ({
@@ -56,11 +61,17 @@ import {
   listClaimableParticipants,
   claimParticipantByGame,
 } from '@/modules/auth/services/normalized-history.service'
+import {
+  claimLiveSessionParticipant,
+  listLiveSessionParticipants,
+} from '@/modules/auth/services/live-session-claim.service'
 
 const mockIsConfigured = isSupabaseConfigured as jest.Mock
 const mockUseAuth = useAuth as jest.Mock
 const mockListClaimable = listClaimableParticipants as jest.Mock
 const mockClaimByGame = claimParticipantByGame as jest.Mock
+const mockListLive = listLiveSessionParticipants as jest.Mock
+const mockClaimLive = claimLiveSessionParticipant as jest.Mock
 
 const VALID_TOKEN = '550e8400-e29b-41d4-a716-446655440000'
 
@@ -89,6 +100,72 @@ beforeEach(() => {
   jest.clearAllMocks()
   mockIsConfigured.mockReturnValue(true)
   mockUseAuth.mockReturnValue(defaultAuthState)
+  mockListLive.mockResolvedValue({ participants: [], error: null })
+})
+
+describe('ClaimPage — modo ?session= permanente', () => {
+  const liveParticipants = [
+    {
+      participantClientId: 'a1',
+      displayName: 'A1',
+      teamName: 'Time A',
+      claimed: false,
+      claimedByMe: false,
+      claimable: true,
+      claimId: null,
+    },
+    {
+      participantClientId: 'b1',
+      displayName: 'B1',
+      teamName: 'Time B',
+      claimed: true,
+      claimedByMe: false,
+      claimable: false,
+      claimId: 'claim-b1',
+    },
+    {
+      participantClientId: 'c1',
+      displayName: 'C1',
+      teamName: 'Time C',
+      claimed: false,
+      claimedByMe: false,
+      claimable: false,
+      claimId: null,
+    },
+  ]
+
+  it('preserva o gate de login', () => {
+    renderClaimPage(`?session=${VALID_TOKEN}`)
+    expect(screen.getByRole('button', { name: /entrar \/ criar conta/i })).toBeInTheDocument()
+    expect(mockListLive).not.toHaveBeenCalled()
+  })
+
+  it('lista times, diferencia ocupado e reservado', async () => {
+    mockUseAuth.mockReturnValue({ ...defaultAuthState, user: { id: 'user-1' } })
+    mockListLive.mockResolvedValue({ participants: liveParticipants, error: null })
+
+    renderClaimPage(`?session=${VALID_TOKEN}`)
+
+    expect(await screen.findByText('A1')).toBeInTheDocument()
+    expect(screen.getByText('Time B')).toBeInTheDocument()
+    expect(screen.getByText('vinculado')).toBeInTheDocument()
+    expect(screen.getByText('reservado')).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Sou A1' })).toBeEnabled()
+  })
+
+  it('reivindica por client id e aceita sucesso ainda durante o jogo', async () => {
+    mockUseAuth.mockReturnValue({ ...defaultAuthState, user: { id: 'user-1' } })
+    mockListLive.mockResolvedValue({ participants: liveParticipants, error: null })
+    mockClaimLive.mockResolvedValue({ gameId: null, sessionClientId: 'session-1', error: null })
+
+    renderClaimPage(`?session=${VALID_TOKEN}`)
+    fireEvent.click(await screen.findByRole('button', { name: 'Sou A1' }))
+
+    await waitFor(() => {
+      expect(mockClaimLive).toHaveBeenCalledWith(VALID_TOKEN, 'a1')
+      expect(screen.getByText(/partida vinculada à sua conta/i)).toBeInTheDocument()
+    })
+  })
 })
 
 // ── 1. Supabase não configurado ───────────────────────────────────────────────

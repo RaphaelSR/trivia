@@ -6,9 +6,13 @@ As migrations são aplicadas manualmente via SQL Editor do painel do Supabase.
 
 1. Acesse [supabase.com/dashboard](https://supabase.com/dashboard) e abra seu projeto.
 2. No menu lateral, vá em **SQL Editor** → **New query**.
-3. Copie o conteúdo do arquivo `migrations/0001_online_foundation.sql`.
-4. Cole na área de edição e clique em **Run**.
-5. Verifique na aba **Table Editor** se as tabelas `profiles` e `game_history` foram criadas.
+3. Aplique em ordem apenas os arquivos ainda pendentes de `migrations/0001_*.sql` a `0009_*.sql`.
+4. Cole cada arquivo inteiro na área de edição e clique em **Run**.
+5. Execute os checks descritos em `docs/online/AMBIENTE-E-DEPLOY.md` antes de publicar o frontend correspondente.
+
+`0009_live_session_claims.sql` é deliberadamente aditiva: não substitui RPCs antigas,
+não arquiva `online_sessions` e não faz backfill amplo. Antes do merge, valide retry e
+concorrência da finalização contra o banco autenticado.
 
 ## Habilitar autenticação por email
 
@@ -54,6 +58,6 @@ Postura de dados deste projeto (hobby game, sem dinheiro envolvido):
 
 ## Escopo de modos
 
-Os modos `demo` e `offline` estão **travados**: nada do Supabase pode alterar o
-comportamento ou a UI deles. Toda feature online fica atrás de
-`isSupabaseConfigured()` e do modo `online`.
+`demo` nunca sincroniza. `offline` continua jogável sem conta e pode fazer backup de
+sessão quando o usuário já está logado. QR, claim ao vivo e identidade visual ficam
+exclusivamente no modo `online` autenticado; falhas desses recursos não bloqueiam o jogo.

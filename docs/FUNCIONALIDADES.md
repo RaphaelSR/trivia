@@ -17,7 +17,7 @@ Mapa funcional do projeto com foco no que existe hoje, no que esta em migracao e
 ## Modos de jogo
 - `ativo`: `demo` inicia com sessao pronta para demonstracao e permite variar escala de times e perguntas
 - `ativo`: `offline` permite sessao local persistida no navegador
-- `interno`: `online` ja usa camada dedicada de repository e PIN, mas a experiencia completa de sincronizacao remota ainda esta em evolucao
+- `ativo`: `online` mantém o jogo local-first e acrescenta conta, backup remoto, restauração e histórico normalizado
 
 ## Dashboard de controle
 - `ativo`: configuracao de times e participantes
@@ -81,10 +81,14 @@ Mapa funcional do projeto com foco no que existe hoje, no que esta em migracao e
 - `em migracao`: consolidacao visual para um dashboard mais coeso
 
 ## Modo online
-- `interno`: repositories dedicados para sessao e PIN, hoje com cache local isolado
-- `planejado`: Supabase como backend oficial do modo online
-- `planejado`: sincronizacao remota completa
-- `planejado`: autenticacao opcional, join code, campeonatos e historico cross-session
+- `ativo`: Supabase como backend oficial de conta, sessão, snapshots e histórico
+- `ativo`: sincronização remota em background com estado pendente e retry, sem bloquear o jogo
+- `ativo`: autenticação por e-mail e senha, recuperação e vínculo de participações
+- `ativo`: um QR/link permanente por sessão online para escolher o próprio participante
+- `ativo`: reserva opcional por e-mail, atualização de status e desvinculação auditada pelo host
+- `ativo`: QR local sem envio do token para serviços externos
+- `ativo`: finalização normalizada idempotente por conta + `TriviaSession.id`
+- `planejado`: campeonatos e histórico agregado cross-session
 - `planejado`: leaderboards agregados por campeonato e conta
 
 ## Onde aprofundar

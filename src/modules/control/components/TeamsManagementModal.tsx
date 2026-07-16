@@ -1,4 +1,4 @@
-import { ArrowDown, ArrowUp, Plus, Shuffle, Trash2, UserPlus } from 'lucide-react'
+import { ArrowDown, ArrowUp, Plus, QrCode, Shuffle, Trash2, UserPlus } from 'lucide-react'
 import { useEffect, useMemo, useState } from 'react'
 import { Button } from '@/components/ui/Button'
 import { Modal } from '@/components/ui/Modal'
@@ -11,6 +11,7 @@ import {
   type InvitedContact,
 } from '@/modules/auth/services/normalized-history.service'
 import { TeamRandomizerModal } from './TeamRandomizerModal'
+import { LiveSessionInviteModal } from './LiveSessionInviteModal'
 
 type TeamsManagementModalProps = {
   isOpen: boolean
@@ -36,6 +37,10 @@ type TeamsManagementModalProps = {
   onSave: () => void
   onReplaceDrafts: (drafts: TeamDraft[]) => void
   canRandomizeRoster: boolean
+  canInviteLivePlayers?: boolean
+  hasUnsavedLiveRosterChanges?: boolean
+  sessionClientId?: string
+  onPrepareLiveInvite?: () => Promise<boolean>
   /** Modo de jogo atual — campo de e-mail só aparece quando gameMode === 'online' */
   gameMode: string
 }
@@ -63,11 +68,16 @@ export function TeamsManagementModal({
   onSave,
   onReplaceDrafts,
   canRandomizeRoster,
+  canInviteLivePlayers = false,
+  hasUnsavedLiveRosterChanges = false,
+  sessionClientId = '',
+  onPrepareLiveInvite = async () => false,
   gameMode,
 }: TeamsManagementModalProps) {
   const isOnline = gameMode === 'online'
   const [previewOpen, setPreviewOpen] = useState(false)
   const [randomizerOpen, setRandomizerOpen] = useState(false)
+  const [liveInviteOpen, setLiveInviteOpen] = useState(false)
   const [inviteContacts, setInviteContacts] = useState<InvitedContact[]>([])
 
   // Carrega contatos de convites anteriores do host apenas no modo online e
@@ -278,6 +288,31 @@ export function TeamsManagementModal({
             </p>
           ) : null}
 
+          {isOnline && canInviteLivePlayers ? (
+            <div className="rounded-2xl border border-[var(--color-primary)]/20 bg-[var(--color-primary)]/5 p-4">
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                <div>
+                  <h4 className="flex items-center gap-2 text-sm font-semibold text-[var(--color-text)]">
+                    <QrCode size={16} className="text-[var(--color-primary)]" />
+                    Convidar jogadores
+                  </h4>
+                  <p className="mt-1 text-xs text-[var(--color-muted)]">
+                    {hasUnsavedLiveRosterChanges
+                      ? 'Salve as alterações de elenco antes de abrir o convite.'
+                      : 'Gere um único QR para cada pessoa escolher seu nome. O elenco é sincronizado antes de abrir.'}
+                  </p>
+                </div>
+                <Button
+                  variant="secondary"
+                  disabled={hasUnsavedLiveRosterChanges}
+                  onClick={() => setLiveInviteOpen(true)}
+                >
+                  Abrir convite ao vivo
+                </Button>
+              </div>
+            </div>
+          ) : null}
+
           <div className="rounded-2xl border border-[var(--color-border)] bg-[var(--color-background)] p-4">
             <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
               <div className="space-y-2">
@@ -350,6 +385,15 @@ export function TeamsManagementModal({
         inviteContacts={inviteContacts}
         previewQuestionCount={previewQuestionCount}
       />
+
+      {isOnline && canInviteLivePlayers ? (
+        <LiveSessionInviteModal
+          isOpen={liveInviteOpen}
+          onClose={() => setLiveInviteOpen(false)}
+          sessionClientId={sessionClientId}
+          onPrepareSync={onPrepareLiveInvite}
+        />
+      ) : null}
     </>
   )
 }

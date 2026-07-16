@@ -8,9 +8,7 @@
  *  - Copiar link (navigator.clipboard; fallback: input readonly selecionado)
  *  - WhatsApp (wa.me/?text=...)
  *  - E-mail (mailto:?subject=...&body=...)
- *  - QR Code via api.qrserver.com (serviço externo gratuito, aceitável para
- *    links de convite não-secretos; o QR fica atrás de um toggle "Mostrar QR"
- *    para evitar requisição automática para todos os participantes).
+ *  - QR Code gerado localmente no navegador; o token não sai do app.
  *
  * Gate: só renderiza botões quando claim_token !== null — para participantes
  * sem token (leitores que não são o dono do jogo) o componente não mostra nada.
@@ -19,6 +17,7 @@
 import { useState, useRef } from 'react'
 import { Copy, Check, Mail, QrCode, UserCheck, Share2 } from 'lucide-react'
 import { buildClaimUrl } from '../services/normalized-history.service'
+import { LocalQrCode } from '@/shared/components/LocalQrCode'
 
 // ---------------------------------------------------------------------------
 // Tipos
@@ -106,8 +105,6 @@ function InviteBlock({ name, token }: InviteBlockProps) {
 
   const whatsappHref = `https://wa.me/?text=${encodeURIComponent(message)}`
   const mailHref = `mailto:?subject=${encodeURIComponent('Convite Trivia')}&body=${encodeURIComponent(message)}`
-  const qrSrc = `https://api.qrserver.com/v1/create-qr-code/?size=160x160&data=${encodeURIComponent(url)}`
-
   return (
     <div
       className="flex flex-col gap-2 rounded-xl border border-white/10 bg-white/5 px-3 py-3 backdrop-blur-sm"
@@ -203,18 +200,10 @@ function InviteBlock({ name, token }: InviteBlockProps) {
         </div>
       )}
 
-      {/* QR Code — serviço externo: api.qrserver.com (gratuito, sem autenticação).
-          O QR é gerado somente quando o usuário clica "Mostrar QR". */}
+      {/* QR Code gerado localmente somente quando solicitado. */}
       {showQr && (
         <div className="flex flex-col items-center gap-1 pt-1">
-          <img
-            src={qrSrc}
-            alt={`QR Code do convite para ${name}`}
-            width={160}
-            height={160}
-            loading="lazy"
-            className="max-w-full rounded-lg border border-white/10 bg-white p-1"
-          />
+          <LocalQrCode value={url} label={`QR Code do convite para ${name}`} size={160} />
           <p className="text-[9px] text-[var(--color-muted)]">
             Aponte a câmera para escanear
           </p>

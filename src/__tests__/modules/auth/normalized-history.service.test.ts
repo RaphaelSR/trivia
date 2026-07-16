@@ -284,7 +284,7 @@ describe('saveNormalizedGame — com sessão ativa', () => {
   const fakeUser = { id: 'user-uuid' }
   const fakeAuthSession = { user: fakeUser }
 
-  it('chama rpc create_game_normalized com payload correto', async () => {
+  it('chama a RPC idempotente com payload e session id estavel', async () => {
     const mockRpc = jest.fn().mockResolvedValue({ data: 'new-game-uuid', error: null })
     mockIsConfigured.mockReturnValue(true)
     mockGetClient.mockReturnValue({
@@ -298,8 +298,9 @@ describe('saveNormalizedGame — com sessão ativa', () => {
 
     expect(mockRpc).toHaveBeenCalledTimes(1)
     expect(mockRpc).toHaveBeenCalledWith(
-      'create_game_normalized',
+      'create_game_normalized_idempotent',
       expect.objectContaining({
+        p_session_client_id: 'sess-1',
         p: expect.objectContaining({
           game: expect.objectContaining({ source: 'live', title: 'Copa Trivia' }),
           teams: expect.arrayContaining([
