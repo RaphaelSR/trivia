@@ -13,7 +13,7 @@
 - `docs/README.md`: indice geral da documentacao do projeto.
 - `docs/FUNCIONALIDADES.md`: mapa funcional do que esta ativo, interno e planejado.
 - `docs/SETORES.md`: mapa enxuto das responsabilidades e regras de cada setor do produto.
-- `docs/online/`: planejamento detalhado do modo `online`.
+- `docs/online/`: arquitetura, segurança e operação do modo `online` ativo.
 - A raiz do repositorio pode ser aberta como vault no Obsidian. `.obsidian/` e `docs/obsidian/` continuam locais; conhecimento duravel deve ser migrado para os documentos oficiais antes de entrar no Git.
 
 ## Mapa atual
@@ -46,8 +46,9 @@
 - O preview operacional deve consumir `session.turnSequence`; estimativas só são usadas antes de existir uma sequência real.
 
 ## Online/Supabase
-- A arquitetura já separa o modo `online` em repository próprio.
-- Supabase é a decisão oficial para persistência remota, autenticação opcional e realtime.
-- Enquanto a sincronização remota completa não estiver ativa, o adapter online permanece como cache local isolado atrás de interface e com namespace dedicado.
-- O fluxo de UI não deve afirmar que o modo online está “fake”; ele deve refletir a capacidade real do adapter atual.
-- **Planejamento detalhado:** ver [`docs/online/ARQUITETURA-ONLINE.md`](./online/ARQUITETURA-ONLINE.md) — modelagem remota, queries, fluxo de jogo e próximos passos.
+- O jogo é local-first; `useCloudSync` replica snapshots no Supabase e preserva mudanças pendentes em falhas.
+- Histórico normalizado e claims passam por serviços em `src/modules/auth/services` e Database Functions transacionais.
+- Conta, claim e avatar ficam fora de `TriviaSession` e do domínio de pontuação/turnos.
+- Partidas ao vivo finalizam por uma RPC aditiva idempotente; importações e RPCs históricas mantêm seus contratos.
+- QR é gerado localmente por `src/shared/components/LocalQrCode.tsx`.
+- Detalhes: [`docs/online/ARQUITETURA-ONLINE.md`](./online/ARQUITETURA-ONLINE.md).

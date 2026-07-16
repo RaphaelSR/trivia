@@ -12,7 +12,7 @@ import {
   Theater,
   Volume2,
 } from 'lucide-react'
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { toast } from 'sonner'
 import { Button } from '@/components/ui/Button'
 import { FilmRoulette } from '@/components/ui/FilmRoulette'
@@ -426,6 +426,11 @@ export function ControlDashboard() {
         break
     }
   }
+
+  const prepareLiveInvite = useCallback(async () => {
+    const result = await forceSync()
+    return result === 'synced' || result === 'already-synced'
+  }, [forceSync])
 
   // Reseta flag de notificação quando o board muda (perguntas resetadas ou respondidas)
   useEffect(() => {
@@ -1362,6 +1367,15 @@ export function ControlDashboard() {
         }}
         onReplaceDrafts={teamManagement.replaceTeamDrafts}
         canRandomizeRoster={canDrawTeamsBeforePlay(session)}
+        canInviteLivePlayers={gameMode === 'online' && syncEnabled}
+        hasUnsavedLiveRosterChanges={hasRosterChanges(
+          orderedTeams,
+          participants,
+          teamManagement.previewTeams,
+          teamManagement.previewParticipants,
+        )}
+        sessionClientId={session.id}
+        onPrepareLiveInvite={prepareLiveInvite}
         gameMode={gameMode}
       />
 

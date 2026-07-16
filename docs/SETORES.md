@@ -63,6 +63,9 @@ Mapa enxuto para navegar pelo produto sem depender de notas operacionais ou cont
 
 - Autenticação e histórico: `src/modules/auth`.
 - Backend oficial: Supabase com RLS e PII mínima.
+- Convite ao vivo: um QR por sessão online, gerado localmente depois de forçar o sync.
+- Claims usam IDs estáveis de participantes, índices de unicidade e ledger auditável fora do estado do jogo.
+- Finalização ao vivo é idempotente por conta + ID da sessão; as RPCs legadas continuam compatíveis.
 - Detalhes: [online/README.md](./online/README.md).
 
 ## Interface e temas

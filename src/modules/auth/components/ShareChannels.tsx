@@ -12,6 +12,7 @@
 
 import { useState, useRef } from 'react'
 import { Copy, Check, Mail, QrCode } from 'lucide-react'
+import { LocalQrCode } from '@/shared/components/LocalQrCode'
 
 interface ShareChannelsProps {
   url: string
@@ -45,8 +46,6 @@ export function ShareChannels({ url, label }: ShareChannelsProps) {
 
   const whatsappHref = `https://wa.me/?text=${encodeURIComponent(message)}`
   const mailHref = `mailto:?subject=${encodeURIComponent('Convite Trivia')}&body=${encodeURIComponent(message)}`
-  const qrSrc = `https://api.qrserver.com/v1/create-qr-code/?size=160x160&data=${encodeURIComponent(url)}`
-
   return (
     <div className="flex flex-col gap-2">
       {/* Botões */}
@@ -131,18 +130,10 @@ export function ShareChannels({ url, label }: ShareChannelsProps) {
         </div>
       )}
 
-      {/* QR Code — gerado somente quando o usuário clica "QR", evitando
-          requisições automáticas. Serviço externo: api.qrserver.com (gratuito). */}
+      {/* QR Code gerado localmente: o token nunca sai do navegador. */}
       {showQr && (
         <div className="flex flex-col items-center gap-1 pt-1">
-          <img
-            src={qrSrc}
-            alt={`QR Code do convite ${label}`}
-            width={160}
-            height={160}
-            loading="lazy"
-            className="max-w-full rounded-lg border border-white/10 bg-white p-1"
-          />
+          <LocalQrCode value={url} label={`QR Code do convite ${label}`} size={160} />
           <p className="text-[9px] text-[var(--color-muted)]">
             Aponte a câmera para escanear
           </p>

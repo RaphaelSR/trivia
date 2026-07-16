@@ -234,3 +234,46 @@ describe('TeamsManagementModal — rodapé não-bloqueante', () => {
     expect(screen.queryByText(/O jogo funciona/i)).not.toBeInTheDocument()
   })
 })
+
+describe('TeamsManagementModal — gate do convite ao vivo', () => {
+  it('aparece somente no modo online autenticado/sincronizável', () => {
+    render(
+      <TeamsManagementModal
+        {...baseProps}
+        gameMode="online"
+        canInviteLivePlayers
+        sessionClientId="session-1"
+      />,
+    )
+    expect(screen.getByText('Convidar jogadores')).toBeInTheDocument()
+  })
+
+  it.each(['demo', 'offline'])('não aparece nem inicia rede no modo %s', (gameMode) => {
+    const prepare = jest.fn()
+    render(
+      <TeamsManagementModal
+        {...baseProps}
+        gameMode={gameMode}
+        canInviteLivePlayers
+        sessionClientId="session-1"
+        onPrepareLiveInvite={prepare}
+      />,
+    )
+    expect(screen.queryByText('Convidar jogadores')).not.toBeInTheDocument()
+    expect(prepare).not.toHaveBeenCalled()
+  })
+
+  it('exige salvar o draft antes de sincronizar o QR', () => {
+    render(
+      <TeamsManagementModal
+        {...baseProps}
+        gameMode="online"
+        canInviteLivePlayers
+        hasUnsavedLiveRosterChanges
+        sessionClientId="session-1"
+      />,
+    )
+    expect(screen.getByText(/salve as alterações de elenco/i)).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /abrir convite ao vivo/i })).toBeDisabled()
+  })
+})

@@ -1,10 +1,12 @@
 /**
- * ClaimPage — /claim?token=<uuid>  ou  /claim?game=<join_token>
+ * ClaimPage — /claim?token=, /claim?game= ou /claim?session=
  *
- * Dois modos:
+ * Tres modos:
  *  A) ?token=<uuid>  → convite por participante (fluxo original, migration 0005)
  *  B) ?game=<uuid>   → convite genérico da sessão (migration 0006): o usuário
  *     loga e escolhe qual participante é.
+ *  C) ?session=<uuid> → convite permanente ao vivo (migration 0009), valido
+ *     durante o jogo e no historico normalizado depois do fim.
  *
  * Fluxo comum:
  *  1. Se Supabase não está configurado → mensagem "Indisponível".
@@ -14,7 +16,7 @@
  * Sem exposição de PII.
  */
 
-import { useState, useEffect, useRef } from 'react'
+import { useCallback, useState, useEffect, useRef } from 'react'
 import { useSearchParams, Link } from 'react-router-dom'
 import { CheckCircle2, AlertCircle, Loader2, UserCheck } from 'lucide-react'
 import { isSupabaseConfigured } from '../../../shared/services/supabase.client'
@@ -26,6 +28,11 @@ import {
   claimParticipantByGame,
 } from '../services/normalized-history.service'
 import type { ClaimableParticipant } from '../services/normalized-history.service'
+import {
+  claimLiveSessionParticipant,
+  listLiveSessionParticipants,
+  type LiveSessionParticipant,
+} from '../services/live-session-claim.service'
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -44,6 +51,7 @@ export function ClaimPage() {
   const [searchParams] = useSearchParams()
   const token = searchParams.get('token') ?? ''
   const game = searchParams.get('game') ?? ''
+  const session = searchParams.get('session') ?? ''
 
   if (!isSupabaseConfigured()) {
     return (
@@ -56,6 +64,10 @@ export function ClaimPage() {
         </StatusCard>
       </PageShell>
     )
+  }
+
+  if (session) {
+    return <LiveSessionClaimPage joinToken={session} />
   }
 
   if (game) {
@@ -74,6 +86,150 @@ export function ClaimPage() {
           O link não contém um token válido. Verifique o link e tente novamente.
         </p>
       </StatusCard>
+    </PageShell>
+  )
+}
+
+// ---------------------------------------------------------------------------
+// LiveSessionClaimPage — modo ?session=<join_token> (migration 0009)
+// ---------------------------------------------------------------------------
+
+function LiveSessionClaimPage({ joinToken }: { joinToken: string }) {
+  const { user, loading } = useAuth()
+  const [participants, setParticipants] = useState<LiveSessionParticipant[]>([])
+  const [loadingList, setLoadingList] = useState(false)
+  const [claimingId, setClaimingId] = useState<string | null>(null)
+  const [claimed, setClaimed] = useState<{ gameId: string | null } | null>(null)
+  const [errorMsg, setErrorMsg] = useState<string | null>(null)
+  const fetchedRef = useRef(false)
+
+  const refreshParticipants = useCallback(async () => {
+    setLoadingList(true)
+    const result = await listLiveSessionParticipants(joinToken)
+    setParticipants(result.participants)
+    setErrorMsg(result.error)
+    setLoadingList(false)
+  }, [joinToken])
+
+  useEffect(() => {
+    if (!user || loading || fetchedRef.current) return
+    fetchedRef.current = true
+    void refreshParticipants()
+  }, [user, loading, refreshParticipants])
+
+  if (loading) {
+    return (
+      <PageShell>
+        <StatusCard icon="loading">
+          <p className="text-sm text-[var(--color-muted)]">Verificando sessão…</p>
+        </StatusCard>
+      </PageShell>
+    )
+  }
+
+  if (!user) {
+    return (
+      <PageShell>
+        <AuthGate />
+      </PageShell>
+    )
+  }
+
+  if (claimed) {
+    return (
+      <PageShell>
+        <SuccessCard gameId={claimed.gameId} />
+      </PageShell>
+    )
+  }
+
+  async function handleClaim(participantClientId: string) {
+    if (claimingId) return
+    setClaimingId(participantClientId)
+    setErrorMsg(null)
+    const result = await claimLiveSessionParticipant(joinToken, participantClientId)
+    setClaimingId(null)
+    if (result.error) {
+      setErrorMsg(result.error)
+      await refreshParticipants()
+      return
+    }
+    setClaimed({ gameId: result.gameId })
+  }
+
+  if (loadingList) {
+    return (
+      <PageShell>
+        <StatusCard icon="loading">
+          <p className="text-sm text-[var(--color-muted)]">Carregando participantes…</p>
+        </StatusCard>
+      </PageShell>
+    )
+  }
+
+  return (
+    <PageShell>
+      <div className="flex w-full max-w-sm flex-col gap-4 rounded-2xl border border-white/10 bg-black/60 p-6 shadow-2xl backdrop-blur-xl">
+        <div className="text-center">
+          <p className="text-sm font-semibold text-[var(--color-text)]">Quem é você nesta partida?</p>
+          <p className="mt-1 text-xs text-[var(--color-muted)]">
+            Escolha seu nome. Se ele estiver reservado, entre com o e-mail convidado.
+          </p>
+        </div>
+
+        {errorMsg ? (
+          <div className="flex items-start gap-2 rounded-lg border border-red-500/20 bg-red-500/10 px-3 py-2">
+            <AlertCircle className="mt-0.5 h-3.5 w-3.5 shrink-0 text-red-400" aria-hidden="true" />
+            <p className="text-xs text-red-400">{errorMsg}</p>
+          </div>
+        ) : null}
+
+        {participants.length === 0 ? (
+          <p className="text-center text-xs text-[var(--color-muted)]">
+            Nenhum participante disponível para este convite.
+          </p>
+        ) : (
+          <ul className="flex flex-col gap-2" role="list">
+            {participants.map((participant) => (
+              <li
+                key={participant.participantClientId}
+                className="flex items-center gap-3 rounded-lg border border-white/5 bg-white/5 px-3 py-2.5"
+              >
+                <div className="min-w-0 flex-1">
+                  <p className="truncate text-xs font-medium text-[var(--color-text)]">
+                    {participant.displayName}
+                  </p>
+                  {participant.teamName ? (
+                    <p className="text-[10px] text-[var(--color-muted)]">{participant.teamName}</p>
+                  ) : null}
+                </div>
+                {participant.claimed ? (
+                  <span className="inline-flex shrink-0 items-center gap-1 rounded px-2 py-1 text-[9px] font-medium bg-[var(--color-primary)]/15 text-[var(--color-primary)]">
+                    <UserCheck className="h-2.5 w-2.5" aria-hidden="true" />
+                    {participant.claimedByMe ? 'você' : 'vinculado'}
+                  </span>
+                ) : participant.claimable ? (
+                  <button
+                    type="button"
+                    onClick={() => void handleClaim(participant.participantClientId)}
+                    disabled={claimingId !== null}
+                    aria-label={`Sou ${participant.displayName}`}
+                    className="shrink-0 rounded-lg bg-[var(--color-primary)] px-3 py-2 text-[11px] font-semibold text-black transition-opacity hover:opacity-90 disabled:opacity-50"
+                  >
+                    {claimingId === participant.participantClientId ? (
+                      <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />
+                    ) : (
+                      'Sou eu'
+                    )}
+                  </button>
+                ) : (
+                  <span className="shrink-0 text-[10px] text-[var(--color-muted)]">reservado</span>
+                )}
+              </li>
+            ))}
+          </ul>
+        )}
+      </div>
     </PageShell>
   )
 }

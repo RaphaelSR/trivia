@@ -3,7 +3,7 @@
 ## Modos de jogo
 - `demo`: inicia com dados de exemplo prontos para demonstração e aceita presets de times, jogadores por time e quantidade de perguntas.
 - `offline`: inicia vazio e persiste a sessão localmente.
-- `online`: usa o mesmo fluxo de jogo, mas com repositório separado para sessão e PIN, preparado para Supabase.
+- `online`: usa o mesmo fluxo local-first e acrescenta autenticação, backup no Supabase, histórico normalizado e convite de jogadores sem bloquear o jogo.
 
 ## Sessao
 - Uma sessão contém: metadados, tema, times, participantes, board, turno ativo e histórico de mímica.
@@ -77,6 +77,19 @@
 - `demo` usa PIN padrão fixo.
 - `offline` e `online` podem sobrescrever o PIN por repositório.
 - Se não houver PIN customizado configurado, a biblioteca pode abrir sem bloqueio.
+
+## Conta e reivindicacao online
+- Conta, claim e avatar não fazem parte de `TriviaSession` e nunca alteram pontuação, turnos ou alternância.
+- `demo` e `offline` não fazem chamadas de conta ou claim.
+- No modo online autenticado, o host pode gerar um único link `/claim?session=` depois de sincronizar o elenco atual.
+- Uma conta pode ocupar no máximo um participante por sessão; um participante pode ter no máximo um claim ativo.
+- Repetir o próprio claim do mesmo participante é idempotente.
+- E-mail opcional válido reserva o slot para o mesmo e-mail autenticado; vazio ou inválido não reserva e não bloqueia o jogo.
+- Renomear ou mover preserva o claim pelo ID do participante. Remover revoga o vínculo na próxima reconciliação.
+- A correção do host apenas desvincula, com confirmação e registro de ator/data; outra pessoa reivindica depois.
+- O mesmo token continua válido no histórico normalizado após o fim da partida.
+- Links antigos `/claim?token=` e `/claim?game=` permanecem compatíveis.
+- Finalizar novamente a mesma sessão online deve devolver o mesmo jogo normalizado, sem duplicar histórico.
 
 ## Roleta de filmes
 - A roleta é independente do trivia atual e não importa filmes do board ou da Biblioteca.

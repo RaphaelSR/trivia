@@ -312,7 +312,16 @@ export async function saveNormalizedGame(
   const nowIso = new Date().toISOString()
   const payload = buildNormalizedGamePayload(session, { ...opts, nowIso })
 
-  const { data, error } = await client.rpc('create_game_normalized', { p: payload })
+  // Partidas ao vivo usam a chave estavel da TriviaSession. A RPC 0009
+  // serializa repeticoes concorrentes e devolve o mesmo game_id. Importacoes
+  // continuam na RPC historica, preservando seu contrato.
+  const { data, error } =
+    opts.source === 'live'
+      ? await client.rpc('create_game_normalized_idempotent', {
+          p: payload,
+          p_session_client_id: session.id,
+        })
+      : await client.rpc('create_game_normalized', { p: payload })
 
   if (error) {
     console.warn('[saveNormalizedGame] Falha ao salvar partida normalizada:', error)

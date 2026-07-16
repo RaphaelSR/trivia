@@ -19,7 +19,8 @@
 - Provider e hooks começam a consumir contratos novos sem quebrar a API publica.
 
 ## Proximas frentes
-- Implementar fundacao Supabase para o modo `online`.
+- Auditar migrations Supabase e contratos online com dados de produção antes de mudanças destrutivas ou backfills.
+- Evoluir campeonatos e leaderboards sem acoplar identidade ao estado do jogo.
 - Reduzir `ControlDashboard.tsx` com `useReducer`.
 - Mover componentes de dominio de `components/ui` para modulos adequados.
 - Completar redesign do dashboard principal.
