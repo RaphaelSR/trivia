@@ -12,8 +12,10 @@ import {
   updateParticipantDraft,
   moveParticipantDraft,
   canSaveTeams,
+  hasRosterChanges,
 } from '../../../../modules/control/utils/teamUtils'
 import type { TeamDraft } from '../../../../modules/control/types/control.types'
+import type { TriviaParticipant, TriviaTeam } from '../../../../modules/trivia/types'
 
 describe('teamUtils', () => {
   describe('createTeamId', () => {
@@ -385,5 +387,37 @@ describe('teamUtils', () => {
       expect(canSaveTeams(drafts)).toBe(true)
     })
   })
-})
 
+  describe('hasRosterChanges', () => {
+    const teams: TriviaTeam[] = [
+      { id: 'team-a', name: 'A', color: '#111', order: 0, members: ['a1'], score: 10 },
+      { id: 'team-b', name: 'B', color: '#222', order: 1, members: ['b1', 'b2'], score: 20 },
+      { id: 'team-c', name: 'C', color: '#333', order: 2, members: ['c1', 'c2', 'c3'], score: 30 },
+    ]
+    const participants: TriviaParticipant[] = teams.flatMap(team =>
+      team.members.map(id => ({ id, name: id.toUpperCase(), role: 'player', teamId: team.id }))
+    )
+
+    it('detecta participante novo no elenco 1/2/3', () => {
+      const nextTeams = teams.map(team =>
+        team.id === 'team-b' ? { ...team, members: [...team.members, 'b3'] } : team
+      )
+      const nextParticipants = [
+        ...participants,
+        { id: 'b3', name: 'B3', role: 'player' as const, teamId: 'team-b' },
+      ]
+
+      expect(hasRosterChanges(teams, participants, nextTeams, nextParticipants)).toBe(true)
+    })
+
+    it('não confunde mudança de placar com alteração de elenco', () => {
+      const scoredTeams = teams.map(team => ({ ...team, score: team.score + 50 }))
+
+      expect(hasRosterChanges(teams, participants, scoredTeams, participants)).toBe(false)
+    })
+
+    it('não cria mudança quando o elenco salvo é idêntico', () => {
+      expect(hasRosterChanges(teams, participants, teams, participants)).toBe(false)
+    })
+  })
+})

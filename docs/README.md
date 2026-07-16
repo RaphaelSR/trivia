@@ -10,6 +10,7 @@ Central de navegacao dos documentos oficiais do `trivia`.
 
 ## Produto e estado atual
 - [FUNCIONALIDADES.md](./FUNCIONALIDADES.md): inventario das funcionalidades implementadas, internas e planejadas
+- [SETORES.md](./SETORES.md): mapa curto de responsabilidades, regras e pontos de entrada por setor
 
 ## Modulo online
 - [online/README.md](./online/README.md): indice dos documentos do modo `online`
@@ -25,7 +26,12 @@ Central de navegacao dos documentos oficiais do `trivia`.
 
 ## O que nao entra no Git
 - `.obsidian/`: configuracao local do app Obsidian.
-- `docs/obsidian/`: workspace operacional pessoal para notas, board e handoff.
+- `docs/obsidian/`: workspace operacional pessoal para notas, board e handoff. Conhecimento durável deve ser resumido nos documentos oficiais antes de uma entrega.
+
+## Obsidian
+- Abra a raiz do repositorio como vault para navegar por `README.md`, `AGENTS.md` e `docs/` sem duplicar conteudo.
+- Configuracao visual, estado de janelas, handoffs temporarios e boards pessoais permanecem locais.
+- Regras, arquitetura, funcionalidades e decisoes duraveis ficam nos arquivos oficiais versionados.
 
 ## Convencoes desta pasta
 - Prefira atualizar um doc existente antes de criar outro.

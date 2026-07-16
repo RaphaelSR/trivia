@@ -1,5 +1,5 @@
 import '@testing-library/jest-dom'
-import { render, screen, fireEvent, waitFor } from '@testing-library/react'
+import { act, render, screen, fireEvent, waitFor } from '@testing-library/react'
 import { MimicaModal } from '@/components/ui/MimicaModal'
 import type { TriviaTeam, TriviaParticipant } from '@/modules/trivia/types'
 
@@ -43,11 +43,8 @@ const mockParticipants: TriviaParticipant[] = [
   },
 ]
 
-const mockTurnSequence = ['participant-1', 'participant-3', 'participant-2']
-
 describe('MimicaModal', () => {
   const mockOnClose = jest.fn()
-  const mockOnAdvanceTurn = jest.fn()
   const mockOnScore = jest.fn()
 
   beforeEach(() => {
@@ -56,7 +53,7 @@ describe('MimicaModal', () => {
   })
 
   afterEach(() => {
-    jest.runOnlyPendingTimers()
+    jest.clearAllTimers()
     jest.useRealTimers()
   })
 
@@ -75,9 +72,8 @@ describe('MimicaModal', () => {
         onClose={mockOnClose}
         teams={mockTeams}
         participants={mockParticipants}
-        activeParticipant={mockParticipants[2]}
-        turnSequence={mockTurnSequence}
-        onAdvanceTurn={mockOnAdvanceTurn}
+        triviaActiveParticipantId="participant-3"
+        triviaActiveTurnIndex={3}
         onScore={mockOnScore}
       />
     )
@@ -88,10 +84,10 @@ describe('MimicaModal', () => {
       expect(mockOnScore).toHaveBeenCalled()
     })
 
-    jest.advanceTimersByTime(500)
+    act(() => jest.advanceTimersByTime(500))
 
     await waitFor(() => {
-      expect(mockOnAdvanceTurn).toHaveBeenCalled()
+      expect(screen.getByTestId('mimica-active-participant')).toHaveTextContent('Participante 1')
     })
 
     expect(mockOnClose).not.toHaveBeenCalled()
@@ -104,9 +100,8 @@ describe('MimicaModal', () => {
         onClose={mockOnClose}
         teams={mockTeams}
         participants={mockParticipants}
-        activeParticipant={mockParticipants[2]}
-        turnSequence={mockTurnSequence}
-        onAdvanceTurn={mockOnAdvanceTurn}
+        triviaActiveParticipantId="participant-3"
+        triviaActiveTurnIndex={3}
         onScore={mockOnScore}
       />
     )
@@ -117,10 +112,10 @@ describe('MimicaModal', () => {
       expect(mockOnScore).toHaveBeenCalled()
     })
 
-    jest.advanceTimersByTime(500)
+    act(() => jest.advanceTimersByTime(500))
 
     await waitFor(() => {
-      expect(mockOnAdvanceTurn).toHaveBeenCalled()
+      expect(screen.getByText(/Rodada 2/i)).toBeInTheDocument()
     })
   })
 
@@ -131,9 +126,8 @@ describe('MimicaModal', () => {
         onClose={mockOnClose}
         teams={mockTeams}
         participants={mockParticipants}
-        activeParticipant={mockParticipants[0]}
-        turnSequence={mockTurnSequence}
-        onAdvanceTurn={mockOnAdvanceTurn}
+        triviaActiveParticipantId="participant-1"
+        triviaActiveTurnIndex={0}
         onScore={mockOnScore}
       />
     )
@@ -149,9 +143,8 @@ describe('MimicaModal', () => {
         onClose={mockOnClose}
         teams={mockTeams}
         participants={mockParticipants}
-        activeParticipant={mockParticipants[0]}
-        turnSequence={mockTurnSequence}
-        onAdvanceTurn={mockOnAdvanceTurn}
+        triviaActiveParticipantId="participant-1"
+        triviaActiveTurnIndex={0}
         onScore={mockOnScore}
       />
     )
@@ -160,6 +153,7 @@ describe('MimicaModal', () => {
 
     await waitFor(() => {
       expect(mockOnScore).toHaveBeenCalledWith(
+        'participant-1',
         'full-current',
         undefined,
         50,
@@ -176,9 +170,8 @@ describe('MimicaModal', () => {
         onClose={mockOnClose}
         teams={mockTeams}
         participants={mockParticipants}
-        activeParticipant={mockParticipants[0]}
-        turnSequence={mockTurnSequence}
-        onAdvanceTurn={mockOnAdvanceTurn}
+        triviaActiveParticipantId="participant-1"
+        triviaActiveTurnIndex={0}
         onScore={mockOnScore}
       />
     )
@@ -187,6 +180,7 @@ describe('MimicaModal', () => {
 
     await waitFor(() => {
       expect(mockOnScore).toHaveBeenCalledWith(
+        'participant-1',
         'full-current',
         undefined,
         50,
@@ -203,9 +197,8 @@ describe('MimicaModal', () => {
         onClose={mockOnClose}
         teams={mockTeams}
         participants={mockParticipants}
-        activeParticipant={mockParticipants[0]}
-        turnSequence={mockTurnSequence}
-        onAdvanceTurn={mockOnAdvanceTurn}
+        triviaActiveParticipantId="participant-1"
+        triviaActiveTurnIndex={0}
         onScore={mockOnScore}
       />
     )
@@ -214,6 +207,7 @@ describe('MimicaModal', () => {
 
     await waitFor(() => {
       expect(mockOnScore).toHaveBeenCalledWith(
+        'participant-1',
         'full-current',
         undefined,
         50,
@@ -230,9 +224,8 @@ describe('MimicaModal', () => {
         onClose={mockOnClose}
         teams={mockTeams}
         participants={mockParticipants}
-        activeParticipant={mockParticipants[0]}
-        turnSequence={mockTurnSequence}
-        onAdvanceTurn={mockOnAdvanceTurn}
+        triviaActiveParticipantId="participant-1"
+        triviaActiveTurnIndex={0}
         onScore={mockOnScore}
       />
     )
@@ -241,6 +234,7 @@ describe('MimicaModal', () => {
 
     await waitFor(() => {
       expect(mockOnScore).toHaveBeenCalledWith(
+        'participant-1',
         'half-current',
         undefined,
         25,
@@ -257,9 +251,8 @@ describe('MimicaModal', () => {
         onClose={mockOnClose}
         teams={mockTeams}
         participants={mockParticipants}
-        activeParticipant={mockParticipants[0]}
-        turnSequence={mockTurnSequence}
-        onAdvanceTurn={mockOnAdvanceTurn}
+        triviaActiveParticipantId="participant-1"
+        triviaActiveTurnIndex={0}
         onScore={mockOnScore}
       />
     )
@@ -280,9 +273,8 @@ describe('MimicaModal', () => {
         onClose={mockOnClose}
         teams={mockTeams}
         participants={mockParticipants}
-        activeParticipant={mockParticipants[0]}
-        turnSequence={mockTurnSequence}
-        onAdvanceTurn={mockOnAdvanceTurn}
+        triviaActiveParticipantId="participant-1"
+        triviaActiveTurnIndex={0}
         onScore={mockOnScore}
       />
     )
@@ -291,6 +283,7 @@ describe('MimicaModal', () => {
 
     await waitFor(() => {
       expect(mockOnScore).toHaveBeenCalledWith(
+        'participant-1',
         'everyone',
         undefined,
         25,
@@ -307,9 +300,8 @@ describe('MimicaModal', () => {
         onClose={mockOnClose}
         teams={mockTeams}
         participants={mockParticipants}
-        activeParticipant={mockParticipants[0]}
-        turnSequence={mockTurnSequence}
-        onAdvanceTurn={mockOnAdvanceTurn}
+        triviaActiveParticipantId="participant-1"
+        triviaActiveTurnIndex={0}
         onScore={mockOnScore}
       />
     )
@@ -318,6 +310,7 @@ describe('MimicaModal', () => {
 
     await waitFor(() => {
       expect(mockOnScore).toHaveBeenCalledWith(
+        'participant-1',
         'void',
         undefined,
         0,
@@ -334,16 +327,70 @@ describe('MimicaModal', () => {
         onClose={mockOnClose}
         teams={mockTeams}
         participants={mockParticipants}
-        activeParticipant={mockParticipants[0]}
-        turnSequence={mockTurnSequence}
-        onAdvanceTurn={mockOnAdvanceTurn}
+        triviaActiveParticipantId="participant-1"
+        triviaActiveTurnIndex={0}
         onScore={mockOnScore}
       />
     )
 
-    const orderSummary = screen.getByText(/Ordem \(3\)/i)
+    const orderSummary = screen.getByText(/Ordem \(4\)/i)
     fireEvent.click(orderSummary)
 
     expect(screen.getAllByText('Alternada').length).toBeGreaterThan(0)
+  })
+
+  it('permite escolher claramente entre continuar do trivia e começar do primeiro', () => {
+    render(
+      <MimicaModal
+        isOpen={true}
+        onClose={mockOnClose}
+        teams={mockTeams}
+        participants={mockParticipants}
+        triviaActiveParticipantId="participant-3"
+        triviaActiveTurnIndex={3}
+        onScore={mockOnScore}
+      />
+    )
+
+    expect(screen.getByTestId('mimica-active-participant')).toHaveTextContent('Participante 3')
+    fireEvent.click(screen.getByText(/Ordem \(4\)/i))
+    fireEvent.click(screen.getByRole('button', { name: 'Começar do primeiro' }))
+    expect(screen.getByTestId('mimica-active-participant')).toHaveTextContent('Participante 1')
+    fireEvent.click(screen.getByRole('button', { name: 'Continuar do trivia' }))
+    expect(screen.getByTestId('mimica-active-participant')).toHaveTextContent('Participante 3')
+  })
+
+  it('não reinicia a ordem quando apenas a pontuação dos times muda', async () => {
+    const { rerender } = render(
+      <MimicaModal
+        isOpen={true}
+        onClose={mockOnClose}
+        teams={mockTeams}
+        participants={mockParticipants}
+        triviaActiveParticipantId="participant-1"
+        triviaActiveTurnIndex={0}
+        onScore={mockOnScore}
+      />
+    )
+
+    selectScoringAndConfirm(/^100%$/)
+    act(() => jest.advanceTimersByTime(500))
+    await waitFor(() => {
+      expect(screen.getByTestId('mimica-active-participant')).toHaveTextContent('Participante 3')
+    })
+
+    rerender(
+      <MimicaModal
+        isOpen={true}
+        onClose={mockOnClose}
+        teams={mockTeams.map(team => ({ ...team, score: team.score + 50 }))}
+        participants={mockParticipants}
+        triviaActiveParticipantId="participant-1"
+        triviaActiveTurnIndex={0}
+        onScore={mockOnScore}
+      />
+    )
+
+    expect(screen.getByTestId('mimica-active-participant')).toHaveTextContent('Participante 3')
   })
 })

@@ -180,6 +180,62 @@ describe('session domain', () => {
     expect(synced.activeTurnIndex).not.toBe(0)
     expect(synced.activeTeamId).toBe('team-a')
   })
+
+  it('preserva o turno atual e inclui participante novo apenas na ordem futura (times 1/2/3)', () => {
+    const teams: TriviaTeam[] = [
+      { id: 'team-a', name: 'A', color: '#000', order: 0, members: ['a1'], score: 0 },
+      { id: 'team-b', name: 'B', color: '#111', order: 1, members: ['b1', 'b2'], score: 0 },
+      { id: 'team-c', name: 'C', color: '#222', order: 2, members: ['c1', 'c2', 'c3'], score: 0 },
+    ]
+    const participants: TriviaParticipant[] = teams.flatMap(team =>
+      team.members.map(id => ({ id, name: id.toUpperCase(), role: 'player', teamId: team.id }))
+    )
+    const sequence = ['a1', 'b1', 'c1', 'a1', 'b2', 'c2', 'a1', 'b1', 'c3', 'a1', 'b2', 'c1']
+    const session: TriviaSession = {
+      id: 'session-roster-change',
+      title: 'Trivia',
+      scheduledAt: new Date().toISOString(),
+      theme: {
+        id: 'default-dark',
+        name: 'Tema Escuro',
+        palette: { background: '#000', primary: '#111', secondary: '#222', accent: '#333', surface: '#444' },
+      },
+      teams,
+      participants,
+      board: [{
+        id: 'column',
+        filmId: 'film',
+        film: 'Film',
+        tiles: Array.from({ length: 12 }, (_, index) => ({
+          id: `tile-${index}`,
+          film: 'Film',
+          points: 10,
+          state: index < 4 ? 'answered' as const : 'available' as const,
+          question: `Q${index}`,
+          answer: `A${index}`,
+        })),
+      }],
+      activeTeamId: 'team-b',
+      activeParticipantId: 'b2',
+      activeTurnIndex: 4,
+      turnSequence: sequence,
+      mimicaScores: [],
+    }
+
+    const updatedTeams = teams.map(team =>
+      team.id === 'team-b' ? { ...team, members: [...team.members, 'b3'] } : team
+    )
+    const updatedParticipants = [
+      ...participants,
+      { id: 'b3', name: 'B3', role: 'player' as const, teamId: 'team-b' },
+    ]
+    const rebuilt = rebuildSessionTurnState(session, updatedTeams, updatedParticipants)
+
+    expect(rebuilt.turnSequence.slice(0, 5)).toEqual(sequence.slice(0, 5))
+    expect(rebuilt.activeParticipantId).toBe('b2')
+    expect(rebuilt.activeTurnIndex).toBe(4)
+    expect(rebuilt.turnSequence.slice(5, 9)).toEqual(['c2', 'a1', 'b3', 'c3'])
+  })
 })
 
 describe('compareEventLogs', () => {

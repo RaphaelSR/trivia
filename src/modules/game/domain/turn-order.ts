@@ -105,6 +105,16 @@ export function buildTurnPreviewGroups(
   return typeof maxGroups === 'number' ? grouped.slice(0, maxGroups) : grouped
 }
 
+export function buildTurnPreviewGroupsFromSequence(
+  teams: TriviaTeam[],
+  participants: TriviaParticipant[],
+  sequence: string[],
+  maxGroups?: number,
+): TurnPreviewGroup[] {
+  const grouped = groupCompleteRounds(sequence, teams, participants)
+  return typeof maxGroups === 'number' ? grouped.slice(0, maxGroups) : grouped
+}
+
 export function getNextTurnState(session: TriviaSession): {
   turnSequence: string[]
   activeParticipantId: string | null

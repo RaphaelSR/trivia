@@ -1,4 +1,30 @@
 import type { TeamDraft, ParticipantDraft } from '../types/control.types'
+import type { TriviaParticipant, TriviaTeam } from '@/modules/trivia/types'
+
+/**
+ * Compara apenas a composição editável do elenco. Pontuação e outros estados
+ * de jogo não devem criar um checkpoint estrutural por engano.
+ */
+export function hasRosterChanges(
+  currentTeams: TriviaTeam[],
+  currentParticipants: TriviaParticipant[],
+  nextTeams: TriviaTeam[],
+  nextParticipants: TriviaParticipant[],
+): boolean {
+  const rosterSnapshot = (teams: TriviaTeam[], participants: TriviaParticipant[]) => ({
+    teams: teams.map(({ id, name, color, order, members }) => ({ id, name, color, order, members })),
+    participants: participants.map(({ id, name, role, teamId, email }) => ({
+      id,
+      name,
+      role,
+      teamId,
+      email: email ?? null,
+    })),
+  })
+
+  return JSON.stringify(rosterSnapshot(currentTeams, currentParticipants)) !==
+    JSON.stringify(rosterSnapshot(nextTeams, nextParticipants))
+}
 
 /**
  * Gera um ID único para time
@@ -186,4 +212,3 @@ export function canSaveTeams(teamDrafts: TeamDraft[]): boolean {
       team.members.every((member) => member.name.trim())
   )
 }
-

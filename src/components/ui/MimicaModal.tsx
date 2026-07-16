@@ -1,21 +1,27 @@
 import { HelpCircle, Minus, Plus, UsersRound } from 'lucide-react'
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { toast } from 'sonner'
 import { Button } from './Button'
 import { Modal } from './Modal'
 import { Timer } from './Timer'
 import { Tooltip } from './Tooltip'
 import type { TriviaParticipant, TriviaTeam } from '../../modules/trivia/types'
+import {
+  buildMimicaTurnSequence,
+  getMimicaStartIndex,
+  type MimicaOrderMode,
+  type MimicaStartMode,
+} from '../../modules/game/domain/mimica-turn-order'
 
 type MimicaModalProps = {
   isOpen: boolean
   onClose: () => void
   teams: TriviaTeam[]
   participants: TriviaParticipant[]
-  activeParticipant: TriviaParticipant | null
-  turnSequence: string[]
-  onAdvanceTurn: () => void
+  triviaActiveParticipantId: string | null
+  triviaActiveTurnIndex: number
   onScore: (
+    participantId: string,
     mode: ScoringMode,
     targetTeamId: string | undefined,
     points: number,
@@ -36,94 +42,60 @@ export function MimicaModal({
   onClose,
   teams,
   participants,
-  activeParticipant,
-  turnSequence,
-  onAdvanceTurn,
+  triviaActiveParticipantId,
+  triviaActiveTurnIndex,
   onScore,
 }: MimicaModalProps) {
   const [scoringMode, setScoringMode] = useState<ScoringMode | null>(null)
   const [selectedTeam, setSelectedTeam] = useState<string | null>(null)
   const [mimicaPoints, setMimicaPoints] = useState(50)
-  const [shuffleMode, setShuffleMode] = useState<'alternate' | 'shuffle' | 'team-shuffle'>('alternate')
-  const [shuffledSequence, setShuffledSequence] = useState<string[]>([])
+  const [orderMode, setOrderMode] = useState<MimicaOrderMode>('alternate')
+  const [startMode, setStartMode] = useState<MimicaStartMode>('continue')
+  const [mimicaSequence, setMimicaSequence] = useState<string[]>([])
+  const [currentParticipantIndex, setCurrentParticipantIndex] = useState(0)
   const [roundNumber, setRoundNumber] = useState(1)
   const [timerSeconds, setTimerSeconds] = useState(60)
   const [timerResetKey, setTimerResetKey] = useState(0)
 
-  const shuffleArray = (array: string[]) => {
-    const shuffled = [...array]
-    for (let i = shuffled.length - 1; i > 0; i--) {
-      const j = Math.floor(Math.random() * (i + 1))
-      ;[shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]]
-    }
-    return shuffled
+  const rosterSignature = useMemo(
+    () => JSON.stringify({
+      teams: teams.map(team => ({ id: team.id, order: team.order, members: team.members })),
+      participants: participants.map(participant => ({ id: participant.id, teamId: participant.teamId })),
+    }),
+    [teams, participants]
+  )
+  const rosterRef = useRef({ signature: '', teams, participants })
+  if (rosterRef.current.signature !== rosterSignature) {
+    rosterRef.current = { signature: rosterSignature, teams, participants }
   }
 
   useEffect(() => {
     if (isOpen) {
-      setRoundNumber(1)
+      const roster = rosterRef.current
+      setMimicaSequence(buildMimicaTurnSequence(roster.teams, roster.participants, orderMode))
     }
-  }, [isOpen])
+  }, [isOpen, orderMode, rosterSignature])
 
   useEffect(() => {
-    if (isOpen && turnSequence.length > 0) {
-      let newSequence: string[] = []
-
-      switch (shuffleMode) {
-        case 'alternate': {
-          const participantsByTeam = teams.map(team => ({
-            team,
-            members: participants.filter(p => p.teamId === team.id)
-          }))
-          const maxMembers = Math.max(...participantsByTeam.map(t => t.members.length))
-
-          for (let i = 0; i < maxMembers; i++) {
-            participantsByTeam.forEach(({ members }) => {
-              if (members[i]) {
-                newSequence.push(members[i].id)
-              }
-            })
-          }
-          break
-        }
-
-        case 'shuffle':
-          newSequence = shuffleArray(turnSequence)
-          break
-
-        case 'team-shuffle': {
-          const shuffledByTeam = teams.map(team => ({
-            team,
-            members: shuffleArray(participants.filter(p => p.teamId === team.id).map(p => p.id))
-          }))
-          const maxShuffledMembers = Math.max(...shuffledByTeam.map(t => t.members.length))
-
-          for (let i = 0; i < maxShuffledMembers; i++) {
-            shuffledByTeam.forEach(({ members }) => {
-              if (members[i]) {
-                newSequence.push(members[i])
-              }
-            })
-          }
-          break
-        }
-      }
-
-      setShuffledSequence(newSequence)
-    }
-  }, [isOpen, turnSequence, shuffleMode, teams, participants])
+    if (!isOpen || !mimicaSequence.length) return
+    setRoundNumber(1)
+    setCurrentParticipantIndex(
+      getMimicaStartIndex(
+        mimicaSequence,
+        startMode,
+        triviaActiveParticipantId,
+        triviaActiveTurnIndex
+      )
+    )
+  }, [isOpen, mimicaSequence, startMode, triviaActiveParticipantId, triviaActiveTurnIndex])
 
   const alternateParticipants = useMemo(() => {
-    const sequenceToUse = shuffledSequence.length > 0 ? shuffledSequence : turnSequence
-    return sequenceToUse
+    return mimicaSequence
       .map(id => participants.find(p => p.id === id))
       .filter((p): p is TriviaParticipant => p !== undefined)
-  }, [shuffledSequence, turnSequence, participants])
+  }, [mimicaSequence, participants])
 
-  const currentParticipantIndex = useMemo(() => {
-    if (!activeParticipant) return 0
-    return alternateParticipants.findIndex(p => p.id === activeParticipant.id)
-  }, [activeParticipant, alternateParticipants])
+  const activeParticipant = alternateParticipants[currentParticipantIndex] ?? null
 
   const turnNumber = useMemo(() => {
     return (roundNumber - 1) * alternateParticipants.length + currentParticipantIndex + 1
@@ -170,20 +142,21 @@ export function MimicaModal({
         break
     }
 
-    onScore(mode, targetTeamId, points, turnNumber, roundNumber)
+    if (!activeParticipant) return
+    onScore(activeParticipant.id, mode, targetTeamId, points, turnNumber, roundNumber)
     setScoringMode(null)
     setSelectedTeam(null)
     setTimerResetKey(k => k + 1)
 
     setTimeout(() => {
       if (currentParticipantIndex < alternateParticipants.length - 1) {
-        onAdvanceTurn()
+        setCurrentParticipantIndex(index => index + 1)
         if (nextParticipant) {
           toast.success(`Próximo turno: ${nextParticipant.name}`)
         }
       } else {
         setRoundNumber(prev => prev + 1)
-        onAdvanceTurn()
+        setCurrentParticipantIndex(0)
         if (alternateParticipants[0]) {
           toast.success(`Rodada ${roundNumber + 1} iniciada! Próximo turno: ${alternateParticipants[0].name}`)
         }
@@ -205,7 +178,7 @@ export function MimicaModal({
     <Modal
       isOpen={isOpen}
       title="Modo Mímica"
-      description="Cada participante faz sua vez na ordem alternada."
+      description="Os times alternam como no trivia; times menores repetem participantes para manter a rotação."
       onClose={handleClose}
     >
       <div className="space-y-5 text-[var(--color-text)]">
@@ -218,7 +191,9 @@ export function MimicaModal({
             />
             <div>
               <p className="text-sm font-semibold">
-                {activeParticipant?.name ?? 'Aguardando'}
+                <span data-testid="mimica-active-participant">
+                  {activeParticipant?.name ?? 'Aguardando'}
+                </span>
               </p>
               <p className="text-xs text-[var(--color-muted)]">
                 {activeTeam?.name} · Rodada {roundNumber} · Turno {turnNumber}
@@ -356,67 +331,114 @@ export function MimicaModal({
           </Button>
         </div>
 
-        {/* Ordem de participação - colapsada */}
-        <details className="rounded-xl border border-[var(--color-border)]">
-          <summary className="flex cursor-pointer items-center justify-between px-4 py-2.5 text-xs font-semibold uppercase tracking-[0.2em] text-[var(--color-muted)]">
+        {/* Configuração e preview da ordem */}
+        <details className="overflow-hidden rounded-xl border border-[var(--color-border)]">
+          <summary className="flex cursor-pointer items-center justify-between gap-3 px-4 py-3 text-xs font-semibold uppercase tracking-[0.2em] text-[var(--color-muted)] transition hover:bg-[var(--color-border)]/15">
             <span className="flex items-center gap-2">
               <UsersRound size={14} />
               Ordem ({alternateParticipants.length})
             </span>
-            <span className="text-[10px] normal-case tracking-normal">
-              {shuffleMode === 'alternate' ? 'Alternada' : shuffleMode === 'shuffle' ? 'Aleatória' : 'Por time'}
+            <span className="text-right text-[10px] font-medium normal-case tracking-normal">
+              {startMode === 'continue' ? 'Do trivia' : 'Do primeiro'} ·{' '}
+              {orderMode === 'alternate' ? 'Alternada' : orderMode === 'shuffle' ? 'Aleatória' : 'Por time'}
             </span>
           </summary>
-          <div className="border-t border-[var(--color-border)] px-4 py-3 space-y-3">
-            <div className="flex gap-1.5">
-              {([
-                { id: 'alternate', label: 'Alternada' },
-                { id: 'shuffle', label: 'Aleatória' },
-                { id: 'team-shuffle', label: 'Por time' },
-              ] as const).map((opt) => (
-                <button
-                  key={opt.id}
-                  type="button"
-                  onClick={() => setShuffleMode(opt.id)}
-                  className={`rounded-lg px-2.5 py-1 text-xs font-medium transition ${
-                    shuffleMode === opt.id
-                      ? 'bg-[var(--color-primary)] text-white'
-                      : 'bg-[var(--color-border)]/40 text-[var(--color-muted)] hover:bg-[var(--color-border)]'
-                  }`}
-                >
-                  {opt.label}
-                </button>
-              ))}
-              <Tooltip content="A mímica continua até você fechar. Quando todos participaram, recomeça do primeiro.">
-                <HelpCircle size={14} className="ml-1 self-center text-[var(--color-muted)] cursor-help" />
-              </Tooltip>
+          <div className="space-y-4 border-t border-[var(--color-border)] bg-[var(--color-surface)]/40 px-4 py-4">
+            <div className="grid gap-3 sm:grid-cols-2">
+              <div className="space-y-2">
+                <div className="flex items-center gap-1.5">
+                  <span className="text-[10px] font-semibold uppercase tracking-[0.18em] text-[var(--color-muted)]">Início</span>
+                  <Tooltip content="Escolhe apenas onde a mímica começa. O turno do trivia não é alterado.">
+                    <HelpCircle size={13} className="cursor-help text-[var(--color-muted)]" />
+                  </Tooltip>
+                </div>
+                <div className="grid grid-cols-2 rounded-lg bg-[var(--color-border)]/35 p-1">
+                  {([
+                    { id: 'continue', label: 'Do trivia', ariaLabel: 'Continuar do trivia' },
+                    { id: 'restart', label: 'Do primeiro', ariaLabel: 'Começar do primeiro' },
+                  ] as const).map(option => (
+                    <button
+                      key={option.id}
+                      type="button"
+                      aria-label={option.ariaLabel}
+                      onClick={() => setStartMode(option.id)}
+                      className={`rounded-md px-2 py-1.5 text-xs font-medium transition ${
+                        startMode === option.id
+                          ? 'bg-[var(--color-surface)] text-[var(--color-primary)] shadow-sm'
+                          : 'text-[var(--color-muted)] hover:text-[var(--color-text)]'
+                      }`}
+                    >
+                      {option.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <div className="flex items-center gap-1.5">
+                  <span className="text-[10px] font-semibold uppercase tracking-[0.18em] text-[var(--color-muted)]">Organização</span>
+                  <Tooltip content="Alternada troca os times como no trivia. Times menores repetem participantes quando necessário.">
+                    <HelpCircle size={13} className="cursor-help text-[var(--color-muted)]" />
+                  </Tooltip>
+                </div>
+                <div className="grid grid-cols-3 rounded-lg bg-[var(--color-border)]/35 p-1">
+                  {([
+                    { id: 'alternate', label: 'Alternada' },
+                    { id: 'shuffle', label: 'Aleatória' },
+                    { id: 'team-shuffle', label: 'Por time' },
+                  ] as const).map(option => (
+                    <button
+                      key={option.id}
+                      type="button"
+                      onClick={() => setOrderMode(option.id)}
+                      className={`rounded-md px-2 py-1.5 text-xs font-medium transition ${
+                        orderMode === option.id
+                          ? 'bg-[var(--color-surface)] text-[var(--color-primary)] shadow-sm'
+                          : 'text-[var(--color-muted)] hover:text-[var(--color-text)]'
+                      }`}
+                    >
+                      {option.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
             </div>
 
-            <div className="space-y-1">
+            <div className="grid gap-2 sm:grid-cols-2">
               {alternateParticipants.map((participant, index) => {
                 const participantTeam = teams.find(team => team.id === participant.teamId)
-                const isActive = participant.id === activeParticipant?.id
+                const isActive = index === currentParticipantIndex
                 const isCompleted = index < currentParticipantIndex
 
                 return (
                   <div
-                    key={participant.id}
-                    className={`flex items-center justify-between rounded-lg px-3 py-1.5 text-xs transition-colors ${
+                    key={`${participant.id}-${index}`}
+                    className={`flex items-center gap-3 rounded-lg border px-3 py-2 text-xs transition-colors ${
                       isActive
-                        ? 'bg-[var(--color-primary)]/10 font-semibold'
+                        ? 'border-[var(--color-primary)] bg-[var(--color-primary)]/10'
                         : isCompleted
-                        ? 'text-[var(--color-muted)] line-through opacity-50'
-                        : ''
+                        ? 'border-[var(--color-border)] opacity-55'
+                        : 'border-[var(--color-border)] bg-[var(--color-background)]/50'
                     }`}
                   >
-                    <span className="flex items-center gap-2">
-                      <span
-                        className="h-1.5 w-1.5 rounded-full"
-                        style={{ backgroundColor: participantTeam?.color }}
-                      />
-                      {participant.name}
+                    <span className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-[10px] font-bold ${
+                      isActive ? 'bg-[var(--color-primary)] text-white' : 'bg-[var(--color-border)]/50 text-[var(--color-muted)]'
+                    }`}>
+                      {index + 1}
                     </span>
-                    <span className="text-[var(--color-muted)]">{participantTeam?.name}</span>
+                    <span className="min-w-0 flex-1">
+                      <span className="flex items-center gap-2 font-medium text-[var(--color-text)]">
+                        <span
+                          className="h-1.5 w-1.5 rounded-full"
+                          style={{ backgroundColor: participantTeam?.color }}
+                        />
+                        {participant.name}
+                      </span>
+                      <span className="mt-0.5 block truncate text-[10px] text-[var(--color-muted)]">{participantTeam?.name}</span>
+                    </span>
+                    {isActive ? (
+                      <span className="rounded-full bg-[var(--color-primary)]/15 px-2 py-0.5 text-[9px] font-bold uppercase tracking-[0.12em] text-[var(--color-primary)]">Agora</span>
+                    ) : null}
                   </div>
                 )
               })}

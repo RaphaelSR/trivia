@@ -18,7 +18,7 @@
 - Toda persistência deve passar por `src/shared/services` ou `src/modules/game/infrastructure`.
 - Evite novos acessos diretos a `localStorage`.
 - Mantenha compatibilidade com a API pública de `useTriviaSession` enquanto a UI estiver sendo migrada.
-- Trate `.obsidian/` e `docs/obsidian/` como workspace local, fora da documentacao oficial do projeto.
+- A raiz do repositorio pode ser usada como vault Obsidian. Trate `.obsidian/` e `docs/obsidian/` como workspace local e migre conhecimento duravel, sem dados sensiveis, para a documentacao oficial em `docs/`.
 - Só criar commits depois de validação explícita do usuário.
 
 ## Regras Essenciais
