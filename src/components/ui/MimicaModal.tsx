@@ -206,36 +206,6 @@ export function MimicaModal({
           </div>
         </div>
 
-        <div className="rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] p-4">
-          <div className="flex items-center gap-2">
-            <span className="text-xs font-semibold uppercase tracking-[0.2em] text-[var(--color-muted)]">
-              Como começar
-            </span>
-            <Tooltip content="A mímica tem progresso próprio. Você pode partir do participante atual do trivia sem alterar o turno do trivia, ou reiniciar a lista.">
-              <HelpCircle size={14} className="cursor-help text-[var(--color-muted)]" />
-            </Tooltip>
-          </div>
-          <div className="mt-3 grid grid-cols-2 gap-2">
-            {([
-              { id: 'continue', label: 'Continuar do trivia' },
-              { id: 'restart', label: 'Começar do primeiro' },
-            ] as const).map(option => (
-              <button
-                key={option.id}
-                type="button"
-                onClick={() => setStartMode(option.id)}
-                className={`rounded-xl border px-3 py-2 text-sm font-medium transition ${
-                  startMode === option.id
-                    ? 'border-[var(--color-primary)] bg-[var(--color-primary)]/10 text-[var(--color-primary)]'
-                    : 'border-[var(--color-border)] text-[var(--color-muted)] hover:border-[var(--color-primary)]/40'
-                }`}
-              >
-                {option.label}
-              </button>
-            ))}
-          </div>
-        </div>
-
         {/* Timer com presets */}
         <div className="space-y-2">
           <div className="flex items-center gap-2">
@@ -361,43 +331,80 @@ export function MimicaModal({
           </Button>
         </div>
 
-        {/* Ordem de participação - colapsada */}
-        <details className="rounded-xl border border-[var(--color-border)]">
-          <summary className="flex cursor-pointer items-center justify-between px-4 py-2.5 text-xs font-semibold uppercase tracking-[0.2em] text-[var(--color-muted)]">
+        {/* Configuração e preview da ordem */}
+        <details className="overflow-hidden rounded-xl border border-[var(--color-border)]">
+          <summary className="flex cursor-pointer items-center justify-between gap-3 px-4 py-3 text-xs font-semibold uppercase tracking-[0.2em] text-[var(--color-muted)] transition hover:bg-[var(--color-border)]/15">
             <span className="flex items-center gap-2">
               <UsersRound size={14} />
               Ordem ({alternateParticipants.length})
             </span>
-            <span className="text-[10px] normal-case tracking-normal">
+            <span className="text-right text-[10px] font-medium normal-case tracking-normal">
+              {startMode === 'continue' ? 'Do trivia' : 'Do primeiro'} ·{' '}
               {orderMode === 'alternate' ? 'Alternada' : orderMode === 'shuffle' ? 'Aleatória' : 'Por time'}
             </span>
           </summary>
-          <div className="border-t border-[var(--color-border)] px-4 py-3 space-y-3">
-            <div className="flex gap-1.5">
-              {([
-                { id: 'alternate', label: 'Alternada' },
-                { id: 'shuffle', label: 'Aleatória' },
-                { id: 'team-shuffle', label: 'Por time' },
-              ] as const).map((opt) => (
-                <button
-                  key={opt.id}
-                  type="button"
-                  onClick={() => setOrderMode(opt.id)}
-                  className={`rounded-lg px-2.5 py-1 text-xs font-medium transition ${
-                    orderMode === opt.id
-                      ? 'bg-[var(--color-primary)] text-white'
-                      : 'bg-[var(--color-border)]/40 text-[var(--color-muted)] hover:bg-[var(--color-border)]'
-                  }`}
-                >
-                  {opt.label}
-                </button>
-              ))}
-              <Tooltip content="Alternada mantém a troca de times do trivia; times menores repetem participantes. A mímica continua até você fechar e então reinicia a rodada.">
-                <HelpCircle size={14} className="ml-1 self-center text-[var(--color-muted)] cursor-help" />
-              </Tooltip>
+          <div className="space-y-4 border-t border-[var(--color-border)] bg-[var(--color-surface)]/40 px-4 py-4">
+            <div className="grid gap-3 sm:grid-cols-2">
+              <div className="space-y-2">
+                <div className="flex items-center gap-1.5">
+                  <span className="text-[10px] font-semibold uppercase tracking-[0.18em] text-[var(--color-muted)]">Início</span>
+                  <Tooltip content="Escolhe apenas onde a mímica começa. O turno do trivia não é alterado.">
+                    <HelpCircle size={13} className="cursor-help text-[var(--color-muted)]" />
+                  </Tooltip>
+                </div>
+                <div className="grid grid-cols-2 rounded-lg bg-[var(--color-border)]/35 p-1">
+                  {([
+                    { id: 'continue', label: 'Do trivia', ariaLabel: 'Continuar do trivia' },
+                    { id: 'restart', label: 'Do primeiro', ariaLabel: 'Começar do primeiro' },
+                  ] as const).map(option => (
+                    <button
+                      key={option.id}
+                      type="button"
+                      aria-label={option.ariaLabel}
+                      onClick={() => setStartMode(option.id)}
+                      className={`rounded-md px-2 py-1.5 text-xs font-medium transition ${
+                        startMode === option.id
+                          ? 'bg-[var(--color-surface)] text-[var(--color-primary)] shadow-sm'
+                          : 'text-[var(--color-muted)] hover:text-[var(--color-text)]'
+                      }`}
+                    >
+                      {option.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <div className="flex items-center gap-1.5">
+                  <span className="text-[10px] font-semibold uppercase tracking-[0.18em] text-[var(--color-muted)]">Organização</span>
+                  <Tooltip content="Alternada troca os times como no trivia. Times menores repetem participantes quando necessário.">
+                    <HelpCircle size={13} className="cursor-help text-[var(--color-muted)]" />
+                  </Tooltip>
+                </div>
+                <div className="grid grid-cols-3 rounded-lg bg-[var(--color-border)]/35 p-1">
+                  {([
+                    { id: 'alternate', label: 'Alternada' },
+                    { id: 'shuffle', label: 'Aleatória' },
+                    { id: 'team-shuffle', label: 'Por time' },
+                  ] as const).map(option => (
+                    <button
+                      key={option.id}
+                      type="button"
+                      onClick={() => setOrderMode(option.id)}
+                      className={`rounded-md px-2 py-1.5 text-xs font-medium transition ${
+                        orderMode === option.id
+                          ? 'bg-[var(--color-surface)] text-[var(--color-primary)] shadow-sm'
+                          : 'text-[var(--color-muted)] hover:text-[var(--color-text)]'
+                      }`}
+                    >
+                      {option.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
             </div>
 
-            <div className="space-y-1">
+            <div className="grid gap-2 sm:grid-cols-2">
               {alternateParticipants.map((participant, index) => {
                 const participantTeam = teams.find(team => team.id === participant.teamId)
                 const isActive = index === currentParticipantIndex
@@ -406,22 +413,32 @@ export function MimicaModal({
                 return (
                   <div
                     key={`${participant.id}-${index}`}
-                    className={`flex items-center justify-between rounded-lg px-3 py-1.5 text-xs transition-colors ${
+                    className={`flex items-center gap-3 rounded-lg border px-3 py-2 text-xs transition-colors ${
                       isActive
-                        ? 'bg-[var(--color-primary)]/10 font-semibold'
+                        ? 'border-[var(--color-primary)] bg-[var(--color-primary)]/10'
                         : isCompleted
-                        ? 'text-[var(--color-muted)] line-through opacity-50'
-                        : ''
+                        ? 'border-[var(--color-border)] opacity-55'
+                        : 'border-[var(--color-border)] bg-[var(--color-background)]/50'
                     }`}
                   >
-                    <span className="flex items-center gap-2">
-                      <span
-                        className="h-1.5 w-1.5 rounded-full"
-                        style={{ backgroundColor: participantTeam?.color }}
-                      />
-                      {participant.name}
+                    <span className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-[10px] font-bold ${
+                      isActive ? 'bg-[var(--color-primary)] text-white' : 'bg-[var(--color-border)]/50 text-[var(--color-muted)]'
+                    }`}>
+                      {index + 1}
                     </span>
-                    <span className="text-[var(--color-muted)]">{participantTeam?.name}</span>
+                    <span className="min-w-0 flex-1">
+                      <span className="flex items-center gap-2 font-medium text-[var(--color-text)]">
+                        <span
+                          className="h-1.5 w-1.5 rounded-full"
+                          style={{ backgroundColor: participantTeam?.color }}
+                        />
+                        {participant.name}
+                      </span>
+                      <span className="mt-0.5 block truncate text-[10px] text-[var(--color-muted)]">{participantTeam?.name}</span>
+                    </span>
+                    {isActive ? (
+                      <span className="rounded-full bg-[var(--color-primary)]/15 px-2 py-0.5 text-[9px] font-bold uppercase tracking-[0.12em] text-[var(--color-primary)]">Agora</span>
+                    ) : null}
                   </div>
                 )
               })}

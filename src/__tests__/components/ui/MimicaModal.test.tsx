@@ -353,6 +353,7 @@ describe('MimicaModal', () => {
     )
 
     expect(screen.getByTestId('mimica-active-participant')).toHaveTextContent('Participante 3')
+    fireEvent.click(screen.getByText(/Ordem \(4\)/i))
     fireEvent.click(screen.getByRole('button', { name: 'Começar do primeiro' }))
     expect(screen.getByTestId('mimica-active-participant')).toHaveTextContent('Participante 1')
     fireEvent.click(screen.getByRole('button', { name: 'Continuar do trivia' }))
