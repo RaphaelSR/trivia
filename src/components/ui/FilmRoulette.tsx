@@ -2,13 +2,12 @@ import { ChevronLeft, Film, History, Minus, Plus, RotateCcw, Shuffle, Users, Vol
 import { createPortal } from 'react-dom'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { Button } from './Button'
-import { FilmManager } from './FilmManager'
 import { MultiSelectField } from './MultiSelectField'
-import { useCustomFilms } from '../../hooks/useCustomFilms'
+import { RouletteFilmPicker, type RouletteFilm } from './RouletteFilmPicker'
 import { MAX_ROULETTE_HISTORY } from '../../shared/constants/game'
 import { STORAGE_KEYS } from '../../shared/constants/storage'
 import { storageService } from '../../shared/services/storage.service'
-import { getStreamingPlatformInfo, getFilmGenreInfo, type CustomFilm, type StreamingPlatform, type FilmGenre } from '../../data/customFilms'
+import { getStreamingPlatformInfo, getFilmGenreInfo, type CustomFilm } from '../../data/customFilms'
 import type { TriviaParticipant, TriviaTeam } from '../../modules/trivia/types'
 import { drawUniqueFilms, type RouletteResult as DrawRouletteResult } from '../../modules/trivia/utils/drawUniqueFilms'
 
@@ -17,7 +16,6 @@ type FilmRouletteProps = {
   onClose: () => void
   teams: TriviaTeam[]
   participants: TriviaParticipant[]
-  sessionFilms?: Array<{ id: string; name: string }>
 }
 
 type RouletteConfig = {
@@ -29,16 +27,6 @@ type SelectedParticipant = {
   id: string
   name: string
   teamName: string
-  selected: boolean
-}
-
-type SelectedFilm = {
-  id: string
-  name: string
-  year?: number
-  genre?: string
-  streaming?: string
-  link?: string
   selected: boolean
 }
 
@@ -101,14 +89,9 @@ function playVictory(ctx: AudioContext) {
 }
 
 export function FilmRoulette({ isOpen, onClose, teams, participants }: FilmRouletteProps) {
-  const { films: globalCustomFilms, addFilm, updateFilm, removeFilm } = useCustomFilms()
-
-  // Sorteio sempre usa apenas filmes do catálogo global — filmes da sessão não entram
-  const customFilms = globalCustomFilms
-
   const [config, setConfig] = useState<RouletteConfig>({ maxFilms: 5, allowMultiplePerPerson: false })
   const [selectedParticipants, setSelectedParticipants] = useState<SelectedParticipant[]>([])
-  const [selectedFilms, setSelectedFilms] = useState<SelectedFilm[]>([])
+  const [selectedFilms, setSelectedFilms] = useState<RouletteFilm[]>([])
   const [isSpinning, setIsSpinning] = useState(false)
   const [results, setResults] = useState<RouletteResult[]>([])
   const [history, setHistory] = useState<RouletteHistory[]>([])
@@ -137,13 +120,8 @@ export function FilmRoulette({ isOpen, onClose, teams, participants }: FilmRoule
           return { id: participant.id, name: participant.name, teamName: team?.name ?? 'Sem time', selected: true }
         })
 
-      const initialFilms: SelectedFilm[] = customFilms.map(film => ({
-        id: film.id, name: film.name, year: film.year, genre: film.genre,
-        streaming: film.streaming, link: film.link, selected: true
-      }))
-
       setSelectedParticipants(initialParticipants)
-      setSelectedFilms(initialFilms)
+      setSelectedFilms([])
       setResults([])
       setRevealedResults(0)
       setShowHistory(false)
@@ -151,7 +129,7 @@ export function FilmRoulette({ isOpen, onClose, teams, participants }: FilmRoule
       rotationRef.current = 0
       setHistory(storageService.getJson<RouletteHistory[]>(STORAGE_KEYS.rouletteHistory, []))
     }
-  }, [isOpen, participants, teams, customFilms])
+  }, [isOpen, participants, teams])
 
   const saveToHistory = (newResults: RouletteResult[]) => {
     const uniqueFilms = new Set(newResults.map(r => r.film.name.toLowerCase().trim())).size
@@ -171,8 +149,15 @@ export function FilmRoulette({ isOpen, onClose, teams, participants }: FilmRoule
   const getSelectedCount = () => selectedParticipants.filter(p => p.selected).length
   const getSelectedFilmsCount = () => selectedFilms.filter(f => f.selected).length
   const getSelectedFilmsList = (): CustomFilm[] => {
-    const ids = selectedFilms.filter(f => f.selected).map(f => f.id)
-    return customFilms.filter(film => ids.includes(film.id))
+    return selectedFilms
+      .filter(film => film.selected)
+      .map(film => ({
+        id: film.id,
+        name: film.name,
+        year: film.year,
+        addedBy: film.addedBy,
+        addedAt: new Date().toISOString(),
+      }))
   }
 
   const spinRoulette = () => {
@@ -271,13 +256,9 @@ export function FilmRoulette({ isOpen, onClose, teams, participants }: FilmRoule
   }))
 
   const filmOptions = selectedFilms.map(f => {
-    const streamingInfo = f.streaming ? getStreamingPlatformInfo(f.streaming as StreamingPlatform) : null
-    const genreInfo = f.genre ? getFilmGenreInfo(f.genre as FilmGenre) : null
     return {
       id: f.id, label: f.name,
-      subtitle: `${f.year ? `(${f.year})` : ''} ${genreInfo ? genreInfo.name : ''}`.trim(),
-      badge: streamingInfo ? streamingInfo.name : undefined,
-      badgeColor: streamingInfo?.color,
+      subtitle: [f.year ? `(${f.year})` : '', f.addedBy ?? ''].filter(Boolean).join(' · '),
       selected: f.selected
     }
   })
@@ -475,13 +456,10 @@ export function FilmRoulette({ isOpen, onClose, teams, participants }: FilmRoule
       case 'films':
         return (
           <div className="space-y-4">
-            <FilmManager
-              films={customFilms}
+            <RouletteFilmPicker
+              films={selectedFilms}
               participants={participants}
-              onAddFilm={addFilm}
-              onUpdateFilm={updateFilm}
-              onRemoveFilm={removeFilm}
-              onClose={() => {}}
+              onFilmsChange={setSelectedFilms}
             />
             <Button
               variant="secondary"
@@ -490,7 +468,9 @@ export function FilmRoulette({ isOpen, onClose, teams, participants }: FilmRoule
               className="w-full gap-2"
             >
               Configurar sorteio
-              <span className="rounded-full bg-white/20 px-2 py-0.5 text-xs">{customFilms.length} filmes</span>
+              <span className="rounded-full bg-white/20 px-2 py-0.5 text-xs">
+                {selectedFilms.length} filme{selectedFilms.length !== 1 ? 's' : ''}
+              </span>
             </Button>
           </div>
         )

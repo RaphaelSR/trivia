@@ -74,6 +74,12 @@
 - `offline` e `online` podem sobrescrever o PIN por repositório.
 - Se não houver PIN customizado configurado, a biblioteca pode abrir sem bloqueio.
 
+## Roleta de filmes
+- A roleta é independente do trivia atual e não importa filmes do board ou da Biblioteca.
+- Os candidatos são adicionados em uma lista temporária criada a cada abertura da roleta.
+- A digitação manual deve estar sempre disponível.
+- Sugestões externas de título e ano são opcionais; qualquer falha do provedor deve ser ignorada sem impedir a inclusão manual ou o sorteio.
+
 ## Tema e interface
 - Temas válidos: `light`, `dark`, `cinema`, `retro`, `matrix`, `brazil`, `easter`.
 - O projeto mantém um tema sazonal `easter` além dos temas base.
