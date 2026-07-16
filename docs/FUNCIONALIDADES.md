@@ -24,7 +24,7 @@ Mapa funcional do projeto com foco no que existe hoje, no que esta em migracao e
 - `ativo`: criacao, edicao e remocao de colunas de filmes
 - `ativo`: criacao, edicao e remocao de tiles de perguntas
 - `ativo`: exibicao de status da sessao, turno atual e progresso do board
-- `ativo`: acoes rapidas para biblioteca, filmes, tema, ranking, reset e gerenciamento de sessao
+- `ativo`: acoes rapidas para biblioteca, roleta, tema, ranking, reset e gerenciamento de sessao
 
 ## Board e progresso do jogo
 - `ativo`: tiles com estados `available`, `active` e `answered`
@@ -54,8 +54,9 @@ Mapa funcional do projeto com foco no que existe hoje, no que esta em migracao e
 ## Biblioteca e conteudo
 - `ativo`: biblioteca de perguntas com busca, filtro e ordenacao
 - `ativo`: importacao de perguntas
-- `ativo`: gerenciamento de catalogo de filmes customizados
-- `ativo`: roleta de filmes
+- `ativo`: roleta com lista temporária, independente dos filmes da Biblioteca e do trivia atual
+- `ativo`: entrada manual de filmes sempre disponível na roleta
+- `ativo`: autocomplete opcional de título e ano pela Apple/iTunes, sem chave; falhas externas não bloqueiam nem exibem erro
 
 ## Persistencia e sessao
 - `ativo`: salvar sessao atual

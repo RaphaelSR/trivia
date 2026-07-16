@@ -2,7 +2,6 @@ import {
   BookOpen,
   ClipboardList,
   Dice5,
-  Film,
   Info,
   Palette,
   RefreshCw,
@@ -17,14 +16,12 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { toast } from 'sonner'
 import { Button } from '@/components/ui/Button'
 import { FilmRoulette } from '@/components/ui/FilmRoulette'
-import { FilmManager } from '@/components/ui/FilmManager'
 import { MimicaModal } from '@/components/ui/MimicaModal'
 import { Modal } from '@/components/ui/Modal'
 import { TriviaBoard } from '@/components/ui/TriviaBoard'
 import type { TriviaColumn, TriviaParticipant, TriviaQuestionTile, TriviaSession, TriviaTeam } from '@/modules/trivia/types'
 import { useTriviaSession } from '@/modules/trivia/hooks/useTriviaSession'
 import { useThemeMode } from '@/app/providers/useThemeMode'
-import { useCustomFilms } from '@/hooks/useCustomFilms'
 import { useGameMode } from '@/hooks/useGameMode'
 import { usePinManagement } from '@/hooks/usePinManagement'
 import { useOfflineSession } from '@/hooks/useOfflineSession'
@@ -103,8 +100,6 @@ export function ControlDashboard() {
   const { user } = useAuth()
   const { verifyPin, saveCustomPin, clearCustomPin, hasCustomPin } = usePinManagement()
   const { currentSession, saveSession, loadSession, getSessionStatus } = useOfflineSession()
-  const { films: customFilms, addFilm: addCustomFilm, updateFilm: updateCustomFilm, removeFilm: removeCustomFilm } = useCustomFilms()
-
   const dashboardState = useControlDashboardState()
   const {
     selectedIds,
@@ -121,8 +116,6 @@ export function ControlDashboard() {
     setScoreboardOpen,
     libraryOpen,
     setLibraryOpen,
-    filmsOpen,
-    setFilmsOpen,
     libraryUnlocked,
     setLibraryUnlocked,
     pinModalOpen,
@@ -165,10 +158,6 @@ export function ControlDashboard() {
     setLibraryPointsFilter,
     librarySortMode,
     setLibrarySortMode,
-    filmCatalogViewMode,
-    setFilmCatalogViewMode,
-    filmCatalogSortMode,
-    setFilmCatalogSortMode,
     confirmActionOpen,
     setConfirmActionOpen,
     confirmActionConfig,
@@ -243,10 +232,6 @@ export function ControlDashboard() {
     session.activeParticipantId,
     session.turnSequence,
     session.activeTurnIndex,
-  )
-  const sessionFilms = useMemo(
-    () => session.board.map((column) => ({ id: column.id, name: column.film })),
-    [session.board],
   )
   const canOpenTurnPreview = useMemo(
     () =>
@@ -557,11 +542,6 @@ export function ControlDashboard() {
   const handleOpenTheme = () => {
     setActivePanel('theme')
     setThemeModalOpen(true)
-  }
-
-  const handleOpenFilms = () => {
-    setActivePanel('films')
-    setFilmsOpen(true)
   }
 
   const handleLoadSession = (sessionId: string) => {
@@ -902,17 +882,6 @@ export function ControlDashboard() {
           }}
         />
         <SidebarNavItem
-          icon={<Film size={18} />}
-          title="Filmes"
-          description="Organiza o catálogo com filtros, visualização em grid e sessão atual."
-          badge={`${customFilms.length}`}
-          active={activePanel === 'films'}
-          onClick={() => {
-            handleOpenFilms()
-            handleCloseMobileSidebar()
-          }}
-        />
-        <SidebarNavItem
           icon={<BookOpen size={18} />}
           title="Importar / Exportar"
           description="Usa a biblioteca para trocar JSONs de filmes e perguntas."
@@ -924,9 +893,9 @@ export function ControlDashboard() {
         <SidebarNavItem
           icon={<RotateCcw size={18} />}
           title="Roleta"
-          description="Sorteia filmes aleatórios para preencher o board."
+          description="Sorteia uma lista temporária de filmes para uma próxima edição."
           onClick={() => {
-            setActivePanel('films')
+            setActivePanel('board')
             setFilmRouletteOpen(true)
             handleCloseMobileSidebar()
           }}
@@ -1484,33 +1453,6 @@ export function ControlDashboard() {
       />
 
       <Modal
-        isOpen={filmsOpen}
-        title="Catálogo de filmes"
-        description="Organize os filmes da sessão e o catálogo personalizado em um só lugar."
-        onClose={() => {
-          setFilmsOpen(false)
-          setActivePanel('board')
-        }}
-      >
-        <FilmManager
-          films={customFilms}
-          participants={participants}
-          sessionFilms={sessionFilms}
-          viewMode={filmCatalogViewMode}
-          onViewModeChange={setFilmCatalogViewMode}
-          sortMode={filmCatalogSortMode}
-          onSortModeChange={setFilmCatalogSortMode}
-          onAddFilm={addCustomFilm}
-          onUpdateFilm={updateCustomFilm}
-          onRemoveFilm={removeCustomFilm}
-          onClose={() => {
-            setFilmsOpen(false)
-            setActivePanel('board')
-          }}
-        />
-      </Modal>
-
-      <Modal
         isOpen={themeModalOpen}
         title="Ajustar tema"
         description="Escolha o estilo de cores aplicado a todas as telas."
@@ -1636,7 +1578,6 @@ export function ControlDashboard() {
         }}
         teams={orderedTeams}
         participants={participants}
-        sessionFilms={sessionFilms}
       />
 
       <OfflineOnboardingModal

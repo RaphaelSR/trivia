@@ -43,6 +43,13 @@ Mapa enxuto para navegar pelo produto sem depender de notas operacionais ou cont
 - A ordem visual dos filmes é preservada; reimportar um filme existente atualiza seu conteúdo em vez de duplicá-lo.
 - Persistência nunca deve acessar `localStorage` diretamente a partir da UI.
 
+## Roleta de filmes
+
+- Planeja filmes para uma próxima edição e não consome o board ou a Biblioteca da sessão atual.
+- Cada abertura começa com uma lista temporária vazia; os filmes são adicionados na hora e não formam um catálogo persistente.
+- A entrada manual é o fluxo principal. O autocomplete Apple/iTunes apenas sugere título e ano após três caracteres.
+- Falha, lentidão ou ausência de resultados do autocomplete é ignorada silenciosamente e nunca bloqueia o sorteio.
+
 ## Sessao, historico e sync
 
 - Repositórios: `src/modules/game/infrastructure`.
