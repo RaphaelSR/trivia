@@ -49,6 +49,10 @@ jest.mock('@/modules/auth/components/DeleteGameDialog', () => ({
   ),
 }))
 
+jest.mock('@/modules/auth/components/ProfileAvatarEditor', () => ({
+  ProfileAvatarEditor: ({ name }: { name: string }) => <div>Avatar de {name}</div>,
+}))
+
 import '@testing-library/jest-dom'
 import { render, screen, act, fireEvent } from '@testing-library/react'
 import { AuthPanel } from '@/modules/auth/components/AuthPanel'

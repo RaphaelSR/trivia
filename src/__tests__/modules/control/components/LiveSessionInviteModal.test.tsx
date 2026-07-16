@@ -8,6 +8,10 @@ jest.mock('@/modules/auth/services/live-session-claim.service', () => ({
   revokeLiveSessionClaim: jest.fn(),
 }))
 
+jest.mock('@/modules/auth/services/profile-avatar.service', () => ({
+  listLiveParticipantIdentities: jest.fn(),
+}))
+
 import '@testing-library/jest-dom'
 import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { LiveSessionInviteModal } from '@/modules/control/components/LiveSessionInviteModal'
@@ -16,10 +20,12 @@ import {
   listLiveSessionParticipants,
   revokeLiveSessionClaim,
 } from '@/modules/auth/services/live-session-claim.service'
+import { listLiveParticipantIdentities } from '@/modules/auth/services/profile-avatar.service'
 
 const mockGetInvite = getLiveSessionInvite as jest.Mock
 const mockList = listLiveSessionParticipants as jest.Mock
 const mockRevoke = revokeLiveSessionClaim as jest.Mock
+const mockIdentities = listLiveParticipantIdentities as jest.Mock
 const TOKEN = '550e8400-e29b-41d4-a716-446655440000'
 const URL = `http://localhost:5173/claim?session=${TOKEN}`
 
@@ -52,6 +58,16 @@ beforeEach(() => {
     ],
     error: null,
   })
+  mockIdentities.mockResolvedValue([
+    {
+      participantClientId: 'a1',
+      profileId: 'profile-a1',
+      accountDisplayName: 'Conta A1',
+      avatarPath: 'profile-a1/avatar.webp',
+      avatarUpdatedAt: '2026-07-16T00:00:00Z',
+      avatarUrl: 'https://cdn.test/a1.webp',
+    },
+  ])
 })
 
 it('forca sync antes de buscar QR e lista status', async () => {
@@ -75,7 +91,8 @@ it('forca sync antes de buscar QR e lista status', async () => {
   )
 
   expect(await screen.findByTestId('local-qr')).toHaveTextContent(URL)
-  expect(screen.getByText('A1')).toBeInTheDocument()
+  expect(screen.getByText('A1', { selector: 'p' })).toBeInTheDocument()
+  expect(screen.getByRole('img', { name: 'Avatar de A1' })).toHaveAttribute('src', 'https://cdn.test/a1.webp')
   expect(screen.getByText('aguardando')).toBeInTheDocument()
   expect(order).toEqual(['sync', 'invite'])
   expect(mockList).toHaveBeenCalledWith(TOKEN)

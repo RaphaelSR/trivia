@@ -66,6 +66,7 @@ Mapa enxuto para navegar pelo produto sem depender de notas operacionais ou cont
 - Convite ao vivo: um QR por sessão online, gerado localmente depois de forçar o sync.
 - Claims usam IDs estáveis de participantes, índices de unicidade e ledger auditável fora do estado do jogo.
 - Finalização ao vivo é idempotente por conta + ID da sessão; as RPCs legadas continuam compatíveis.
+- Avatares são identidade de conta fora do snapshot: upload owner-only no Storage, leitura contextual por RPC e fallback por iniciais sem rede em `demo/offline`.
 - Detalhes: [online/README.md](./online/README.md).
 
 ## Interface e temas

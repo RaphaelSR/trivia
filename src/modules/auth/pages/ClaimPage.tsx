@@ -33,6 +33,7 @@ import {
   listLiveSessionParticipants,
   type LiveSessionParticipant,
 } from '../services/live-session-claim.service'
+import { ProfileAvatarEditor } from '../components/ProfileAvatarEditor'
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -273,6 +274,13 @@ function AuthGate() {
 // ---------------------------------------------------------------------------
 
 function SuccessCard({ gameId }: { gameId: string | null }) {
+  const { user } = useAuth()
+  const [showAvatarSetup, setShowAvatarSetup] = useState(true)
+  const profileName =
+    (user?.user_metadata as Record<string, string> | undefined)?.display_name ??
+    user?.email?.split('@')[0] ??
+    'Jogador'
+
   return (
     <StatusCard icon="success">
       <p className="text-sm font-semibold text-[var(--color-text)]">
@@ -286,6 +294,18 @@ function SuccessCard({ gameId }: { gameId: string | null }) {
           ID da partida: <span className="font-mono text-[var(--color-text)]">{gameId}</span>
         </p>
       )}
+      {user && showAvatarSetup ? (
+        <div className="mt-4 w-full">
+          <ProfileAvatarEditor name={profileName} variant="claim" />
+          <button
+            type="button"
+            onClick={() => setShowAvatarSetup(false)}
+            className="mt-2 text-xs text-[var(--color-muted)] underline-offset-2 hover:underline"
+          >
+            Agora não
+          </button>
+        </div>
+      ) : null}
       <Link
         to={getHomeUrl()}
         className="mt-4 inline-block rounded-lg bg-[var(--color-primary)] px-4 py-2 text-sm font-semibold text-black transition-opacity hover:opacity-90"

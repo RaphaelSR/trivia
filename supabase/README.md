@@ -6,13 +6,18 @@ As migrations são aplicadas manualmente via SQL Editor do painel do Supabase.
 
 1. Acesse [supabase.com/dashboard](https://supabase.com/dashboard) e abra seu projeto.
 2. No menu lateral, vá em **SQL Editor** → **New query**.
-3. Aplique em ordem apenas os arquivos ainda pendentes de `migrations/0001_*.sql` a `0009_*.sql`.
+3. Aplique em ordem apenas os arquivos ainda pendentes de `migrations/0001_*.sql` a `0010_*.sql`.
 4. Cole cada arquivo inteiro na área de edição e clique em **Run**.
 5. Execute os checks descritos em `docs/online/AMBIENTE-E-DEPLOY.md` antes de publicar o frontend correspondente.
 
 `0009_live_session_claims.sql` é deliberadamente aditiva: não substitui RPCs antigas,
 não arquiva `online_sessions` e não faz backfill amplo. Antes do merge, valide retry e
 concorrência da finalização contra o banco autenticado.
+
+`0010_profile_avatars.sql` adiciona campos opcionais ao perfil, o bucket público de
+avatares e RPCs de identidade contextual. Ela não substitui funções de claim ou
+finalização. Valide configuração do bucket, políticas owner-only, escopo das RPCs e
+preservação das contagens antes de publicar o frontend.
 
 ## Habilitar autenticação por email
 
@@ -48,7 +53,7 @@ Encontre esses valores em **Settings → API** no painel do Supabase.
 
 Postura de dados deste projeto (hobby game, sem dinheiro envolvido):
 
-- **Único PII coletado: e-mail** — necessário para recuperar conta/histórico.
+- **PII mínimo:** e-mail para recuperar conta/histórico e foto de perfil opcional escolhida pelo usuário.
 - `display_name` é apelido, não nome real. Nomes de times/jogadores no `summary`
   do histórico são o que o host digitar (na prática, apelidos).
 - Senhas nunca passam pelo nosso código: o Supabase Auth armazena apenas hash (bcrypt).

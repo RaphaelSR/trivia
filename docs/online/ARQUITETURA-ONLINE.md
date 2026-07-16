@@ -14,7 +14,8 @@ As migrations em `supabase/migrations/` são incrementais:
 - `0003`–`0004`: histórico normalizado e criação transacional;
 - `0005`–`0007`: vínculo por e-mail, links de claim e contatos do próprio host;
 - `0008`: snapshots remotos de restauração;
-- `0009`: convite ao vivo, ledger `participant_claims` e finalização idempotente.
+- `0009`: convite ao vivo, ledger `participant_claims` e finalização idempotente;
+- `0010`: avatar de perfil, bucket com escrita owner-only e leituras contextuais de identidade.
 
 O histórico normalizado usa `games`, `game_teams`, `game_participants`, `game_films`, `game_questions`, `score_events`, `score_event_recipients` e `game_raw_snapshots`. O snapshot integral é preservado para reprocessamento; listagens usam tabelas normalizadas.
 
@@ -59,3 +60,9 @@ As RPCs bloqueiam a linha da sessão ou do jogo antes de conferir e gravar. Repe
 - escrita direta no ledger é revogada; mutações passam por RPC autenticada;
 - funções privilegiadas usam `search_path` vazio e referências de schema explícitas;
 - e-mails de convite ficam em `participant_invites` e nunca aparecem nas listas de claim.
+
+## Avatar e identidade contextual
+
+`profiles.avatar_path` guarda somente o caminho opaco no bucket público `profile-avatars`. O conteúdo público é uma foto de perfil deliberadamente compartilhável por URL; upload, update e delete permanecem protegidos por RLS na pasta do dono.
+
+`get_my_profile_identity()` retorna o próprio perfil. `list_live_participant_identities(session_id)` é host-only e retorna apenas claims ativos daquela sessão. `list_game_participant_identities(game_id)` limita a leitura ao dono e a participantes vinculados ao mesmo jogo. Nenhuma dessas identidades entra em `TriviaSession`, snapshots ou cursores.

@@ -90,6 +90,11 @@
 - O mesmo token continua válido no histórico normalizado após o fim da partida.
 - Links antigos `/claim?token=` e `/claim?game=` permanecem compatíveis.
 - Finalizar novamente a mesma sessão online deve devolver o mesmo jogo normalizado, sem duplicar histórico.
+- Avatar é opcional, pertence à conta e não renomeia o participante dentro de uma partida.
+- A origem aceita JPEG, PNG ou WebP de até 5 MB; antes do upload, o navegador recorta ao centro, redimensiona para `512x512` e gera WebP de até 1 MB.
+- Troca e remoção preservam o avatar anterior quando a operação não pode ser concluída; falhas de imagem ou rede usam iniciais e não bloqueiam o jogo.
+- O host vê avatar apenas de contas com claim ativo em sua sessão; no histórico, somente dono e participantes vinculados consultam as identidades daquele jogo.
+- `demo` e `offline` usam somente iniciais e não chamam Storage nem RPCs de avatar.
 
 ## Roleta de filmes
 - A roleta é independente do trivia atual e não importa filmes do board ou da Biblioteca.

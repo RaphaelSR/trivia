@@ -12,10 +12,11 @@ O modo `online` esta ativo e continua local-first: jogar, pontuar e editar o ele
 - convite permanente ao vivo (`/claim?session=`), com um QR por sessao;
 - claims auditaveis, reserva opcional por e-mail e correcao pelo host;
 - QR gerado no navegador, sem enviar o token a servicos externos.
+- avatar opcional de conta, com processamento no navegador, Storage owner-only e leitura limitada a sessões/jogos compartilhados.
 
 ## Limites deliberados
 
-- `demo` e `offline` nao usam conta, QR ou RPCs de claim;
+- `demo` e `offline` nao usam QR, RPCs de claim ou identidades remotas dentro do jogo;
 - identidade e claims nao entram em `TriviaSession` nem no motor de turnos;
 - campeonatos e leaderboards entre partidas continuam planejados;
 - migrations sao aplicadas manualmente no Supabase antes do frontend correspondente.

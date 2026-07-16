@@ -17,6 +17,11 @@ import { getGameDetail, buildSessionClaimUrl } from '../services/normalized-hist
 import type { GameDetail, TimelineEntry } from '../services/normalized-history.service'
 import { InviteShare } from './InviteShare'
 import { ShareChannels } from './ShareChannels'
+import { ParticipantAvatar } from '@/shared/components/ParticipantAvatar'
+import {
+  listGameParticipantIdentities,
+  type ParticipantIdentity,
+} from '../services/profile-avatar.service'
 
 // ---------------------------------------------------------------------------
 // Props
@@ -77,15 +82,17 @@ export function GameDetailView({ gameId, onBack }: GameDetailViewProps) {
   const [detail, setDetail] = useState<GameDetail | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(false)
+  const [identities, setIdentities] = useState<Record<string, ParticipantIdentity>>({})
 
   useEffect(() => {
     let cancelled = false
     setLoading(true)
     setError(false)
 
-    getGameDetail(gameId)
-      .then((result) => {
+    Promise.all([getGameDetail(gameId), listGameParticipantIdentities(gameId)])
+      .then(([result, identityRows]) => {
         if (!cancelled) {
+          setIdentities(Object.fromEntries(identityRows.map((identity) => [identity.participantClientId, identity])))
           if (result === null) {
             setError(true)
           } else {
@@ -221,6 +228,11 @@ export function GameDetailView({ gameId, onBack }: GameDetailViewProps) {
                         <span className="w-4 shrink-0 text-center text-[10px] text-[var(--color-muted)]">
                           {idx + 1}
                         </span>
+                        <ParticipantAvatar
+                          name={stat.display_name}
+                          src={stat.participant_client_id ? identities[stat.participant_client_id]?.avatarUrl : null}
+                          size={28}
+                        />
                         <span className="min-w-0 flex-1 truncate text-xs font-medium text-[var(--color-text)]">
                           {stat.display_name}
                         </span>

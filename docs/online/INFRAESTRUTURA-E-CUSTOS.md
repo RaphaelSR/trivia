@@ -3,7 +3,7 @@
 ## Stack
 
 - frontend estático React/Vite no GitHub Pages;
-- Supabase Database + Auth;
+- Supabase Database + Auth + Storage;
 - acesso pelo SDK `@supabase/supabase-js` e anon key protegida por RLS;
 - funções transacionais implementadas como Database Functions PostgreSQL;
 - `qrcode` no bundle para gerar SVG localmente.
@@ -13,6 +13,10 @@ Não há API própria, Edge Function ou serviço externo de QR. O autocomplete d
 ## Dependencia `qrcode`
 
 É uma dependência de runtime consciente. Ela substitui requests para `api.qrserver.com`, evitando enviar tokens de claim a terceiros. O app usa apenas geração SVG no navegador. Entrada manual/cópia do link continua disponível se o QR falhar.
+
+## Storage de avatares
+
+O bucket público `profile-avatars` armazena apenas WebP de até 1 MB em caminhos `uid/uuid.webp`. O processamento usa Canvas do navegador, sem biblioteca ou serviço externo de imagem. A leitura pública é uma decisão própria de foto de perfil; escrita e remoção exigem usuário autenticado, pasta própria e RLS.
 
 ## Segurança de chaves
 

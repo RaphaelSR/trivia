@@ -71,6 +71,8 @@ import { listSessionSnapshots, type SessionSnapshot } from '@/modules/game/infra
 import { SoundSettingsModal } from '@/components/ui/SoundSettingsModal'
 import { playSound } from '@/shared/services/audio.service'
 import { AuthPanel } from '@/modules/auth/components/AuthPanel'
+import { useLiveParticipantIdentities } from '@/modules/auth/hooks/useLiveParticipantIdentities'
+import { ParticipantAvatar } from '@/shared/components/ParticipantAvatar'
 // PIN será gerenciado pelo hook usePinManagement
 
 export function ControlDashboard() {
@@ -79,7 +81,9 @@ export function ControlDashboard() {
     orderedTeams,
     participants,
     activeTeam,
+    nextTeam,
     activeParticipant,
+    nextParticipant,
     updateTileState,
     updateTileContent,
     updateColumnTitle,
@@ -324,6 +328,10 @@ export function ControlDashboard() {
   //  - ao ativar (login/mount), reconcilia com a nuvem e restaura se mais novo.
   // Demo nunca sincroniza (enabled=false quando gameMode==='demo').
   const syncEnabled = gameMode !== 'demo' && Boolean(user) && isSupabaseConfigured()
+  const { identities: participantIdentities } = useLiveParticipantIdentities(
+    session.id,
+    gameMode === 'online' && syncEnabled,
+  )
   // Conflito detectado pelo reconcile (local x nuvem divergem de forma ambígua).
   const [sessionConflict, setSessionConflict] = useState<CloudSyncConflict | null>(null)
   const { status: syncStatus, forceSync, snapshotFailing, lastSyncedAt } = useCloudSync({
@@ -980,8 +988,11 @@ export function ControlDashboard() {
           <GameStatusStrip
             activeParticipant={activeParticipant}
             activeTeam={activeTeam}
+            nextParticipant={nextParticipant}
+            nextTeam={nextTeam}
             currentTurnLabel={currentTurnLabel}
             scoreboard={scoreboard}
+            participantIdentities={participantIdentities}
           />
         </>
       }
@@ -1283,6 +1294,11 @@ export function ControlDashboard() {
                     <div className="space-y-2">
                       {participantScores.map(({ participant, points: individualPoints, triviaPoints, mimicaPoints }) => (
                         <div key={participant.id} className="flex items-center justify-between py-2 px-3 rounded-lg bg-[var(--color-background)]">
+                          <ParticipantAvatar
+                            name={participant.name}
+                            src={participantIdentities[participant.id]?.avatarUrl}
+                            size={32}
+                          />
                           <div className="flex-1">
                             <span className="text-xs font-medium text-[var(--color-muted)]">
                               {participant.name}
@@ -1376,6 +1392,7 @@ export function ControlDashboard() {
         )}
         sessionClientId={session.id}
         onPrepareLiveInvite={prepareLiveInvite}
+        participantIdentities={participantIdentities}
         gameMode={gameMode}
       />
 
@@ -1524,6 +1541,7 @@ export function ControlDashboard() {
         participants={participants}
         triviaActiveParticipantId={session.activeParticipantId}
         triviaActiveTurnIndex={session.activeTurnIndex}
+        participantIdentities={participantIdentities}
         onScore={(participantId, mode, targetTeamId, points, turnNumber, roundNumber) => {
           let message = ''
           

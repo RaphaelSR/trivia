@@ -53,6 +53,10 @@ jest.mock('@/modules/auth/components/DeleteGameDialog', () => ({
   ),
 }))
 
+jest.mock('@/modules/auth/components/ProfileAvatarEditor', () => ({
+  ProfileAvatarEditor: ({ name }: { name: string }) => <div>Avatar de {name}</div>,
+}))
+
 import { useAuth } from '@/modules/auth/hooks/useAuth'
 
 const mockUseAuth = useAuth as jest.Mock

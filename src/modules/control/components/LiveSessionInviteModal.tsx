@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/Button'
 import { ConfirmActionModal } from '@/components/ui/ConfirmActionModal'
 import { Modal } from '@/components/ui/Modal'
 import { LocalQrCode } from '@/shared/components/LocalQrCode'
+import { ParticipantAvatar } from '@/shared/components/ParticipantAvatar'
 import {
   getLiveSessionInvite,
   listLiveSessionParticipants,
@@ -11,6 +12,10 @@ import {
   type LiveSessionInvite,
   type LiveSessionParticipant,
 } from '@/modules/auth/services/live-session-claim.service'
+import {
+  listLiveParticipantIdentities,
+  type ParticipantIdentity,
+} from '@/modules/auth/services/profile-avatar.service'
 
 type LiveSessionInviteModalProps = {
   isOpen: boolean
@@ -27,6 +32,7 @@ export function LiveSessionInviteModal({
 }: LiveSessionInviteModalProps) {
   const [invite, setInvite] = useState<LiveSessionInvite | null>(null)
   const [participants, setParticipants] = useState<LiveSessionParticipant[]>([])
+  const [identities, setIdentities] = useState<Record<string, ParticipantIdentity>>({})
   const [preparing, setPreparing] = useState(false)
   const [refreshing, setRefreshing] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -35,11 +41,15 @@ export function LiveSessionInviteModal({
 
   const refreshParticipants = useCallback(async (token: string, showSpinner = false) => {
     if (showSpinner) setRefreshing(true)
-    const result = await listLiveSessionParticipants(token)
+    const [result, identityRows] = await Promise.all([
+      listLiveSessionParticipants(token),
+      listLiveParticipantIdentities(sessionClientId),
+    ])
     if (!result.error) setParticipants(result.participants)
+    setIdentities(Object.fromEntries(identityRows.map((identity) => [identity.participantClientId, identity])))
     setError(result.error)
     if (showSpinner) setRefreshing(false)
-  }, [])
+  }, [sessionClientId])
 
   const prepare = useCallback(async () => {
     setPreparing(true)
@@ -64,6 +74,7 @@ export function LiveSessionInviteModal({
     if (!isOpen) return
     setInvite(null)
     setParticipants([])
+    setIdentities({})
     setCopied(false)
     void prepare()
   }, [isOpen, prepare])
@@ -170,6 +181,11 @@ export function LiveSessionInviteModal({
                     key={participant.participantClientId}
                     className="flex items-center gap-3 rounded-xl border border-[var(--color-border)] bg-[var(--color-background)] px-3 py-2.5"
                   >
+                    <ParticipantAvatar
+                      name={participant.displayName}
+                      src={identities[participant.participantClientId]?.avatarUrl}
+                      size={34}
+                    />
                     <div className="min-w-0 flex-1">
                       <p className="truncate text-sm font-medium text-[var(--color-text)]">
                         {participant.displayName}
