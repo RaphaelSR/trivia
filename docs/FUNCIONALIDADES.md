@@ -40,6 +40,7 @@ Mapa funcional do projeto com foco no que existe hoje, no que esta em migracao e
 - `ativo`: reorganizacao manual dos proximos turnos sem apagar o historico ou trocar o participante atual
 - `ativo`: alteracao de elenco durante o trivia preserva o passado e inclui participantes novos apenas na ordem futura possivel
 - `ativo`: preview usa a sequencia real, destaca o turno atual e permite reorganizar o futuro
+- `ativo`: checkpoint local antes de salvar alterações reais de times ou participantes em sessões offline/online
 
 ## Pontuacao
 - `ativo`: pontuacao de trivia por tile respondida

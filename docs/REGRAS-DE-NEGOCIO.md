@@ -31,6 +31,8 @@
 - Alterar times ou participantes durante o trivia preserva o turno atual e tudo que já foi jogado; somente a ordem futura é reconciliada.
 - Um participante adicionado durante o trivia entra na primeira posição futura justa do seu time. Se não houver perguntas suficientes até essa posição, ele não recebe turno retroativo.
 - A ação manual de reorganizar turnos nunca reescreve o passado da sessão.
+- Salvar uma alteração de times ou participantes durante uma sessão ativa cria antes um checkpoint local `Antes de alterar times e participantes`, exceto em `demo`.
+- Esse checkpoint guarda o elenco e a ordem anteriores; a sessão atualizada continua seguindo o autosave local e, com login, a sincronização online normal.
 
 ### Exemplo canonico com tres times desiguais
 - Time A: `A1`

@@ -14,6 +14,7 @@ Mapa enxuto para navegar pelo produto sem depender de notas operacionais ou cont
 - Composição: `src/modules/game/application` e provider legado em `src/modules/trivia`.
 - Regra central: alternância entre times sempre que possível; times menores repetem integrantes antes de times maiores completarem uma rodada.
 - Alterações de elenco preservam o turno e o passado, reconciliando somente o futuro.
+- Antes de salvar uma alteração real de elenco em sessão offline/online, o estado anterior vira um checkpoint restaurável.
 - Exemplo de referência `1/2/3`: `A1 -> B1 -> C1 -> A1 -> B2 -> C2 -> A1 -> B1 -> C3`.
 
 ## Trivia

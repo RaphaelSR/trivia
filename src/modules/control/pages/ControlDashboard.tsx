@@ -59,7 +59,7 @@ import { useSessionManagement } from '../hooks/useSessionManagement'
 import { TeamsManagementModal } from '../components/TeamsManagementModal'
 import { ScoringControls } from '../components/ScoringControls'
 import { TurnOrderPreview } from '../components/TurnOrderPreview'
-import { createTeamId, createParticipantId } from '../utils/teamUtils'
+import { createTeamId, createParticipantId, hasRosterChanges } from '../utils/teamUtils'
 import { buildParticipantScoreBreakdown, buildTeamScoreboard } from '../utils/scoreboardUtils'
 import type { OnboardingConfig } from '../types/control.types'
 import { useAuth } from '@/modules/auth/hooks/useAuth'
@@ -1371,6 +1371,21 @@ export function ControlDashboard() {
         previewTurnSequence={teamManagement.previewTurnSequence}
         previewQuestionCount={teamManagement.previewQuestionCount}
         onSave={() => {
+          if (
+            gameMode !== 'demo' &&
+            orderedTeams.length > 0 &&
+            hasRosterChanges(
+              orderedTeams,
+              participants,
+              teamManagement.previewTeams,
+              teamManagement.previewParticipants,
+            )
+          ) {
+            saveCheckpoint(
+              releaseActiveTiles(session),
+              'Antes de alterar times e participantes',
+            )
+          }
           teamManagement.saveTeams()
           setTeamsModalOpen(false)
           setActivePanel('board')
