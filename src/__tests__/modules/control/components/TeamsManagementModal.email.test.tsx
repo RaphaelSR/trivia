@@ -42,6 +42,8 @@ const baseProps = {
   previewTurnSequence: [],
   previewQuestionCount: 0,
   onSave: jest.fn(),
+  onReplaceDrafts: jest.fn(),
+  canRandomizeRoster: true,
 }
 
 describe('TeamsManagementModal — campo de e-mail (gate por gameMode)', () => {

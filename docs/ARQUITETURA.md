@@ -40,6 +40,7 @@
 ## Motor de turnos
 - `src/modules/game/domain/turn-order.ts` concentra a ordem do trivia, preview e avanço do cursor da sessão.
 - `src/modules/game/domain/mimica-turn-order.ts` deriva a ordem da mímica reutilizando a alternância balanceada, mas sem depender do total de perguntas.
+- `src/modules/game/domain/team-draw.ts` define o gate de pré-jogo e a distribuição aleatória balanceada; ele não altera sessão, pontuação ou cursor.
 - A composição de times e participantes é compartilhada; os cursores de trivia e mímica são independentes.
 - `rebuildSessionTurnState` preserva o prefixo já jogado e reconcilia somente o futuro quando o elenco muda ou o host reorganiza a ordem.
 - O preview operacional deve consumir `session.turnSequence`; estimativas só são usadas antes de existir uma sequência real.

@@ -1,5 +1,17 @@
 import type { TeamDraft, ParticipantDraft } from '../types/control.types'
 import type { TriviaParticipant, TriviaTeam } from '@/modules/trivia/types'
+import { drawBalancedGroups, type RandomSource } from '@/modules/game/domain/team-draw'
+
+const DRAW_TEAM_COLORS = [
+  '#7c3aed',
+  '#0ea5e9',
+  '#f97316',
+  '#10b981',
+  '#ec4899',
+  '#eab308',
+  '#6366f1',
+  '#14b8a6',
+]
 
 /**
  * Compara apenas a composição editável do elenco. Pontuação e outros estados
@@ -211,4 +223,47 @@ export function canSaveTeams(teamDrafts: TeamDraft[]): boolean {
       team.members.length > 0 &&
       team.members.every((member) => member.name.trim())
   )
+}
+
+/**
+ * Monta drafts balanceados sem alterar os drafts recebidos. Os participantes
+ * mantêm identidade, papel e e-mail; somente a associação ao time muda.
+ */
+export function buildRandomizedTeamDrafts(
+  currentDrafts: TeamDraft[],
+  candidates: ParticipantDraft[],
+  teamCount: number,
+  random: RandomSource = Math.random,
+): TeamDraft[] {
+  const validCandidates = candidates
+    .filter((candidate) => candidate.name.trim().length > 0)
+    .map((candidate) => ({
+      ...candidate,
+      name: candidate.name.trim(),
+      ...(candidate.email?.trim() ? { email: candidate.email.trim() } : { email: undefined }),
+    }))
+
+  const groups = drawBalancedGroups(validCandidates, teamCount, random)
+  if (!groups.length) return []
+
+  return groups.map((members, index) => {
+    const existing = currentDrafts[index]
+    return {
+      id: existing?.id ?? createTeamId(),
+      name: existing?.name.trim() || `Time ${index + 1}`,
+      color: existing?.color || DRAW_TEAM_COLORS[index % DRAW_TEAM_COLORS.length],
+      members,
+    }
+  })
+}
+
+/** Usa crypto quando disponível, mantendo um fallback simples para testes/SSR. */
+export function secureBrowserRandom(): number {
+  if (typeof crypto === 'undefined' || typeof crypto.getRandomValues !== 'function') {
+    return Math.random()
+  }
+
+  const value = new Uint32Array(1)
+  crypto.getRandomValues(value)
+  return value[0] / 0x1_0000_0000
 }

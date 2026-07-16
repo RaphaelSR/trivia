@@ -34,6 +34,8 @@ Mapa funcional do projeto com foco no que existe hoje, no que esta em migracao e
 
 ## Times, participantes e turnos
 - `ativo`: pontuacao agregada por time
+- `ativo`: sorteio opcional de times no pré-jogo, com lista única de pessoas, quantidade de times configurável, formação balanceada e preview antes de salvar
+- `ativo`: reorganização pré-jogo preserva IDs, papéis e e-mails, sem criar um segundo motor de turnos
 - `ativo`: participante ativo e proximo participante derivados da sequencia de turnos
 - `ativo`: sequencia simples ou balanceada conforme a quantidade de perguntas
 - `ativo`: preview da ordem da partida quando a sessao ja tem times validos e perguntas no board

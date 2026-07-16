@@ -15,6 +15,8 @@ Mapa enxuto para navegar pelo produto sem depender de notas operacionais ou cont
 - Regra central: alternância entre times sempre que possível; times menores repetem integrantes antes de times maiores completarem uma rodada.
 - Alterações de elenco preservam o turno e o passado, reconciliando somente o futuro.
 - Antes de salvar uma alteração real de elenco em sessão offline/online, o estado anterior vira um checkpoint restaurável.
+- No pré-jogo, o host pode sortear uma formação balanceada a partir de uma lista única. A ação produz apenas um rascunho revisável e usa o salvamento/checkpoint já existente.
+- O sorteio é bloqueado assim que uma pergunta é revelada ou qualquer pontuação/evento é registrado.
 - Exemplo de referência `1/2/3`: `A1 -> B1 -> C1 -> A1 -> B2 -> C2 -> A1 -> B1 -> C3`.
 
 ## Trivia

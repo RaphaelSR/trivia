@@ -113,6 +113,10 @@ export function useTeamManagement(
     toast.success('Times atualizados e sequência regenerada')
   }
 
+  const replaceTeamDrafts = (drafts: TeamDraft[]) => {
+    setTeamDrafts(drafts)
+  }
+
   return {
     teamDrafts,
     canSave,
@@ -125,6 +129,7 @@ export function useTeamManagement(
     updateParticipant,
     moveParticipant,
     saveTeams,
+    replaceTeamDrafts,
     previewTeams,
     previewParticipants,
     previewTurnSequence,
