@@ -18,6 +18,7 @@ import { toast } from 'sonner'
 import type { User } from '@supabase/supabase-js'
 import { isSupabaseConfigured } from '../../../shared/services/supabase.client'
 import { saveNormalizedGame } from '../services/normalized-history.service'
+import { isValidEmail } from '@/shared/utils/email'
 import { isGameFinished } from '../../game/domain/board.utils'
 import type { TriviaSession } from '../../trivia/types'
 
@@ -81,8 +82,8 @@ export function useGameHistorySync({
     // Monta mapa clientId → e-mail para participantes que têm e-mail preenchido
     const emailsByClientId: Record<string, string> = {}
     for (const participant of session.participants) {
-      if (participant.email) {
-        emailsByClientId[participant.id] = participant.email
+      if (participant.email && isValidEmail(participant.email.trim())) {
+        emailsByClientId[participant.id] = participant.email.trim().toLowerCase()
       }
     }
 

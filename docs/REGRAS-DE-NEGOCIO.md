@@ -20,6 +20,10 @@
 - Pontuação é agregada no nível do time.
 - Participantes pertencem a um time e entram na sequência de turnos pela ordem dos membros.
 - Se houver sequência regenerada, deve manter alternância entre times sempre que houver mais de um time elegível.
+- Antes de qualquer pergunta ser revelada ou pontuação registrada, o host pode reunir o elenco em uma lista e sortear uma nova formação balanceada.
+- O sorteio preserva a identidade, o papel e o e-mail opcional de participantes existentes; somente a associação aos times muda.
+- Aplicar a prévia do sorteio altera apenas o rascunho. A sessão muda no salvamento normal e continua usando o mesmo motor de turnos e checkpoint de elenco.
+- Depois de o jogo começar, o sorteio é bloqueado; a gestão manual e a reconciliação segura do futuro continuam disponíveis.
 
 ## Turnos
 - Sem perguntas, a sequência usa alternância simples entre times.

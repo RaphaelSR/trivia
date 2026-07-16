@@ -40,6 +40,7 @@ import { countAnsweredTiles, countTotalTiles, releaseActiveTiles } from '@/modul
 import { planImport } from '@/modules/control/utils/filmExportUtils'
 import { getDefaultTimerForPoints } from '@/modules/game/domain/timer'
 import { buildTurnSequence, getTurnLabel } from '@/modules/game/domain/turn-order'
+import { canDrawTeamsBeforePlay } from '@/modules/game/domain/team-draw'
 import { FaqPanel } from '../ui/FaqPanel'
 import { GameStatusStrip } from '../ui/GameStatusStrip'
 import { ControlShell } from '../ui/ControlShell'
@@ -1359,6 +1360,8 @@ export function ControlDashboard() {
           setTeamsModalOpen(false)
           setActivePanel('board')
         }}
+        onReplaceDrafts={teamManagement.replaceTeamDrafts}
+        canRandomizeRoster={canDrawTeamsBeforePlay(session)}
         gameMode={gameMode}
       />
 

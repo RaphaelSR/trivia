@@ -1,4 +1,4 @@
-import { ArrowDown, ArrowUp, Plus, Trash2, UserPlus } from 'lucide-react'
+import { ArrowDown, ArrowUp, Plus, Shuffle, Trash2, UserPlus } from 'lucide-react'
 import { useEffect, useMemo, useState } from 'react'
 import { Button } from '@/components/ui/Button'
 import { Modal } from '@/components/ui/Modal'
@@ -10,6 +10,7 @@ import {
   listMyInvitedContacts,
   type InvitedContact,
 } from '@/modules/auth/services/normalized-history.service'
+import { TeamRandomizerModal } from './TeamRandomizerModal'
 
 type TeamsManagementModalProps = {
   isOpen: boolean
@@ -33,6 +34,8 @@ type TeamsManagementModalProps = {
   previewTurnSequence: string[]
   previewQuestionCount: number
   onSave: () => void
+  onReplaceDrafts: (drafts: TeamDraft[]) => void
+  canRandomizeRoster: boolean
   /** Modo de jogo atual — campo de e-mail só aparece quando gameMode === 'online' */
   gameMode: string
 }
@@ -58,10 +61,13 @@ export function TeamsManagementModal({
   previewTurnSequence,
   previewQuestionCount,
   onSave,
+  onReplaceDrafts,
+  canRandomizeRoster,
   gameMode,
 }: TeamsManagementModalProps) {
   const isOnline = gameMode === 'online'
   const [previewOpen, setPreviewOpen] = useState(false)
+  const [randomizerOpen, setRandomizerOpen] = useState(false)
   const [inviteContacts, setInviteContacts] = useState<InvitedContact[]>([])
 
   // Carrega contatos de convites anteriores do host apenas no modo online e
@@ -100,12 +106,27 @@ export function TeamsManagementModal({
         description="Ajuste nomes, participantes e ordem de turno das equipes."
         onClose={onClose}
       >
-        <div className="flex items-center justify-between pb-4">
+        <div className="flex flex-wrap items-center justify-between gap-3 pb-4">
           <p className="text-sm text-[var(--color-muted)]">Organize os times e defina a rotação dos jogadores.</p>
-          <Button variant="outline" size="sm" onClick={onAddTeam}>
-            <Plus size={14} /> Adicionar time
-          </Button>
+          <div className="flex flex-wrap gap-2">
+            <Button
+              variant="secondary"
+              size="sm"
+              onClick={() => setRandomizerOpen(true)}
+              disabled={!canRandomizeRoster}
+            >
+              <Shuffle size={14} /> Sortear times
+            </Button>
+            <Button variant="outline" size="sm" onClick={onAddTeam}>
+              <Plus size={14} /> Adicionar time
+            </Button>
+          </div>
         </div>
+        {!canRandomizeRoster ? (
+          <p className="mb-4 rounded-xl border border-[var(--color-secondary)]/20 bg-[var(--color-secondary)]/10 px-3 py-2 text-xs text-[var(--color-muted)]">
+            O sorteio fica disponível somente antes de revelar perguntas ou registrar pontos. A gestão manual continua disponível.
+          </p>
+        ) : null}
         <div className="max-h-[60vh] space-y-4 overflow-y-auto pr-1">
           {teamDrafts.map((team, index) => (
             <div key={team.id} className="rounded-2xl border border-[var(--color-border)] bg-[var(--color-background)]">
@@ -319,6 +340,16 @@ export function TeamsManagementModal({
           description="Esta prévia usa a sequência real do jogo e mostra a partida inteira dentro do cenário atual."
         />
       </Modal>
+
+      <TeamRandomizerModal
+        isOpen={randomizerOpen}
+        onClose={() => setRandomizerOpen(false)}
+        onApply={onReplaceDrafts}
+        teamDrafts={teamDrafts}
+        gameMode={gameMode}
+        inviteContacts={inviteContacts}
+        previewQuestionCount={previewQuestionCount}
+      />
     </>
   )
 }
