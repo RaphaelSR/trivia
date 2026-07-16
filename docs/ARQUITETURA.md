@@ -12,8 +12,9 @@
 ## Documentacao oficial
 - `docs/README.md`: indice geral da documentacao do projeto.
 - `docs/FUNCIONALIDADES.md`: mapa funcional do que esta ativo, interno e planejado.
+- `docs/SETORES.md`: mapa enxuto das responsabilidades e regras de cada setor do produto.
 - `docs/online/`: planejamento detalhado do modo `online`.
-- `.obsidian/` e `docs/obsidian/` sao workspace local e nao fazem parte da documentacao oficial versionada.
+- A raiz do repositorio pode ser aberta como vault no Obsidian. `.obsidian/` e `docs/obsidian/` continuam locais; conhecimento duravel deve ser migrado para os documentos oficiais antes de entrar no Git.
 
 ## Mapa atual
 - `src/app`: bootstrap, providers e rotas.
@@ -35,6 +36,13 @@
 - Persistência por modo vai para repositories em `src/modules/game/infrastructure`.
 - Hooks de composição do jogo vão para `src/modules/game/application`.
 - Componentes genéricos ficam em `src/shared/components`; componentes de fluxo ficam nos módulos.
+
+## Motor de turnos
+- `src/modules/game/domain/turn-order.ts` concentra a ordem do trivia, preview e avanço do cursor da sessão.
+- `src/modules/game/domain/mimica-turn-order.ts` deriva a ordem da mímica reutilizando a alternância balanceada, mas sem depender do total de perguntas.
+- A composição de times e participantes é compartilhada; os cursores de trivia e mímica são independentes.
+- `rebuildSessionTurnState` preserva o prefixo já jogado e reconcilia somente o futuro quando o elenco muda ou o host reorganiza a ordem.
+- O preview operacional deve consumir `session.turnSequence`; estimativas só são usadas antes de existir uma sequência real.
 
 ## Online/Supabase
 - A arquitetura já separa o modo `online` em repository próprio.

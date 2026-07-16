@@ -37,13 +37,18 @@ Mapa funcional do projeto com foco no que existe hoje, no que esta em migracao e
 - `ativo`: participante ativo e proximo participante derivados da sequencia de turnos
 - `ativo`: sequencia simples ou balanceada conforme a quantidade de perguntas
 - `ativo`: preview da ordem da partida quando a sessao ja tem times validos e perguntas no board
-- `ativo`: regeneracao manual da sequencia para evitar repeticao ruim entre times quando possivel
+- `ativo`: reorganizacao manual dos proximos turnos sem apagar o historico ou trocar o participante atual
+- `ativo`: alteracao de elenco durante o trivia preserva o passado e inclui participantes novos apenas na ordem futura possivel
+- `ativo`: preview usa a sequencia real, destaca o turno atual e permite reorganizar o futuro
 
 ## Pontuacao
 - `ativo`: pontuacao de trivia por tile respondida
 - `ativo`: pontuacao de mimica com modos `full-current`, `half-current`, `steal`, `everyone` e `void`
 - `ativo`: ranking por time com ordenacao por pontuacao
 - `ativo`: registro de historico de mímica na sessao
+- `ativo`: mímica com cursor próprio e alternância balanceada igual à do trivia
+- `ativo`: escolha entre continuar do turno deixado pelo trivia ou começar do primeiro participante
+- `ativo`: organizações `Alternada`, `Aleatória` e `Por time` controlam a ordem realmente executada
 
 ## Biblioteca e conteudo
 - `ativo`: biblioteca de perguntas com busca, filtro e ordenacao

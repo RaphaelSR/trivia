@@ -693,8 +693,8 @@ export function ControlDashboard() {
 
   const handleRegenerateTurnSequence = () => {
     setConfirmActionConfig({
-      title: 'Regenerar Sequência de Turnos',
-      description: 'Esta ação irá recriar completamente a sequência de turnos, alternando entre todos os times. A sequência atual será substituída por uma nova, garantindo que nenhum time jogue duas vezes consecutivas.',
+      title: 'Reorganizar próximos turnos',
+      description: 'O turno atual e o histórico já jogado serão preservados. Somente os próximos turnos serão reorganizados com o elenco atual e a alternância equilibrada entre os times.',
       onConfirm: () => {
         sessionManagement.regenerateTurnSequence()
       },
@@ -1548,34 +1548,34 @@ export function ControlDashboard() {
         }}
         teams={orderedTeams}
         participants={participants}
-        activeParticipant={activeParticipant}
-        turnSequence={session.turnSequence}
-        onAdvanceTurn={advanceTurn}
-        onScore={(mode, targetTeamId, points, turnNumber, roundNumber) => {
+        triviaActiveParticipantId={session.activeParticipantId}
+        triviaActiveTurnIndex={session.activeTurnIndex}
+        onScore={(participantId, mode, targetTeamId, points, turnNumber, roundNumber) => {
           let message = ''
           
           try {
-            if (!activeParticipant) {
+            const mimicaParticipant = participants.find(participant => participant.id === participantId)
+            const mimicaTeam = orderedTeams.find(team => team.id === mimicaParticipant?.teamId)
+            if (!mimicaParticipant || !mimicaTeam) {
               toast.error('Nenhum participante ativo')
               return
             }
 
-            const participantId = activeParticipant.id
-            let teamId = activeTeam?.id
+            let teamId = mimicaTeam.id
 
             switch (mode) {
               case 'full-current':
-                if (activeTeam) {
-                  teamId = activeTeam.id
+                if (mimicaTeam) {
+                  teamId = mimicaTeam.id
                   awardMimicaPoints(participantId, teamId, points, turnNumber, roundNumber, mode)
-                  message = `Mímica: ${points} pontos para ${activeTeam.name}`
+                  message = `Mímica: ${points} pontos para ${mimicaTeam.name}`
                 }
                 break
               case 'half-current':
-                if (activeTeam) {
-                  teamId = activeTeam.id
+                if (mimicaTeam) {
+                  teamId = mimicaTeam.id
                   awardMimicaPoints(participantId, teamId, points, turnNumber, roundNumber, mode)
-                  message = `Mímica: ${points} pontos para ${activeTeam.name}`
+                  message = `Mímica: ${points} pontos para ${mimicaTeam.name}`
                 }
                 break
               case 'steal':
@@ -1597,8 +1597,8 @@ export function ControlDashboard() {
                 break
               }
               case 'void':
-                if (activeTeam) {
-                  teamId = activeTeam.id
+                if (mimicaTeam) {
+                  teamId = mimicaTeam.id
                   awardMimicaPoints(participantId, teamId, 0, turnNumber, roundNumber, mode)
                 }
                 message = `Mímica: sem pontuação`
@@ -1651,9 +1651,15 @@ export function ControlDashboard() {
         <TurnOrderPreview
           teams={orderedTeams}
           participants={participants}
-          turnSequenceLength={session.turnSequence.length}
+          turnSequence={session.turnSequence}
+          activeTurnIndex={session.activeTurnIndex}
+          maxGroups={Number.MAX_SAFE_INTEGER}
           title="Ordem prevista da sessão atual"
-          description="A rodada fecha quando todos os participantes aparecerem pelo menos uma vez."
+          description="Revise a sequência salva, identifique o turno atual e corrija somente o futuro se o elenco mudou."
+          onReorganize={() => {
+            setTurnPreviewOpen(false)
+            handleRegenerateTurnSequence()
+          }}
         />
       </Modal>
 

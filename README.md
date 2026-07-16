@@ -31,5 +31,6 @@ npm run dev
 - A interface esta em migracao para uma experiencia `dark glassmorphism` mais proxima de dashboard jogavel.
 
 ## Workspace local
-- `.obsidian/` e `docs/obsidian/` sao uso local e nao fazem parte da documentacao oficial versionada.
-- A documentacao oficial do projeto fica concentrada em `docs/`.
+- A raiz do repositorio pode ser aberta diretamente como vault no Obsidian.
+- `.obsidian/` e `docs/obsidian/` permanecem locais para configuracao, board e handoffs temporarios.
+- Conhecimento duravel e seguro deve ser migrado para a documentacao oficial em `docs/`.

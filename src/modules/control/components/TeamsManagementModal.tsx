@@ -313,7 +313,8 @@ export function TeamsManagementModal({
         <TurnOrderPreview
           teams={previewTeams}
           participants={previewParticipants}
-          turnSequenceLength={previewTurnSequence.length}
+          turnSequence={previewTurnSequence}
+          sequenceSource="draft"
           title="Ordem prevista para a sessão"
           description="Esta prévia usa a sequência real do jogo e mostra a partida inteira dentro do cenário atual."
         />
