@@ -26,6 +26,7 @@ import { sendKeepaliveSessionPatch } from './keepalive-flush'
 import { countAnsweredTiles } from '../domain/board.utils'
 import { compareEventLogs } from '../domain/session'
 import type { TriviaSession } from '../../trivia/types'
+import { i18n } from '@/shared/i18n'
 
 // ── Internal types ────────────────────────────────────────────────────────────
 
@@ -159,7 +160,7 @@ class CloudSessionSyncImpl implements CloudSessionSync {
 
   pushSnapshot(session: TriviaSession, opts?: { title?: string }): void {
     // Coalesce: keep only the latest snapshot.
-    const title = opts?.title ?? session.title ?? 'Sessão online'
+    const title = opts?.title ?? session.title ?? i18n.t('game:sessionCreation.cloudFallback')
     this.pending = { session, title, dirty: this.pending?.dirty ?? false }
 
     // Honestidade do indicador: há mudança enfileirada e ainda não enviada,

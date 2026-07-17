@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { clsx } from 'clsx'
 import { getAvatarInitials } from '@/shared/utils/avatar'
+import { useTranslation } from '@/shared/i18n'
 
 type ParticipantAvatarProps = {
   name: string
@@ -15,6 +16,7 @@ export function ParticipantAvatar({
   size = 32,
   className,
 }: ParticipantAvatarProps) {
+  const { t } = useTranslation('common')
   const [imageFailed, setImageFailed] = useState(false)
 
   useEffect(() => setImageFailed(false), [src])
@@ -29,7 +31,7 @@ export function ParticipantAvatar({
     return (
       <img
         src={src}
-        alt={`Avatar de ${name}`}
+        alt={t('avatar.imageAlt', { name })}
         width={size}
         height={size}
         loading="lazy"
@@ -43,7 +45,7 @@ export function ParticipantAvatar({
   return (
     <span
       role="img"
-      aria-label={`Iniciais de ${name}`}
+      aria-label={t('avatar.initialsLabel', { name })}
       className={clsx(classes, 'inline-flex items-center justify-center font-semibold')}
       style={{ ...style, fontSize: Math.max(9, Math.round(size * 0.34)) }}
     >

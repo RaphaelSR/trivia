@@ -1,6 +1,7 @@
 import { AlertTriangle } from 'lucide-react'
 import { Button } from './Button'
 import { Modal } from './Modal'
+import { useTranslation } from '@/shared/i18n'
 
 type ConfirmActionModalProps = {
   isOpen: boolean
@@ -22,10 +23,11 @@ export function ConfirmActionModal({
   onConfirm,
   title,
   description,
-  confirmLabel = 'Confirmar',
-  cancelLabel = 'Cancelar',
+  confirmLabel,
+  cancelLabel,
   variant = 'warning',
 }: ConfirmActionModalProps) {
+  const { t } = useTranslation('common')
   const handleConfirm = () => {
     onConfirm()
     onClose()
@@ -72,17 +74,16 @@ export function ConfirmActionModal({
             onClick={onClose}
             className="flex-1"
           >
-            {cancelLabel}
+            {cancelLabel ?? t('actions.cancel')}
           </Button>
           <Button
             onClick={handleConfirm}
             className={`flex-1 ${styles.button} text-white`}
           >
-            {confirmLabel}
+            {confirmLabel ?? t('actions.confirm')}
           </Button>
         </div>
       </div>
     </Modal>
   )
 }
-

@@ -1,6 +1,7 @@
 import clsx from 'clsx'
 import type { CSSProperties } from 'react'
 import type { TriviaQuestionTile } from '../../modules/trivia/types'
+import { useTranslation } from '@/shared/i18n'
 
 type TriviaCardProps = {
   tile: TriviaQuestionTile
@@ -15,10 +16,11 @@ type TriviaCardProps = {
 }
 
 export function TriviaCard({ tile, theme, isSelected = false, onSelect }: TriviaCardProps) {
+  const { t } = useTranslation('game')
   const isAvailable = tile.state === 'available'
   const state = tile.state === 'answered' ? 'answered' : tile.state === 'active' ? 'active' : 'default'
   const label =
-    tile.state === 'answered' ? 'respondida' : tile.state === 'active' ? 'ao vivo' : 'pontos'
+    tile.state === 'answered' ? t('board.answered') : tile.state === 'active' ? t('board.live') : t('board.points')
 
   const style = theme
     ? ({

@@ -109,7 +109,7 @@ describe('AuthPanel', () => {
     // Submete o formulário via querySelector pelo type
     const form = document.querySelector('form')!
     fireEvent.submit(form)
-    expect(await screen.findByText(/endereço de email válido/i)).toBeInTheDocument()
+    expect(await screen.findByText(/endereço de e-mail válido/i)).toBeInTheDocument()
   })
 
   it('exibe erro de validação para senha curta', async () => {
@@ -208,7 +208,7 @@ describe('AuthPanel — estado pós-cadastro (confirmação pendente)', () => {
     fireEvent.change(screen.getByPlaceholderText('seu@email.com'), {
       target: { value: email },
     })
-    fireEvent.change(screen.getByPlaceholderText(/mínimo 8 caracteres/i), {
+    fireEvent.change(screen.getByPlaceholderText(/mínimo de 8 caracteres/i), {
       target: { value: 'senha12345' },
     })
 
@@ -222,7 +222,7 @@ describe('AuthPanel — estado pós-cadastro (confirmação pendente)', () => {
   it('mostra mensagem com o email após signup bem-sucedido', async () => {
     await goToConfirmationPending('teste@exemplo.com')
     expect(screen.getByText(/link de confirmação para/i)).toBeInTheDocument()
-    expect(screen.getByText('teste@exemplo.com')).toBeInTheDocument()
+    expect(screen.getByText(/teste@exemplo\.com/)).toBeInTheDocument()
     expect(screen.getByText(/clique no link para entrar/i)).toBeInTheDocument()
   })
 
@@ -307,7 +307,7 @@ describe('AuthPanel — estado pós-cadastro (confirmação pendente)', () => {
     fireEvent.click(tabs[0])
     fireEvent.change(screen.getByPlaceholderText(/como você quer ser chamado/i), { target: { value: 'Teste' } })
     fireEvent.change(screen.getByPlaceholderText('seu@email.com'), { target: { value: 'a@b.com' } })
-    fireEvent.change(screen.getByPlaceholderText(/mínimo 8 caracteres/i), { target: { value: 'senha12345' } })
+    fireEvent.change(screen.getByPlaceholderText(/mínimo de 8 caracteres/i), { target: { value: 'senha12345' } })
     await act(async () => { fireEvent.submit(document.querySelector('form')!) })
 
     // Confirma que está no estado pendente
@@ -348,7 +348,7 @@ describe('AuthPanel — esqueci minha senha', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Esqueci minha senha' }))
 
     expect(screen.getByText('Redefinir senha')).toBeInTheDocument()
-    expect(screen.getByLabelText('Email')).toHaveValue('rrocha@teste.com')
+    expect(screen.getByLabelText('E-mail')).toHaveValue('rrocha@teste.com')
     expect(screen.queryByLabelText('Senha')).not.toBeInTheDocument()
   })
 
@@ -369,7 +369,7 @@ describe('AuthPanel — esqueci minha senha', () => {
       fireEvent.click(screen.getByRole('button', { name: 'Enviar link de redefinição' }))
     })
 
-    expect(screen.getByText('Informe um endereço de email válido.')).toBeInTheDocument()
+    expect(screen.getByText('Informe um endereço de e-mail válido.')).toBeInTheDocument()
     expect(defaultAuthState.requestReset).not.toHaveBeenCalled()
   })
 
@@ -428,7 +428,7 @@ describe('AuthPanel — atributos de autofill (gerenciador de senhas)', () => {
   it('cadastro usa new-password para o navegador sugerir senha forte', () => {
     render(<AuthPanel onClose={() => {}} />)
     fireEvent.click(screen.getByRole('button', { name: 'Criar conta' }))
-    const senha = screen.getByPlaceholderText('Mínimo 8 caracteres')
+    const senha = screen.getByPlaceholderText('Mínimo de 8 caracteres')
     expect(senha).toHaveAttribute('autocomplete', 'new-password')
   })
 

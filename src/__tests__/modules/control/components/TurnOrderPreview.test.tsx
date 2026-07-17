@@ -56,7 +56,7 @@ describe("TurnOrderPreview", () => {
 
     expect(
       screen.getByText(
-        "Esta é a sequência real salva na sessão. Turnos concluídos ficam atenuados e o turno atual aparece em destaque.",
+        "Esta é a sequência real salva na partida. Turnos concluídos ficam atenuados e o atual aparece em destaque.",
       ),
     ).toBeInTheDocument();
     expect(screen.getByText("Atual")).toBeInTheDocument();

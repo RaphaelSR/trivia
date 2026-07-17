@@ -13,6 +13,7 @@
 import { getSupabaseClient, isSupabaseConfigured } from '../../../shared/services/supabase.client'
 import { readViteEnv } from '../../../shared/services/vite-env'
 import type { TriviaSession } from '../../trivia/types'
+import { i18n } from '@/shared/i18n'
 
 // ---------------------------------------------------------------------------
 // Tipos de saída do builder / do serviço de listagem
@@ -390,11 +391,11 @@ const UUID_RE_DELETE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f
  */
 export async function deleteNormalizedGame(gameId: string): Promise<{ error: string | null }> {
   if (!UUID_RE_DELETE.test(gameId)) {
-    return { error: 'ID de partida inválido.' }
+    return { error: i18n.t('auth:services.history.invalidGameId') }
   }
 
   if (!isSupabaseConfigured()) {
-    return { error: 'Funcionalidade indisponível neste ambiente.' }
+    return { error: i18n.t('auth:services.history.unavailable') }
   }
 
   const client = getSupabaseClient()!
@@ -402,7 +403,7 @@ export async function deleteNormalizedGame(gameId: string): Promise<{ error: str
   try {
     const { data: { session: authSession } } = await client.auth.getSession()
     if (!authSession?.user) {
-      return { error: 'Faça login para excluir partidas.' }
+      return { error: i18n.t('auth:services.history.signInToDelete') }
     }
 
     const { error } = await client
@@ -412,12 +413,12 @@ export async function deleteNormalizedGame(gameId: string): Promise<{ error: str
 
     if (error) {
       console.warn('[deleteNormalizedGame] Falha ao excluir partida:', error)
-      return { error: 'Não foi possível excluir a partida. Tente novamente.' }
+      return { error: i18n.t('auth:services.history.deleteFailed') }
     }
 
     return { error: null }
   } catch {
-    return { error: 'Não foi possível excluir a partida. Tente novamente.' }
+    return { error: i18n.t('auth:services.history.deleteFailed') }
   }
 }
 
@@ -457,11 +458,11 @@ export async function claimParticipation(
   token: string,
 ): Promise<{ gameId: string | null; error: string | null }> {
   if (!UUID_RE.test(token)) {
-    return { gameId: null, error: 'Link inválido ou já utilizado.' }
+    return { gameId: null, error: i18n.t('auth:services.history.invalidUsedLink') }
   }
 
   if (!isSupabaseConfigured()) {
-    return { gameId: null, error: 'Funcionalidade indisponível neste ambiente.' }
+    return { gameId: null, error: i18n.t('auth:services.history.unavailable') }
   }
 
   const client = getSupabaseClient()!
@@ -470,21 +471,21 @@ export async function claimParticipation(
   } = await client.auth.getSession()
 
   if (!authSession?.user) {
-    return { gameId: null, error: 'Faça login para reivindicar esta participação.' }
+    return { gameId: null, error: i18n.t('auth:services.history.signInToClaim') }
   }
 
   try {
     const { data, error } = await client.rpc('claim_participant', { p_token: token })
     if (error) {
       console.warn('[claimParticipation] Falha:', error)
-      return { gameId: null, error: 'Link inválido ou já utilizado.' }
+      return { gameId: null, error: i18n.t('auth:services.history.invalidUsedLink') }
     }
     if (!data) {
-      return { gameId: null, error: 'Link inválido ou já utilizado.' }
+      return { gameId: null, error: i18n.t('auth:services.history.invalidUsedLink') }
     }
     return { gameId: data as string, error: null }
   } catch {
-    return { gameId: null, error: 'Não foi possível processar o link. Tente novamente.' }
+    return { gameId: null, error: i18n.t('auth:services.history.processLinkFailed') }
   }
 }
 
@@ -542,10 +543,17 @@ export async function listClaimableParticipants(
 // (migration 0006). Mapeia mensagens de erro para pt-BR.
 // ---------------------------------------------------------------------------
 
-const CLAIM_BY_GAME_ERRORS: Record<string, string> = {
-  INVALID_TOKEN: 'Link de convite inválido.',
-  ALREADY_CLAIMED_IN_GAME: 'Você já reivindicou um participante nesta partida.',
-  SLOT_UNAVAILABLE: 'Esse participante já foi vinculado por outra pessoa.',
+function mapHistoricalClaimError(code: string): string {
+  switch (code) {
+    case 'INVALID_TOKEN':
+      return i18n.t('auth:services.history.invalidInvite')
+    case 'ALREADY_CLAIMED_IN_GAME':
+      return i18n.t('auth:services.history.alreadyClaimed')
+    case 'SLOT_UNAVAILABLE':
+      return i18n.t('auth:services.history.slotUnavailable')
+    default:
+      return i18n.t('auth:services.history.claimFailed')
+  }
 }
 
 export async function claimParticipantByGame(
@@ -553,11 +561,11 @@ export async function claimParticipantByGame(
   participantId: string,
 ): Promise<{ gameId: string | null; error: string | null }> {
   if (!UUID_RE.test(gameToken) || !UUID_RE.test(participantId)) {
-    return { gameId: null, error: 'Link de convite inválido.' }
+    return { gameId: null, error: i18n.t('auth:services.history.invalidInvite') }
   }
 
   if (!isSupabaseConfigured()) {
-    return { gameId: null, error: 'Funcionalidade indisponível neste ambiente.' }
+    return { gameId: null, error: i18n.t('auth:services.history.unavailable') }
   }
 
   const client = getSupabaseClient()!
@@ -566,7 +574,7 @@ export async function claimParticipantByGame(
   } = await client.auth.getSession()
 
   if (!authSession?.user) {
-    return { gameId: null, error: 'Faça login para reivindicar esta participação.' }
+    return { gameId: null, error: i18n.t('auth:services.history.signInToClaim') }
   }
 
   try {
@@ -576,22 +584,20 @@ export async function claimParticipantByGame(
     })
     if (error) {
       console.warn('[claimParticipantByGame] Falha:', error)
-      const known = Object.keys(CLAIM_BY_GAME_ERRORS).find((k) =>
+      const known = ['INVALID_TOKEN', 'ALREADY_CLAIMED_IN_GAME', 'SLOT_UNAVAILABLE'].find((k) =>
         (error.message as string | undefined)?.includes(k),
       )
       return {
         gameId: null,
-        error: known
-          ? CLAIM_BY_GAME_ERRORS[known]
-          : 'Não foi possível vincular. Tente novamente.',
+        error: mapHistoricalClaimError(known ?? ''),
       }
     }
     if (!data) {
-      return { gameId: null, error: 'Não foi possível vincular. Tente novamente.' }
+      return { gameId: null, error: i18n.t('auth:services.history.claimFailed') }
     }
     return { gameId: data as string, error: null }
   } catch {
-    return { gameId: null, error: 'Não foi possível vincular. Tente novamente.' }
+    return { gameId: null, error: i18n.t('auth:services.history.claimFailed') }
   }
 }
 
@@ -613,7 +619,7 @@ export async function importLocalSession(
   opts?: ImportLocalSessionOptions,
 ): Promise<{ gameId: string | null; error: string | null }> {
   if (!isSupabaseConfigured()) {
-    return { gameId: null, error: 'Funcionalidade indisponível neste ambiente.' }
+    return { gameId: null, error: i18n.t('auth:services.history.unavailable') }
   }
 
   const client = getSupabaseClient()!
@@ -622,7 +628,7 @@ export async function importLocalSession(
   } = await client.auth.getSession()
 
   if (!authSession?.user) {
-    return { gameId: null, error: 'Faça login para importar sessões.' }
+    return { gameId: null, error: i18n.t('auth:services.history.signInToImport') }
   }
 
   const nowIso = new Date().toISOString()
@@ -639,11 +645,11 @@ export async function importLocalSession(
     const { data, error } = await client.rpc('create_game_normalized', { p: payload })
     if (error) {
       console.warn('[importLocalSession] Falha ao importar sessão:', error)
-      return { gameId: null, error: 'Não foi possível importar a sessão. Tente novamente.' }
+      return { gameId: null, error: i18n.t('auth:services.history.importFailed') }
     }
     return { gameId: data as string, error: null }
   } catch {
-    return { gameId: null, error: 'Não foi possível importar a sessão. Tente novamente.' }
+    return { gameId: null, error: i18n.t('auth:services.history.importFailed') }
   }
 }
 

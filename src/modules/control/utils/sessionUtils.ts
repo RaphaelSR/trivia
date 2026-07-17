@@ -1,6 +1,7 @@
 import type { TriviaTeam, TriviaParticipant, TriviaColumn } from '@/modules/trivia/types'
 import { countTotalTiles } from '@/modules/game/domain/board.utils'
 import { buildTurnSequence } from '@/modules/game/domain/turn-order'
+import { i18n } from '@/shared/i18n'
 
 /**
  * Calcula total de perguntas no board
@@ -38,7 +39,7 @@ export function convertDraftsToTeams(
 ): TriviaTeam[] {
   return teamDrafts.map((team, index) => ({
     id: team.id,
-    name: team.name.trim() || `Time ${index + 1}`,
+    name: team.name.trim() || i18n.t('control:teams.defaults.team', { number: index + 1 }),
     color: team.color || 'var(--color-primary)',
     order: index,
     members: team.members.map((member) => member.id),
@@ -63,7 +64,7 @@ export function convertDraftsToParticipants(
   return teamDrafts.flatMap((team) =>
     team.members.map((member) => ({
       id: member.id,
-      name: member.name.trim() || 'Participante',
+      name: member.name.trim() || i18n.t('control:teams.defaults.participant'),
       role: member.role,
       teamId: team.id,
       ...(member.email ? { email: member.email } : {}),

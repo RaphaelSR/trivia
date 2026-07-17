@@ -28,6 +28,6 @@ describe('RouletteFilmPicker', () => {
   it('explica que a lista não usa a sessão atual', () => {
     render(<RouletteFilmPicker films={[]} participants={participants} onFilmsChange={jest.fn()} />)
 
-    expect(screen.getByText(/não usa os filmes da Biblioteca nem do trivia atual/i)).toBeInTheDocument()
+    expect(screen.getByText(/não usa os filmes da Biblioteca nem da partida atual/i)).toBeInTheDocument()
   })
 })

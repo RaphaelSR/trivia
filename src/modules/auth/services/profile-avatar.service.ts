@@ -1,4 +1,5 @@
 import { getSupabaseClient, isSupabaseConfigured } from '@/shared/services/supabase.client'
+import { i18n } from '@/shared/i18n'
 
 export const PROFILE_AVATAR_BUCKET = 'profile-avatars'
 export const PROFILE_AVATAR_SOURCE_MAX_BYTES = 5 * 1024 * 1024
@@ -34,10 +35,10 @@ export type AvatarMutationResult = {
 
 export function validateAvatarFile(file: Pick<File, 'type' | 'size'>): string | null {
   if (!ACCEPTED_AVATAR_TYPES.has(file.type)) {
-    return 'Use uma imagem JPEG, PNG ou WebP.'
+    return i18n.t('auth:services.avatar.invalidType')
   }
   if (file.size <= 0 || file.size > PROFILE_AVATAR_SOURCE_MAX_BYTES) {
-    return 'A imagem original deve ter no máximo 5 MB.'
+    return i18n.t('auth:services.avatar.sourceTooLarge')
   }
   return null
 }
@@ -94,12 +95,12 @@ export async function prepareAvatarImage(file: File): Promise<Blob> {
 
   const image = await loadImage(file)
   try {
-    if (image.width <= 0 || image.height <= 0) throw new Error('Imagem inválida.')
+    if (image.width <= 0 || image.height <= 0) throw new Error(i18n.t('auth:services.avatar.invalidImage'))
     const canvas = document.createElement('canvas')
     canvas.width = PROFILE_AVATAR_SIZE
     canvas.height = PROFILE_AVATAR_SIZE
     const context = canvas.getContext('2d')
-    if (!context) throw new Error('Não foi possível processar a imagem.')
+    if (!context) throw new Error(i18n.t('auth:services.avatar.processingFailed'))
 
     const crop = calculateSquareCrop(image.width, image.height)
     context.drawImage(
@@ -118,7 +119,7 @@ export async function prepareAvatarImage(file: File): Promise<Blob> {
       const blob = await canvasToWebp(canvas, quality)
       if (blob.size <= PROFILE_AVATAR_OUTPUT_MAX_BYTES) return blob
     }
-    throw new Error('A imagem continuou maior que 1 MB depois da compressão.')
+    throw new Error(i18n.t('auth:services.avatar.compressedTooLarge'))
   } finally {
     image.cleanup()
   }
@@ -224,25 +225,25 @@ async function updateProfileAvatarPath(
  */
 export async function uploadPreparedAvatar(blob: Blob): Promise<AvatarMutationResult> {
   if (blob.type !== 'image/webp' || blob.size <= 0 || blob.size > PROFILE_AVATAR_OUTPUT_MAX_BYTES) {
-    return { identity: null, error: 'O avatar processado deve ser WebP de até 1 MB.' }
+    return { identity: null, error: i18n.t('auth:services.avatar.invalidProcessed') }
   }
   const context = await getAuthenticatedContext()
-  if (!context) return { identity: null, error: 'Entre na sua conta para salvar o avatar.' }
+  if (!context) return { identity: null, error: i18n.t('auth:services.avatar.signInToSave') }
 
   const previous = await getMyProfileIdentity()
-  if (!previous) return { identity: null, error: 'Não foi possível carregar o perfil atual.' }
+  if (!previous) return { identity: null, error: i18n.t('auth:services.avatar.loadProfileFailed') }
 
   const nextPath = `${context.user.id}/${crypto.randomUUID()}.webp`
   const uploaded = await context.client.storage
     .from(PROFILE_AVATAR_BUCKET)
     .upload(nextPath, blob, { contentType: 'image/webp', upsert: false, cacheControl: '31536000' })
-  if (uploaded.error) return { identity: previous, error: 'Não foi possível enviar o avatar.' }
+  if (uploaded.error) return { identity: previous, error: i18n.t('auth:services.avatar.uploadFailed') }
 
   const updatedAt = new Date().toISOString()
   const profileUpdate = await updateProfileAvatarPath(context.user.id, nextPath, updatedAt)
   if (profileUpdate.error) {
     await context.client.storage.from(PROFILE_AVATAR_BUCKET).remove([nextPath])
-    return { identity: previous, error: 'Não foi possível atualizar o perfil.' }
+    return { identity: previous, error: i18n.t('auth:services.avatar.updateProfileFailed') }
   }
 
   if (previous.avatarPath) {
@@ -256,7 +257,7 @@ export async function uploadPreparedAvatar(blob: Blob): Promise<AvatarMutationRe
         previous.avatarUpdatedAt,
       )
       await context.client.storage.from(PROFILE_AVATAR_BUCKET).remove([nextPath])
-      return { identity: previous, error: 'Não foi possível concluir a troca. O avatar anterior foi mantido.' }
+      return { identity: previous, error: i18n.t('auth:services.avatar.replaceRollback') }
     }
   }
 
@@ -280,20 +281,20 @@ export async function uploadProfileAvatar(file: File): Promise<AvatarMutationRes
   } catch (error) {
     return {
       identity: null,
-      error: error instanceof Error ? error.message : 'Não foi possível processar a imagem.',
+      error: error instanceof Error ? error.message : i18n.t('auth:services.avatar.processingFailed'),
     }
   }
 }
 
 export async function removeProfileAvatar(): Promise<AvatarMutationResult> {
   const context = await getAuthenticatedContext()
-  if (!context) return { identity: null, error: 'Entre na sua conta para remover o avatar.' }
+  if (!context) return { identity: null, error: i18n.t('auth:services.avatar.signInToRemove') }
   const previous = await getMyProfileIdentity()
-  if (!previous) return { identity: null, error: 'Não foi possível carregar o perfil atual.' }
+  if (!previous) return { identity: null, error: i18n.t('auth:services.avatar.loadProfileFailed') }
   if (!previous.avatarPath) return { identity: previous, error: null }
 
   const profileUpdate = await updateProfileAvatarPath(context.user.id, null, null)
-  if (profileUpdate.error) return { identity: previous, error: 'Não foi possível atualizar o perfil.' }
+  if (profileUpdate.error) return { identity: previous, error: i18n.t('auth:services.avatar.updateProfileFailed') }
 
   const removed = await context.client.storage
     .from(PROFILE_AVATAR_BUCKET)
@@ -304,7 +305,7 @@ export async function removeProfileAvatar(): Promise<AvatarMutationResult> {
       previous.avatarPath,
       previous.avatarUpdatedAt,
     )
-    return { identity: previous, error: 'Não foi possível remover agora. O avatar anterior foi mantido.' }
+    return { identity: previous, error: i18n.t('auth:services.avatar.removeRollback') }
   }
 
   return {

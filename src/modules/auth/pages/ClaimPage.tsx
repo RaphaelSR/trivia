@@ -34,6 +34,7 @@ import {
   type LiveSessionParticipant,
 } from '../services/live-session-claim.service'
 import { ProfileAvatarEditor } from '../components/ProfileAvatarEditor'
+import { useTranslation } from '@/shared/i18n'
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -49,6 +50,7 @@ function getHomeUrl(): string {
 // ---------------------------------------------------------------------------
 
 export function ClaimPage() {
+  const { t } = useTranslation('auth')
   const [searchParams] = useSearchParams()
   const token = searchParams.get('token') ?? ''
   const game = searchParams.get('game') ?? ''
@@ -58,9 +60,9 @@ export function ClaimPage() {
     return (
       <PageShell>
         <StatusCard icon="unavailable">
-          <p className="text-sm font-semibold text-[var(--color-text)]">Indisponível</p>
+          <p className="text-sm font-semibold text-[var(--color-text)]">{t('claim.unavailable')}</p>
           <p className="mt-1 text-xs text-[var(--color-muted)]">
-            Esta funcionalidade não está disponível neste ambiente.
+            {t('claim.unavailableDescription')}
           </p>
         </StatusCard>
       </PageShell>
@@ -82,9 +84,9 @@ export function ClaimPage() {
   return (
     <PageShell>
       <StatusCard icon="error">
-        <p className="text-sm font-semibold text-[var(--color-text)]">Link inválido</p>
+        <p className="text-sm font-semibold text-[var(--color-text)]">{t('claim.invalidLink')}</p>
         <p className="mt-1 text-xs text-[var(--color-muted)]">
-          O link não contém um token válido. Verifique o link e tente novamente.
+          {t('claim.invalidLinkDescription')}
         </p>
       </StatusCard>
     </PageShell>
@@ -96,6 +98,7 @@ export function ClaimPage() {
 // ---------------------------------------------------------------------------
 
 function LiveSessionClaimPage({ joinToken }: { joinToken: string }) {
+  const { t } = useTranslation('auth')
   const { user, loading } = useAuth()
   const [participants, setParticipants] = useState<LiveSessionParticipant[]>([])
   const [loadingList, setLoadingList] = useState(false)
@@ -122,7 +125,7 @@ function LiveSessionClaimPage({ joinToken }: { joinToken: string }) {
     return (
       <PageShell>
         <StatusCard icon="loading">
-          <p className="text-sm text-[var(--color-muted)]">Verificando sessão…</p>
+          <p className="text-sm text-[var(--color-muted)]">{t('claim.checkingSession')}</p>
         </StatusCard>
       </PageShell>
     )
@@ -162,7 +165,7 @@ function LiveSessionClaimPage({ joinToken }: { joinToken: string }) {
     return (
       <PageShell>
         <StatusCard icon="loading">
-          <p className="text-sm text-[var(--color-muted)]">Carregando participantes…</p>
+          <p className="text-sm text-[var(--color-muted)]">{t('claim.loadingParticipants')}</p>
         </StatusCard>
       </PageShell>
     )
@@ -172,9 +175,9 @@ function LiveSessionClaimPage({ joinToken }: { joinToken: string }) {
     <PageShell>
       <div className="flex w-full max-w-sm flex-col gap-4 rounded-2xl border border-white/10 bg-black/60 p-6 shadow-2xl backdrop-blur-xl">
         <div className="text-center">
-          <p className="text-sm font-semibold text-[var(--color-text)]">Quem é você nesta partida?</p>
+          <p className="text-sm font-semibold text-[var(--color-text)]">{t('claim.liveQuestion')}</p>
           <p className="mt-1 text-xs text-[var(--color-muted)]">
-            Escolha seu nome. Se ele estiver reservado, entre com o e-mail convidado.
+            {t('claim.liveDescription')}
           </p>
         </div>
 
@@ -187,7 +190,7 @@ function LiveSessionClaimPage({ joinToken }: { joinToken: string }) {
 
         {participants.length === 0 ? (
           <p className="text-center text-xs text-[var(--color-muted)]">
-            Nenhum participante disponível para este convite.
+            {t('claim.noAvailableParticipant')}
           </p>
         ) : (
           <ul className="flex flex-col gap-2" role="list">
@@ -207,24 +210,24 @@ function LiveSessionClaimPage({ joinToken }: { joinToken: string }) {
                 {participant.claimed ? (
                   <span className="inline-flex shrink-0 items-center gap-1 rounded px-2 py-1 text-[9px] font-medium bg-[var(--color-primary)]/15 text-[var(--color-primary)]">
                     <UserCheck className="h-2.5 w-2.5" aria-hidden="true" />
-                    {participant.claimedByMe ? 'você' : 'vinculado'}
+                    {participant.claimedByMe ? t('claim.you') : t('claim.linked')}
                   </span>
                 ) : participant.claimable ? (
                   <button
                     type="button"
                     onClick={() => void handleClaim(participant.participantClientId)}
                     disabled={claimingId !== null}
-                    aria-label={`Sou ${participant.displayName}`}
+                    aria-label={t('claim.iAmName', { name: participant.displayName })}
                     className="shrink-0 rounded-lg bg-[var(--color-primary)] px-3 py-2 text-[11px] font-semibold text-black transition-opacity hover:opacity-90 disabled:opacity-50"
                   >
                     {claimingId === participant.participantClientId ? (
                       <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />
                     ) : (
-                      'Sou eu'
+                      t('claim.iAm')
                     )}
                   </button>
                 ) : (
-                  <span className="shrink-0 text-[10px] text-[var(--color-muted)]">reservado</span>
+                  <span className="shrink-0 text-[10px] text-[var(--color-muted)]">{t('claim.reserved')}</span>
                 )}
               </li>
             ))}
@@ -240,22 +243,23 @@ function LiveSessionClaimPage({ joinToken }: { joinToken: string }) {
 // ---------------------------------------------------------------------------
 
 function AuthGate() {
+  const { t } = useTranslation('auth')
   const [showAuthPanel, setShowAuthPanel] = useState(false)
 
   return (
     <div className="flex flex-col items-center gap-4">
       <div className="w-full max-w-sm rounded-2xl border border-white/10 bg-black/60 p-5 shadow-2xl backdrop-blur-xl">
         <p className="mb-1 text-sm font-semibold text-[var(--color-text)]">
-          Entre para reivindicar sua participação
+          {t('claim.authTitle')}
         </p>
         <p className="mb-4 text-xs text-[var(--color-muted)]">
-          Crie uma conta ou entre para vincular esta partida ao seu perfil.
+          {t('claim.authDescription')}
         </p>
         <button
           onClick={() => setShowAuthPanel(true)}
           className="w-full rounded-lg bg-[var(--color-primary)] py-2 text-sm font-semibold text-black transition-opacity hover:opacity-90"
         >
-          Entrar / Criar conta
+          {t('claim.authAction')}
         </button>
       </div>
 
@@ -274,24 +278,25 @@ function AuthGate() {
 // ---------------------------------------------------------------------------
 
 function SuccessCard({ gameId }: { gameId: string | null }) {
+  const { t } = useTranslation('auth')
   const { user } = useAuth()
   const [showAvatarSetup, setShowAvatarSetup] = useState(true)
   const profileName =
     (user?.user_metadata as Record<string, string> | undefined)?.display_name ??
     user?.email?.split('@')[0] ??
-    'Jogador'
+    t('claim.playerFallback')
 
   return (
     <StatusCard icon="success">
       <p className="text-sm font-semibold text-[var(--color-text)]">
-        Partida vinculada à sua conta!
+        {t('claim.successTitle')}
       </p>
       <p className="mt-1 text-xs text-[var(--color-muted)]">
-        A sua participação foi registrada com sucesso.
+        {t('claim.successDescription')}
       </p>
       {gameId && (
         <p className="mt-0.5 text-xs text-[var(--color-muted)]">
-          ID da partida: <span className="font-mono text-[var(--color-text)]">{gameId}</span>
+          {t('claim.gameId', { id: gameId })}
         </p>
       )}
       {user && showAvatarSetup ? (
@@ -302,7 +307,7 @@ function SuccessCard({ gameId }: { gameId: string | null }) {
             onClick={() => setShowAvatarSetup(false)}
             className="mt-2 text-xs text-[var(--color-muted)] underline-offset-2 hover:underline"
           >
-            Agora não
+            {t('claim.notNow')}
           </button>
         </div>
       ) : null}
@@ -310,7 +315,7 @@ function SuccessCard({ gameId }: { gameId: string | null }) {
         to={getHomeUrl()}
         className="mt-4 inline-block rounded-lg bg-[var(--color-primary)] px-4 py-2 text-sm font-semibold text-black transition-opacity hover:opacity-90"
       >
-        Ver meu painel
+        {t('claim.dashboard')}
       </Link>
     </StatusCard>
   )
@@ -325,6 +330,7 @@ interface SessionClaimPageProps {
 }
 
 function SessionClaimPage({ gameToken }: SessionClaimPageProps) {
+  const { t } = useTranslation('auth')
   const { user, loading } = useAuth()
   const [participants, setParticipants] = useState<ClaimableParticipant[]>([])
   const [loadingList, setLoadingList] = useState(false)
@@ -347,7 +353,7 @@ function SessionClaimPage({ gameToken }: SessionClaimPageProps) {
     return (
       <PageShell>
         <StatusCard icon="loading">
-          <p className="text-sm text-[var(--color-muted)]">Verificando sessão…</p>
+          <p className="text-sm text-[var(--color-muted)]">{t('claim.checkingSession')}</p>
         </StatusCard>
       </PageShell>
     )
@@ -377,10 +383,8 @@ function SessionClaimPage({ gameToken }: SessionClaimPageProps) {
     setClaimingId(null)
     if (result.error) {
       setErrorMsg(result.error)
-      if (result.error.includes('já reivindicou')) {
-        // Atualiza lista para refletir estado
-        void listClaimableParticipants(gameToken).then(setParticipants)
-      }
+      // Sempre atualiza a lista: não acopla o comportamento ao idioma do erro.
+      void listClaimableParticipants(gameToken).then(setParticipants)
     } else {
       setClaimed({ gameId: result.gameId })
     }
@@ -390,7 +394,7 @@ function SessionClaimPage({ gameToken }: SessionClaimPageProps) {
     return (
       <PageShell>
         <StatusCard icon="loading">
-          <p className="text-sm text-[var(--color-muted)]">Carregando participantes…</p>
+          <p className="text-sm text-[var(--color-muted)]">{t('claim.loadingParticipants')}</p>
         </StatusCard>
       </PageShell>
     )
@@ -401,10 +405,10 @@ function SessionClaimPage({ gameToken }: SessionClaimPageProps) {
       <div className="flex w-full max-w-sm flex-col gap-4 rounded-2xl border border-white/10 bg-black/60 p-6 shadow-2xl backdrop-blur-xl">
         <div className="flex flex-col items-center gap-1 text-center">
           <p className="text-sm font-semibold text-[var(--color-text)]">
-            Qual é o seu nome na partida?
+            {t('claim.historicalQuestion')}
           </p>
           <p className="text-xs text-[var(--color-muted)]">
-            Selecione o participante que é você.
+            {t('claim.historicalDescription')}
           </p>
         </div>
 
@@ -417,7 +421,7 @@ function SessionClaimPage({ gameToken }: SessionClaimPageProps) {
 
         {participants.length === 0 ? (
           <p className="text-center text-xs text-[var(--color-muted)]">
-            Nenhum participante encontrado para este link.
+            {t('claim.noParticipant')}
           </p>
         ) : (
           <ul className="flex flex-col gap-2" role="list">
@@ -436,24 +440,24 @@ function SessionClaimPage({ gameToken }: SessionClaimPageProps) {
                 </div>
                 {p.claimed ? (
                   <span
-                    aria-label={`${p.displayName} já vinculado`}
+                    aria-label={t('claim.alreadyLinkedAria', { name: p.displayName })}
                     className="inline-flex shrink-0 items-center gap-0.5 rounded px-1.5 py-1 text-[9px] font-medium bg-[var(--color-primary)]/15 text-[var(--color-primary)]"
                   >
                     <UserCheck className="h-2.5 w-2.5" aria-hidden="true" />
-                    já vinculado
+                    {t('claim.alreadyLinked')}
                   </span>
                 ) : (
                   <button
                     type="button"
                     onClick={() => void handleClaim(p.participantId)}
                     disabled={claimingId !== null}
-                    aria-label={`Sou ${p.displayName}`}
+                    aria-label={t('claim.iAmName', { name: p.displayName })}
                     className="shrink-0 rounded-lg bg-[var(--color-primary)] px-3 py-2 text-[11px] font-semibold text-black transition-opacity hover:opacity-90 disabled:opacity-50"
                   >
                     {claimingId === p.participantId ? (
                       <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />
                     ) : (
-                      'Sou eu'
+                      t('claim.iAm')
                     )}
                   </button>
                 )}
@@ -475,6 +479,7 @@ interface ClaimPageInnerProps {
 }
 
 function ClaimPageInner({ token }: ClaimPageInnerProps) {
+  const { t } = useTranslation('auth')
   const { user, loading, claim } = useAuth()
   const [showAuthPanel, setShowAuthPanel] = useState(false)
   const [status, setStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle')
@@ -502,7 +507,7 @@ function ClaimPageInner({ token }: ClaimPageInnerProps) {
     return (
       <PageShell>
         <StatusCard icon="loading">
-          <p className="text-sm text-[var(--color-muted)]">Verificando sessão…</p>
+          <p className="text-sm text-[var(--color-muted)]">{t('claim.checkingSession')}</p>
         </StatusCard>
       </PageShell>
     )
@@ -514,16 +519,16 @@ function ClaimPageInner({ token }: ClaimPageInnerProps) {
         <div className="flex flex-col items-center gap-4">
           <div className="w-full max-w-sm rounded-2xl border border-white/10 bg-black/60 p-5 shadow-2xl backdrop-blur-xl">
             <p className="mb-1 text-sm font-semibold text-[var(--color-text)]">
-              Entre para reivindicar sua participação
+              {t('claim.authTitle')}
             </p>
             <p className="mb-4 text-xs text-[var(--color-muted)]">
-              Crie uma conta ou entre para vincular esta partida ao seu perfil.
+              {t('claim.authDescription')}
             </p>
             <button
               onClick={() => setShowAuthPanel(true)}
               className="w-full rounded-lg bg-[var(--color-primary)] py-2 text-sm font-semibold text-black transition-opacity hover:opacity-90"
             >
-              Entrar / Criar conta
+              {t('claim.authAction')}
             </button>
           </div>
 
@@ -542,7 +547,7 @@ function ClaimPageInner({ token }: ClaimPageInnerProps) {
     return (
       <PageShell>
         <StatusCard icon="loading">
-          <p className="text-sm text-[var(--color-muted)]">Vinculando participação…</p>
+          <p className="text-sm text-[var(--color-muted)]">{t('claim.linking')}</p>
         </StatusCard>
       </PageShell>
     )
@@ -561,16 +566,16 @@ function ClaimPageInner({ token }: ClaimPageInnerProps) {
     <PageShell>
       <StatusCard icon="error">
         <p className="text-sm font-semibold text-[var(--color-text)]">
-          Não foi possível vincular
+          {t('claim.failureTitle')}
         </p>
         <p className="mt-1 text-xs text-[var(--color-muted)]">
-          {errorMsg ?? 'Link inválido ou já utilizado.'}
+          {errorMsg ?? t('claim.failureFallback')}
         </p>
         <Link
           to={getHomeUrl()}
           className="mt-4 inline-block rounded-lg border border-white/10 bg-white/5 px-4 py-2 text-sm text-[var(--color-muted)] transition-colors hover:text-[var(--color-text)]"
         >
-          Voltar para o início
+          {t('claim.backHome')}
         </Link>
       </StatusCard>
     </PageShell>

@@ -6,6 +6,7 @@ import { buildTurnSequence } from '@/modules/game/domain/turn-order'
 import { storageService } from '@/shared/services/storage.service'
 import { STORAGE_KEYS } from '@/shared/constants/storage'
 import type { ThemeMode } from '@/shared/types/game'
+import { useTranslation } from '@/shared/i18n'
 
 /**
  * Hook para gerenciar sessão (load, reset, onboarding)
@@ -27,11 +28,15 @@ export function useSessionManagement(
   restoreSession: (session: TriviaSession) => void,
   setGameEndNotified: (value: boolean) => void
 ) {
+  const { t } = useTranslation('control')
+  const { t: tCommon } = useTranslation('common')
+  const { t: tGame } = useTranslation('game')
+
   const loadSessionById = (sessionId: string): boolean => {
     try {
       const loadedSession = loadSession(sessionId)
       if (loadedSession) {
-        toast.info(`Carregando sessão "${loadedSession.title}"...`)
+        toast.info(t('dashboard.notifications.loadingSession', { title: loadedSession.title }))
         
         restoreSession(loadedSession)
 
@@ -40,22 +45,25 @@ export function useSessionManagement(
         const teamsCount = loadedSession.teams?.length || 0
         const totalScore = loadedSession.teams?.reduce((acc, team) => acc + (team.score || 0), 0) || 0
 
-        const details = []
-        if (filmsCount > 0) details.push(`${filmsCount} filme${filmsCount !== 1 ? 's' : ''}`)
-        if (questionsCount > 0) details.push(`${questionsCount} pergunta${questionsCount !== 1 ? 's' : ''}`)
-        if (teamsCount > 0) details.push(`${teamsCount} time${teamsCount !== 1 ? 's' : ''}`)
-        if (totalScore > 0) details.push(`${totalScore} pontos`)
+        const details: string[] = []
+        if (filmsCount > 0) details.push(tCommon('entities.film', { count: filmsCount }))
+        if (questionsCount > 0) details.push(tCommon('entities.question', { count: questionsCount }))
+        if (teamsCount > 0) details.push(tCommon('entities.team', { count: teamsCount }))
+        if (totalScore > 0) details.push(tCommon('entities.point', { count: totalScore }))
 
         const detailsText = details.length > 0 ? ` (${details.join(', ')})` : ''
-        toast.success(`Sessão "${loadedSession.title}" carregada!${detailsText}`)
+        toast.success(t('dashboard.notifications.sessionLoaded', {
+          title: loadedSession.title,
+          details: detailsText,
+        }))
         return true
       } else {
-        toast.error('Erro ao carregar sessão')
+        toast.error(t('dashboard.notifications.sessionLoadError'))
         return false
       }
     } catch (error) {
       console.error('Erro ao carregar sessão:', error)
-      toast.error('Erro ao carregar sessão')
+      toast.error(t('dashboard.notifications.sessionLoadError'))
       return false
     }
   }
@@ -97,24 +105,24 @@ export function useSessionManagement(
         updateTeamsAndParticipants([], [], undefined)
       }
 
-      const resetItems = []
-      if (options.points) resetItems.push('pontos')
-      if (options.questions) resetItems.push('perguntas')
-      if (options.films) resetItems.push('filmes')
-      if (options.themes) resetItems.push('tema')
-      if (options.teams) resetItems.push('times')
-      if (options.participants) resetItems.push('participantes')
+      const resetItems: string[] = []
+      if (options.points) resetItems.push(tGame('reset.options.points.title'))
+      if (options.questions) resetItems.push(tGame('reset.options.questions.title'))
+      if (options.films) resetItems.push(tGame('reset.options.films.title'))
+      if (options.themes) resetItems.push(tGame('reset.options.themes.title'))
+      if (options.teams) resetItems.push(tGame('reset.options.teams.title'))
+      if (options.participants) resetItems.push(tGame('reset.options.participants.title'))
 
-      toast.success(`Jogo resetado: ${resetItems.join(', ')}`)
+      toast.success(t('dashboard.notifications.gameReset', { items: resetItems.join(', ') }))
     } catch (error) {
       console.error('Erro ao resetar jogo:', error)
-      toast.error('Erro ao resetar o jogo')
+      toast.error(t('dashboard.notifications.gameResetError'))
     }
   }
 
   const regenerateTurnSequence = () => {
     if (teams.length === 0) {
-      toast.warning('Nenhum time configurado')
+      toast.warning(t('dashboard.notifications.noTeams'))
       return
     }
 
@@ -123,7 +131,7 @@ export function useSessionManagement(
     const newTurnSequence = buildTurnSequence(sortedTeams, totalQuestions)
 
     updateTeamsAndParticipants(teams, participants, newTurnSequence)
-    toast.success('Sequência de turnos regenerada')
+    toast.success(t('dashboard.notifications.turnsRegenerated'))
   }
 
   return {

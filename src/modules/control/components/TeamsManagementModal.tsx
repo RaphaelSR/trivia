@@ -14,6 +14,7 @@ import { TeamRandomizerModal } from './TeamRandomizerModal'
 import { LiveSessionInviteModal } from './LiveSessionInviteModal'
 import { ParticipantAvatar } from '@/shared/components/ParticipantAvatar'
 import type { ParticipantIdentity } from '@/modules/auth/services/profile-avatar.service'
+import { useTranslation } from '@/shared/i18n'
 
 type TeamsManagementModalProps = {
   isOpen: boolean
@@ -44,8 +45,10 @@ type TeamsManagementModalProps = {
   sessionClientId?: string
   onPrepareLiveInvite?: () => Promise<boolean>
   participantIdentities?: Record<string, ParticipantIdentity>
-  /** Modo de jogo atual — campo de e-mail só aparece quando gameMode === 'online' */
-  gameMode: string
+  /** Recursos de conta disponíveis para esta partida (sync, convites e identidades). */
+  connectedFeaturesEnabled?: boolean
+  /** @deprecated Compatibilidade temporária com consumidores anteriores. */
+  gameMode?: string
 }
 
 /**
@@ -76,22 +79,26 @@ export function TeamsManagementModal({
   sessionClientId = '',
   onPrepareLiveInvite = async () => false,
   participantIdentities = {},
+  connectedFeaturesEnabled,
   gameMode,
 }: TeamsManagementModalProps) {
-  const isOnline = gameMode === 'online'
+  const { t } = useTranslation(['control', 'common'])
+  const canUseConnectedFeatures = gameMode === 'demo'
+    ? false
+    : connectedFeaturesEnabled ?? gameMode === 'online'
   const [previewOpen, setPreviewOpen] = useState(false)
   const [randomizerOpen, setRandomizerOpen] = useState(false)
   const [liveInviteOpen, setLiveInviteOpen] = useState(false)
   const [inviteContacts, setInviteContacts] = useState<InvitedContact[]>([])
 
-  // Carrega contatos de convites anteriores do host apenas no modo online e
+  // Carrega contatos anteriores apenas quando os recursos conectados estão ativos e
   // enquanto o modal está aberto. No-op silencioso se vazio (primeira partida).
   useEffect(() => {
-    if (!isOnline || !isOpen) return
+    if (!canUseConnectedFeatures || !isOpen) return
     listMyInvitedContacts().then(setInviteContacts).catch(() => {
       // nunca lança — listMyInvitedContacts já absorve erros
     })
-  }, [isOnline, isOpen])
+  }, [canUseConnectedFeatures, isOpen])
   const canPreview = useMemo(
     () =>
       previewQuestionCount > 0 &&
@@ -101,11 +108,11 @@ export function TeamsManagementModal({
     [previewQuestionCount, previewTeams, previewTurnSequence.length],
   )
 
-  // Contagem de e-mails válidos para o rodapé não-bloqueante (só no modo online).
+  // Contagem de e-mails válidos para o rodapé não-bloqueante.
   const validEmailCount = useMemo(() => {
-    if (!isOnline) return 0
+    if (!canUseConnectedFeatures) return 0
     return teamDrafts.flatMap((t) => t.members).filter((m) => isValidEmail(m.email ?? '')).length
-  }, [isOnline, teamDrafts])
+  }, [canUseConnectedFeatures, teamDrafts])
 
   const totalParticipantCount = useMemo(
     () => teamDrafts.flatMap((t) => t.members).length,
@@ -116,12 +123,12 @@ export function TeamsManagementModal({
     <>
       <Modal
         isOpen={isOpen}
-        title="Gestão de times"
-        description="Ajuste nomes, participantes e ordem de turno das equipes."
+        title={t('teams.title', { ns: 'control' })}
+        description={t('teams.description', { ns: 'control' })}
         onClose={onClose}
       >
         <div className="flex flex-wrap items-center justify-between gap-3 pb-4">
-          <p className="text-sm text-[var(--color-muted)]">Organize os times e defina a rotação dos jogadores.</p>
+          <p className="text-sm text-[var(--color-muted)]">{t('teams.helper', { ns: 'control' })}</p>
           <div className="flex flex-wrap gap-2">
             <Button
               variant="secondary"
@@ -129,16 +136,16 @@ export function TeamsManagementModal({
               onClick={() => setRandomizerOpen(true)}
               disabled={!canRandomizeRoster}
             >
-              <Shuffle size={14} /> Sortear times
+              <Shuffle size={14} /> {t('teams.randomize', { ns: 'control' })}
             </Button>
             <Button variant="outline" size="sm" onClick={onAddTeam}>
-              <Plus size={14} /> Adicionar time
+              <Plus size={14} /> {t('teams.addTeam', { ns: 'control' })}
             </Button>
           </div>
         </div>
         {!canRandomizeRoster ? (
           <p className="mb-4 rounded-xl border border-[var(--color-secondary)]/20 bg-[var(--color-secondary)]/10 px-3 py-2 text-xs text-[var(--color-muted)]">
-            O sorteio fica disponível somente antes de revelar perguntas ou registrar pontos. A gestão manual continua disponível.
+            {t('teams.randomizeUnavailable', { ns: 'control' })}
           </p>
         ) : null}
         <div className="max-h-[60vh] space-y-4 overflow-y-auto pr-1">
@@ -147,7 +154,7 @@ export function TeamsManagementModal({
               <div className="flex flex-wrap items-center justify-between gap-3 px-4 py-3">
                 <div className="flex flex-wrap items-center gap-3">
                   <span className="text-xs font-semibold uppercase tracking-[0.3em] text-[var(--color-muted)]">
-                    Time {index + 1}
+                    {t('teams.teamNumber', { ns: 'control', number: index + 1 })}
                   </span>
                   <input
                     value={team.name}
@@ -167,7 +174,7 @@ export function TeamsManagementModal({
                     size="icon"
                     onClick={() => onMoveTeam(team.id, -1)}
                     disabled={index === 0}
-                    aria-label="Mover time para cima"
+                    aria-label={t('teams.moveTeamUp', { ns: 'control' })}
                   >
                     <ArrowUp size={16} />
                   </Button>
@@ -176,7 +183,7 @@ export function TeamsManagementModal({
                     size="icon"
                     onClick={() => onMoveTeam(team.id, 1)}
                     disabled={index === teamDrafts.length - 1}
-                    aria-label="Mover time para baixo"
+                    aria-label={t('teams.moveTeamDown', { ns: 'control' })}
                   >
                     <ArrowDown size={16} />
                   </Button>
@@ -184,7 +191,7 @@ export function TeamsManagementModal({
                     variant="ghost"
                     size="icon"
                     onClick={() => onRemoveTeam(team.id)}
-                    aria-label="Remover time"
+                    aria-label={t('teams.removeTeam', { ns: 'control' })}
                   >
                     <Trash2 size={16} />
                   </Button>
@@ -195,7 +202,7 @@ export function TeamsManagementModal({
                   <div key={member.id} className="space-y-2 rounded-xl border border-[var(--color-border)] bg-[var(--color-background)] p-3">
                     <div className="flex flex-wrap items-center justify-between gap-2">
                       <ParticipantAvatar
-                        name={member.name || 'Participante'}
+                        name={member.name || t('teams.participantFallback', { ns: 'control' })}
                         src={participantIdentities[member.id]?.avatarUrl}
                         size={34}
                       />
@@ -215,9 +222,9 @@ export function TeamsManagementModal({
                         }
                         className="rounded-lg border border-[var(--color-border)] bg-[var(--color-background)] px-2 py-2 text-sm text-[var(--color-text)]"
                       >
-                        <option value="host">Anfitrião</option>
-                        <option value="assistant">Assistente</option>
-                        <option value="player">Jogador</option>
+                        <option value="host">{t('teams.roles.host', { ns: 'control' })}</option>
+                        <option value="assistant">{t('teams.roles.assistant', { ns: 'control' })}</option>
+                        <option value="player">{t('teams.roles.player', { ns: 'control' })}</option>
                       </select>
                       <div className="flex items-center gap-1">
                         <Button
@@ -225,7 +232,7 @@ export function TeamsManagementModal({
                           size="icon"
                           onClick={() => onMoveParticipant(team.id, member.id, -1)}
                           disabled={memberIndex === 0}
-                          aria-label="Mover participante para cima"
+                          aria-label={t('teams.moveParticipantUp', { ns: 'control' })}
                         >
                           <ArrowUp size={16} />
                         </Button>
@@ -234,7 +241,7 @@ export function TeamsManagementModal({
                           size="icon"
                           onClick={() => onMoveParticipant(team.id, member.id, 1)}
                           disabled={memberIndex === team.members.length - 1}
-                          aria-label="Mover participante para baixo"
+                          aria-label={t('teams.moveParticipantDown', { ns: 'control' })}
                         >
                           <ArrowDown size={16} />
                         </Button>
@@ -242,13 +249,13 @@ export function TeamsManagementModal({
                           variant="ghost"
                           size="icon"
                           onClick={() => onRemoveParticipant(team.id, member.id)}
-                          aria-label="Remover participante"
+                          aria-label={t('teams.removeParticipant', { ns: 'control' })}
                         >
                           <Trash2 size={16} />
                         </Button>
                       </div>
                     </div>
-                    {isOnline && (
+                    {canUseConnectedFeatures && (
                       <div className="space-y-1">
                         <input
                           type="email"
@@ -258,16 +265,16 @@ export function TeamsManagementModal({
                             const raw = event.target.value
                             onUpdateParticipant(team.id, member.id, { email: raw })
                           }}
-                          placeholder="e-mail (opcional, para vincular conta)"
-                          aria-label={`E-mail de ${member.name}`}
+                          placeholder={t('teams.emailPlaceholder', { ns: 'control' })}
+                          aria-label={t('teams.emailLabel', { ns: 'control', name: member.name })}
                           className="w-full rounded-lg border border-[var(--color-border)] bg-[var(--color-background)] px-3 py-2 text-sm text-[var(--color-text)] placeholder:text-[var(--color-muted)]"
                         />
                         {/* Helper reativo: só mostra quando há algum texto digitado */}
                         {(member.email ?? '') !== '' && (
                           <p className="text-xs text-[var(--color-muted)]">
                             {isValidEmail(member.email ?? '')
-                              ? 'Será vinculado automaticamente quando entrar com este e-mail.'
-                              : 'Verifique o e-mail — sem isto o jogador ainda joga normalmente.'}
+                              ? t('teams.validEmail', { ns: 'control' })
+                              : t('teams.invalidEmail', { ns: 'control' })}
                           </p>
                         )}
                       </div>
@@ -275,15 +282,14 @@ export function TeamsManagementModal({
                   </div>
                 ))}
                 <Button variant="outline" size="sm" onClick={() => onAddParticipant(team.id)}>
-                  <UserPlus size={14} /> Adicionar participante
+                  <UserPlus size={14} /> {t('teams.addParticipant', { ns: 'control' })}
                 </Button>
               </div>
             </div>
           ))}
-          {/* datalist de autocomplete: privacy-safe (apenas e-mails que o próprio
-              host já convidou antes, via RPC SECURITY INVOKER + RLS owner-only).
-              Renderizado somente em modo online; invisível para demo/offline. */}
-          {isOnline && (
+          {/* Datalist privacy-safe: apenas e-mails que o próprio host já convidou,
+              via RPC SECURITY INVOKER + RLS owner-only. Demo não monta este bloco. */}
+          {canUseConnectedFeatures && (
             <datalist id="invite-contacts">
               {inviteContacts.map((c) => (
                 <option key={c.email} value={c.email} label={c.lastName} />
@@ -293,22 +299,22 @@ export function TeamsManagementModal({
 
           {!teamDrafts.length ? (
             <p className="rounded-2xl border border-dashed border-[var(--color-border)] bg-[var(--color-background)] px-4 py-10 text-center text-sm text-[var(--color-muted)]">
-              Nenhum time cadastrado. Adicione um novo time para começar.
+              {t('teams.empty', { ns: 'control' })}
             </p>
           ) : null}
 
-          {isOnline && canInviteLivePlayers ? (
+          {canUseConnectedFeatures && canInviteLivePlayers ? (
             <div className="rounded-2xl border border-[var(--color-primary)]/20 bg-[var(--color-primary)]/5 p-4">
               <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                 <div>
                   <h4 className="flex items-center gap-2 text-sm font-semibold text-[var(--color-text)]">
                     <QrCode size={16} className="text-[var(--color-primary)]" />
-                    Convidar jogadores
+                    {t('teams.inviteTitle', { ns: 'control' })}
                   </h4>
                   <p className="mt-1 text-xs text-[var(--color-muted)]">
                     {hasUnsavedLiveRosterChanges
-                      ? 'Salve as alterações de elenco antes de abrir o convite.'
-                      : 'Gere um único QR para cada pessoa escolher seu nome. O elenco é sincronizado antes de abrir.'}
+                      ? t('teams.inviteUnsaved', { ns: 'control' })
+                      : t('teams.inviteReady', { ns: 'control' })}
                   </p>
                 </div>
                 <Button
@@ -316,7 +322,7 @@ export function TeamsManagementModal({
                   disabled={hasUnsavedLiveRosterChanges}
                   onClick={() => setLiveInviteOpen(true)}
                 >
-                  Abrir convite ao vivo
+                  {t('teams.openInvite', { ns: 'control' })}
                 </Button>
               </div>
             </div>
@@ -325,53 +331,50 @@ export function TeamsManagementModal({
           <div className="rounded-2xl border border-[var(--color-border)] bg-[var(--color-background)] p-4">
             <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
               <div className="space-y-2">
-                <h4 className="text-sm font-semibold text-[var(--color-text)]">Preview da partida</h4>
+                <h4 className="text-sm font-semibold text-[var(--color-text)]">{t('teams.previewTitle', { ns: 'control' })}</h4>
                 <p className="text-sm text-[var(--color-muted)]">
-                  A prévia completa só aparece quando a sessão já tem times válidos e perguntas reais no board.
+                  {t('teams.previewDescription', { ns: 'control' })}
                 </p>
                 <p className="text-xs text-[var(--color-muted)]">
-                  A rodada fecha quando todos os participantes aparecerem pelo menos uma vez.
+                  {t('teams.previewRound', { ns: 'control' })}
                 </p>
               </div>
 
               <div className="flex flex-wrap gap-2">
                 <Button variant="secondary" onClick={() => setPreviewOpen(true)} disabled={!canPreview}>
-                  Ver preview completo
+                  {t('teams.openPreview', { ns: 'control' })}
                 </Button>
               </div>
             </div>
 
             {!canPreview ? (
               <div className="mt-3 rounded-xl border border-[var(--color-secondary)]/20 bg-[var(--color-secondary)]/10 px-3 py-2 text-xs text-[var(--color-muted)]">
-                Preencha times com participantes e tenha perguntas no board para liberar a prévia real da partida.
+                {t('teams.previewUnavailable', { ns: 'control' })}
               </div>
             ) : null}
           </div>
         </div>
-        {/* Rodapé não-bloqueante: aparece apenas em modo online com ≥1 e-mail válido.
+        {/* Rodapé não-bloqueante: aparece com recursos conectados e ≥1 e-mail válido.
             Informa ao host quantos jogadores serão vinculados, sem bloquear salvar. */}
-        {isOnline && validEmailCount > 0 && (
+        {canUseConnectedFeatures && validEmailCount > 0 && (
           <p className="mt-3 text-xs text-[var(--color-muted)]">
-            {validEmailCount} de {totalParticipantCount} jogador
-            {totalParticipantCount !== 1 ? 'es' : ''} ser
-            {validEmailCount !== 1 ? 'ão vinculados' : 'á vinculado'} por e-mail. O jogo funciona
-            com ou sem isso.
+            {t('teams.emailLinkSummary', { ns: 'control', linked: validEmailCount, total: totalParticipantCount })}
           </p>
         )}
         <div className="mt-4 flex justify-end gap-3">
           <Button variant="secondary" disabled={!canSave} onClick={onSave}>
-            Salvar alterações
+            {t('teams.save', { ns: 'control' })}
           </Button>
           <Button variant="outline" onClick={onClose}>
-            Fechar
+            {t('actions.close', { ns: 'common' })}
           </Button>
         </div>
       </Modal>
 
       <Modal
         isOpen={previewOpen}
-        title="Preview completo da partida"
-        description="Confira a ordem inteira da sessão com base nos times atuais e no board já preenchido."
+        title={t('teams.fullPreviewTitle', { ns: 'control' })}
+        description={t('teams.fullPreviewDescription', { ns: 'control' })}
         onClose={() => setPreviewOpen(false)}
         size="xl"
       >
@@ -380,8 +383,8 @@ export function TeamsManagementModal({
           participants={previewParticipants}
           turnSequence={previewTurnSequence}
           sequenceSource="draft"
-          title="Ordem prevista para a sessão"
-          description="Esta prévia usa a sequência real do jogo e mostra a partida inteira dentro do cenário atual."
+          title={t('teams.plannedOrderTitle', { ns: 'control' })}
+          description={t('teams.plannedOrderDescription', { ns: 'control' })}
         />
       </Modal>
 
@@ -390,12 +393,13 @@ export function TeamsManagementModal({
         onClose={() => setRandomizerOpen(false)}
         onApply={onReplaceDrafts}
         teamDrafts={teamDrafts}
+        connectedFeaturesEnabled={canUseConnectedFeatures}
         gameMode={gameMode}
         inviteContacts={inviteContacts}
         previewQuestionCount={previewQuestionCount}
       />
 
-      {isOnline && canInviteLivePlayers ? (
+      {canUseConnectedFeatures && canInviteLivePlayers ? (
         <LiveSessionInviteModal
           isOpen={liveInviteOpen}
           onClose={() => setLiveInviteOpen(false)}

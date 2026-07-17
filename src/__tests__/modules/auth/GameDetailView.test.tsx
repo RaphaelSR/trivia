@@ -321,7 +321,7 @@ describe('GameDetailView — Convite da sessão', () => {
       render(<GameDetailView gameId="game-1" onBack={jest.fn()} />)
     })
     // O section tem aria-label="Convite da sessão"
-    expect(screen.getByRole('region', { name: /convite da sessão/i })).toBeInTheDocument()
+    expect(screen.getByRole('region', { name: /convite da partida/i })).toBeInTheDocument()
     expect(screen.getByText(/compartilhe um único link com todos/i)).toBeInTheDocument()
   })
 
@@ -332,7 +332,7 @@ describe('GameDetailView — Convite da sessão', () => {
     await act(async () => {
       render(<GameDetailView gameId="game-1" onBack={jest.fn()} />)
     })
-    expect(screen.queryByRole('region', { name: /convite da sessão/i })).not.toBeInTheDocument()
+    expect(screen.queryByRole('region', { name: /convite da partida/i })).not.toBeInTheDocument()
   })
 
   it('NÃO exibe bloco "Convite da sessão" quando joinToken=null mesmo com isOwner=true', async () => {
@@ -342,6 +342,6 @@ describe('GameDetailView — Convite da sessão', () => {
     await act(async () => {
       render(<GameDetailView gameId="game-1" onBack={jest.fn()} />)
     })
-    expect(screen.queryByRole('region', { name: /convite da sessão/i })).not.toBeInTheDocument()
+    expect(screen.queryByRole('region', { name: /convite da partida/i })).not.toBeInTheDocument()
   })
 })

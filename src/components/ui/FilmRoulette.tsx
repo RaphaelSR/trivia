@@ -10,6 +10,7 @@ import { storageService } from '../../shared/services/storage.service'
 import { getStreamingPlatformInfo, getFilmGenreInfo, type CustomFilm } from '../../data/customFilms'
 import type { TriviaParticipant, TriviaTeam } from '../../modules/trivia/types'
 import { drawUniqueFilms, type RouletteResult as DrawRouletteResult } from '../../modules/trivia/utils/drawUniqueFilms'
+import { useTranslation } from '@/shared/i18n'
 
 type FilmRouletteProps = {
   isOpen: boolean
@@ -89,6 +90,8 @@ function playVictory(ctx: AudioContext) {
 }
 
 export function FilmRoulette({ isOpen, onClose, teams, participants }: FilmRouletteProps) {
+  const { t, i18n } = useTranslation(['game', 'common'])
+  const locale = i18n.resolvedLanguage ?? i18n.language
   const [config, setConfig] = useState<RouletteConfig>({ maxFilms: 5, allowMultiplePerPerson: false })
   const [selectedParticipants, setSelectedParticipants] = useState<SelectedParticipant[]>([])
   const [selectedFilms, setSelectedFilms] = useState<RouletteFilm[]>([])
@@ -117,7 +120,7 @@ export function FilmRoulette({ isOpen, onClose, teams, participants }: FilmRoule
         .filter(p => p.role === 'player')
         .map(participant => {
           const team = teams.find(t => t.id === participant.teamId)
-          return { id: participant.id, name: participant.name, teamName: team?.name ?? 'Sem time', selected: true }
+          return { id: participant.id, name: participant.name, teamName: team?.name ?? t('roulette.noTeam', { ns: 'game' }), selected: true }
         })
 
       setSelectedParticipants(initialParticipants)
@@ -129,7 +132,7 @@ export function FilmRoulette({ isOpen, onClose, teams, participants }: FilmRoule
       rotationRef.current = 0
       setHistory(storageService.getJson<RouletteHistory[]>(STORAGE_KEYS.rouletteHistory, []))
     }
-  }, [isOpen, participants, teams])
+  }, [isOpen, participants, t, teams])
 
   const saveToHistory = (newResults: RouletteResult[]) => {
     const uniqueFilms = new Set(newResults.map(r => r.film.name.toLowerCase().trim())).size
@@ -219,7 +222,16 @@ export function FilmRoulette({ isOpen, onClose, teams, participants }: FilmRoule
       }))
 
       const maxFilms = Math.min(config.maxFilms, filmsToUse.length)
-      const newResults = drawUniqueFilms(filmsWithAddedBy, participantsMap, maxFilms, config.allowMultiplePerPerson)
+      const newResults = drawUniqueFilms(
+        filmsWithAddedBy,
+        participantsMap,
+        maxFilms,
+        config.allowMultiplePerPerson,
+        {
+          unknownParticipant: t('roulette.noParticipant', { ns: 'game' }),
+          noTeam: t('roulette.noTeam', { ns: 'game' }),
+        },
+      )
 
       setResults(newResults)
       setIsSpinning(false)
@@ -250,7 +262,7 @@ export function FilmRoulette({ isOpen, onClose, teams, participants }: FilmRoule
   // MultiSelect handlers
   const participantOptions = selectedParticipants.map(p => ({
     id: p.id, label: p.name, subtitle: p.teamName,
-    badge: p.selected ? 'Selecionado' : undefined,
+    badge: p.selected ? t('roulette.selected', { ns: 'game' }) : undefined,
     badgeColor: p.selected ? '#10b981' : undefined,
     selected: p.selected
   }))
@@ -269,7 +281,12 @@ export function FilmRoulette({ isOpen, onClose, teams, participants }: FilmRoule
   const segmentAngle = films.length > 0 ? 360 / films.length : 360
 
   // ── Breadcrumb nav ──
-  const stepLabels: Record<Step, string> = { films: 'Filmes', setup: 'Configurar', spin: 'Roleta', results: 'Resultado' }
+  const stepLabels: Record<Step, string> = {
+    films: t('roulette.steps.films', { ns: 'game' }),
+    setup: t('roulette.steps.setup', { ns: 'game' }),
+    spin: t('roulette.steps.spin', { ns: 'game' }),
+    results: t('roulette.steps.results', { ns: 'game' }),
+  }
   const stepOrder: Step[] = ['films', 'setup', 'spin', 'results']
   const currentIndex = stepOrder.indexOf(currentStep)
 
@@ -390,7 +407,7 @@ export function FilmRoulette({ isOpen, onClose, teams, participants }: FilmRoule
               {films.length}
             </text>
             <text x={cx} y={cy + 8} textAnchor="middle" fill="var(--color-muted)" fontSize="7">
-              filmes
+              {t('roulette.wheelFilms', { ns: 'game' })}
             </text>
           </svg>
         </div>
@@ -408,12 +425,12 @@ export function FilmRoulette({ isOpen, onClose, teams, participants }: FilmRoule
             onClick={() => setShowHistory(false)}
             className="flex items-center gap-1 text-xs font-medium text-[var(--color-muted)] hover:text-[var(--color-text)]"
           >
-            <ChevronLeft size={14} /> Voltar
+            <ChevronLeft size={14} /> {t('roulette.back', { ns: 'game' })}
           </button>
 
           {history.length === 0 ? (
             <div className="rounded-xl border border-dashed border-[var(--color-border)] py-12 text-center text-sm text-[var(--color-muted)]">
-              Nenhum sorteio realizado ainda
+              {t('roulette.emptyHistory', { ns: 'game' })}
             </div>
           ) : (
             <div className="space-y-2">
@@ -421,10 +438,10 @@ export function FilmRoulette({ isOpen, onClose, teams, participants }: FilmRoule
                 <div key={entry.id} className="rounded-xl border border-[var(--color-border)] bg-[var(--color-background)] p-3">
                   <div className="flex items-center justify-between mb-2">
                     <span className="text-xs font-medium text-[var(--color-text)]">
-                      {new Date(entry.timestamp).toLocaleString('pt-BR')}
+                      {new Date(entry.timestamp).toLocaleString(locale)}
                     </span>
                     <span className="text-[10px] text-[var(--color-muted)]">
-                      {entry.uniqueFilms} filme{entry.uniqueFilms !== 1 ? 's' : ''}
+                      {t('entities.film', { ns: 'common', count: entry.uniqueFilms })}
                     </span>
                   </div>
                   <div className="space-y-1">
@@ -441,7 +458,7 @@ export function FilmRoulette({ isOpen, onClose, teams, participants }: FilmRoule
                       </div>
                     ))}
                     {entry.results.length > 3 && (
-                      <span className="text-[10px] text-[var(--color-muted)]">+{entry.results.length - 3} mais</span>
+                      <span className="text-[10px] text-[var(--color-muted)]">{t('roulette.more', { ns: 'game', count: entry.results.length - 3 })}</span>
                     )}
                   </div>
                 </div>
@@ -467,9 +484,9 @@ export function FilmRoulette({ isOpen, onClose, teams, participants }: FilmRoule
               disabled={getSelectedFilmsCount() === 0}
               className="w-full gap-2"
             >
-              Configurar sorteio
+              {t('roulette.setup', { ns: 'game' })}
               <span className="rounded-full bg-white/20 px-2 py-0.5 text-xs">
-                {selectedFilms.length} filme{selectedFilms.length !== 1 ? 's' : ''}
+                {t('entities.film', { ns: 'common', count: selectedFilms.length })}
               </span>
             </Button>
           </div>
@@ -481,7 +498,7 @@ export function FilmRoulette({ isOpen, onClose, teams, participants }: FilmRoule
             {/* Config compacta */}
             <div className="rounded-xl border border-[var(--color-border)] bg-[var(--color-background)] p-3 space-y-3">
               <div className="flex items-center justify-between">
-                <span className="text-xs font-semibold text-[var(--color-text)]">Filmes a sortear</span>
+                <span className="text-xs font-semibold text-[var(--color-text)]">{t('roulette.filmsToDraw', { ns: 'game' })}</span>
                 <div className="flex items-center gap-1.5">
                   <button
                     type="button"
@@ -507,33 +524,33 @@ export function FilmRoulette({ isOpen, onClose, teams, participants }: FilmRoule
                   onChange={(e) => setConfig(prev => ({ ...prev, allowMultiplePerPerson: e.target.checked }))}
                   className="h-4 w-4 rounded border-[var(--color-border)] text-[var(--color-primary)]"
                 />
-                <span className="text-xs text-[var(--color-text)]">Permitir vários filmes por pessoa</span>
+                <span className="text-xs text-[var(--color-text)]">{t('roulette.multiplePerPerson', { ns: 'game' })}</span>
               </label>
             </div>
 
             {/* Participants */}
             <MultiSelectField
-              title="Participantes"
-              description={`${getSelectedCount()} de ${selectedParticipants.length} selecionados`}
+              title={t('roulette.participants', { ns: 'game' })}
+              description={t('roulette.selectedCount', { ns: 'game', selected: getSelectedCount(), total: selectedParticipants.length })}
               options={participantOptions}
               onSelectionChange={(ids) => setSelectedParticipants(prev => prev.map(p => ({ ...p, selected: ids.includes(p.id) })))}
               onSelectAll={() => setSelectedParticipants(prev => prev.map(p => ({ ...p, selected: true })))}
               onSelectNone={() => setSelectedParticipants(prev => prev.map(p => ({ ...p, selected: false })))}
-              searchPlaceholder="Buscar..."
-              emptyMessage="Nenhum participante"
+              searchPlaceholder={t('selection.search', { ns: 'common' })}
+              emptyMessage={t('roulette.noParticipant', { ns: 'game' })}
               maxHeight="max-h-40"
             />
 
             {/* Films */}
             <MultiSelectField
-              title="Filmes na roleta"
-              description={`${getSelectedFilmsCount()} de ${selectedFilms.length} selecionados`}
+              title={t('roulette.filmsInWheel', { ns: 'game' })}
+              description={t('roulette.selectedCount', { ns: 'game', selected: getSelectedFilmsCount(), total: selectedFilms.length })}
               options={filmOptions}
               onSelectionChange={(ids) => setSelectedFilms(prev => prev.map(f => ({ ...f, selected: ids.includes(f.id) })))}
               onSelectAll={() => setSelectedFilms(prev => prev.map(f => ({ ...f, selected: true })))}
               onSelectNone={() => setSelectedFilms(prev => prev.map(f => ({ ...f, selected: false })))}
-              searchPlaceholder="Buscar filmes..."
-              emptyMessage="Nenhum filme"
+              searchPlaceholder={t('roulette.searchFilms', { ns: 'game' })}
+              emptyMessage={t('roulette.noFilm', { ns: 'game' })}
               maxHeight="max-h-40"
             />
 
@@ -544,7 +561,7 @@ export function FilmRoulette({ isOpen, onClose, teams, participants }: FilmRoule
               className="w-full gap-2"
             >
               <Shuffle size={16} />
-              Ir para roleta
+              {t('roulette.goToWheel', { ns: 'game' })}
             </Button>
           </div>
         )
@@ -556,7 +573,12 @@ export function FilmRoulette({ isOpen, onClose, teams, participants }: FilmRoule
 
             <div className="text-center space-y-1">
               <p className="text-xs text-[var(--color-muted)]">
-                {getSelectedCount()} participante{getSelectedCount() !== 1 ? 's' : ''} · {getSelectedFilmsCount()} filme{getSelectedFilmsCount() !== 1 ? 's' : ''} · {config.maxFilms} a sortear
+                {t('roulette.setupSummary', {
+                  ns: 'game',
+                  participants: t('entities.participant', { ns: 'common', count: getSelectedCount() }),
+                  films: t('entities.film', { ns: 'common', count: getSelectedFilmsCount() }),
+                  draw: config.maxFilms,
+                })}
               </p>
             </div>
 
@@ -572,7 +594,7 @@ export function FilmRoulette({ isOpen, onClose, teams, participants }: FilmRoule
               ) : (
                 <Shuffle size={18} />
               )}
-              {isSpinning ? 'Girando...' : 'Girar roleta'}
+              {isSpinning ? t('roulette.spinning', { ns: 'game' }) : t('roulette.spin', { ns: 'game' })}
             </Button>
           </div>
         )
@@ -582,11 +604,11 @@ export function FilmRoulette({ isOpen, onClose, teams, participants }: FilmRoule
           <div className="space-y-3">
             <div className="flex items-center justify-between">
               <span className="text-xs font-semibold text-[var(--color-text)]">
-                {results.length} filme{results.length !== 1 ? 's' : ''} sorteado{results.length !== 1 ? 's' : ''}
+                {t('roulette.drawn', { ns: 'game', count: results.length })}
               </span>
               <Button variant="ghost" size="sm" onClick={resetRoulette} className="gap-1 text-xs">
                 <RotateCcw size={12} />
-                Novo sorteio
+                {t('roulette.newDraw', { ns: 'game' })}
               </Button>
             </div>
 
@@ -643,7 +665,7 @@ export function FilmRoulette({ isOpen, onClose, teams, participants }: FilmRoule
                           rel="noopener noreferrer"
                           className="shrink-0 text-xs text-[var(--color-primary)] hover:underline"
                         >
-                          Ver →
+                          {t('roulette.view', { ns: 'game' })}
                         </a>
                       )}
                     </div>
@@ -656,19 +678,19 @@ export function FilmRoulette({ isOpen, onClose, teams, participants }: FilmRoule
             <div className="flex items-center justify-around rounded-xl bg-[var(--color-surface)] p-3 text-center">
               <div>
                 <div className="text-lg font-bold text-[var(--color-primary)]">{results.length}</div>
-                <div className="text-[10px] text-[var(--color-muted)]">Sorteados</div>
+                <div className="text-[10px] text-[var(--color-muted)]">{t('roulette.drawnLabel', { ns: 'game' })}</div>
               </div>
               <div>
                 <div className="text-lg font-bold text-[var(--color-primary)]">
                   {new Set(results.map(r => r.film.name.toLowerCase().trim())).size}
                 </div>
-                <div className="text-[10px] text-[var(--color-muted)]">Únicos</div>
+                <div className="text-[10px] text-[var(--color-muted)]">{t('roulette.uniqueLabel', { ns: 'game' })}</div>
               </div>
               <div>
                 <div className="text-lg font-bold text-[var(--color-primary)]">
                   {new Set(results.map(r => r.participantName.toLowerCase().trim())).size}
                 </div>
-                <div className="text-[10px] text-[var(--color-muted)]">Indicaram</div>
+                <div className="text-[10px] text-[var(--color-muted)]">{t('roulette.indicatedLabel', { ns: 'game' })}</div>
               </div>
             </div>
           </div>
@@ -684,7 +706,7 @@ export function FilmRoulette({ isOpen, onClose, teams, participants }: FilmRoule
           <div className="flex items-center gap-3">
             <Film size={18} className="text-[var(--color-primary)]" />
             <div>
-              <h2 className="text-sm font-bold text-[var(--color-text)]">Sorteio de Filmes</h2>
+              <h2 className="text-sm font-bold text-[var(--color-text)]">{t('roulette.title', { ns: 'game' })}</h2>
               {renderBreadcrumbs()}
             </div>
           </div>
@@ -693,7 +715,7 @@ export function FilmRoulette({ isOpen, onClose, teams, participants }: FilmRoule
               type="button"
               onClick={() => setSoundEnabled(v => !v)}
               className="rounded-lg p-1.5 text-[var(--color-muted)] transition-colors hover:bg-[var(--color-border)]/40 hover:text-[var(--color-text)]"
-              title={soundEnabled ? 'Desativar som' : 'Ativar som'}
+              title={soundEnabled ? t('roulette.disableSound', { ns: 'game' }) : t('roulette.enableSound', { ns: 'game' })}
             >
               {soundEnabled ? <Volume2 size={16} /> : <VolumeX size={16} />}
             </button>
@@ -701,7 +723,7 @@ export function FilmRoulette({ isOpen, onClose, teams, participants }: FilmRoule
               type="button"
               onClick={() => setShowHistory(!showHistory)}
               className="rounded-lg p-1.5 text-[var(--color-muted)] transition-colors hover:bg-[var(--color-border)]/40 hover:text-[var(--color-text)]"
-              title="Histórico"
+              title={t('roulette.history', { ns: 'game' })}
             >
               <History size={16} />
             </button>
@@ -709,7 +731,7 @@ export function FilmRoulette({ isOpen, onClose, teams, participants }: FilmRoule
               type="button"
               onClick={onClose}
               className="rounded-lg p-1.5 text-[var(--color-muted)] transition-colors hover:bg-[var(--color-border)]/40 hover:text-[var(--color-text)]"
-              title="Fechar"
+              title={t('actions.close', { ns: 'common' })}
             >
               <X size={16} />
             </button>

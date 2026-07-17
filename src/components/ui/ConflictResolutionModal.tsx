@@ -4,6 +4,7 @@ import { Button } from "./Button";
 import { countAnsweredTiles, countTotalTiles } from "../../modules/game/domain/board.utils";
 import type { CloudSyncConflict } from "../../modules/game/application/useCloudSync";
 import type { TriviaSession } from "../../modules/trivia/types";
+import { useTranslation } from "@/shared/i18n";
 
 interface ConflictResolutionModalProps {
   isOpen: boolean;
@@ -34,11 +35,11 @@ function summarize(session: TriviaSession, updatedAt: string | null): VersionSum
   };
 }
 
-function formatStamp(iso: string | null): string {
+function formatStamp(iso: string | null, locale: string): string {
   if (!iso) return "—";
   const d = new Date(iso);
   if (Number.isNaN(d.getTime())) return "—";
-  return d.toLocaleString("pt-BR", {
+  return d.toLocaleString(locale, {
     day: "2-digit",
     month: "2-digit",
     hour: "2-digit",
@@ -59,12 +60,13 @@ function VersionCard({
   onChoose: () => void;
   buttonLabel: string;
 }) {
+  const { t, i18n } = useTranslation('control');
   const rows: Array<[string, string]> = [
-    ["Respondidas", `${summary.answered} de ${summary.total}`],
-    ["Placar", `${summary.score} pts`],
-    ["Filmes", String(summary.films)],
-    ["Última jogada", formatStamp(summary.lastPlay)],
-    ["Atualizada", formatStamp(summary.updatedAt)],
+    [t('conflict.rows.answered'), t('conflict.rows.answeredValue', { answered: summary.answered, total: summary.total })],
+    [t('conflict.rows.score'), t('conflict.rows.scoreValue', { score: summary.score })],
+    [t('conflict.rows.films'), String(summary.films)],
+    [t('conflict.rows.lastPlay'), formatStamp(summary.lastPlay, i18n.resolvedLanguage ?? i18n.language)],
+    [t('conflict.rows.updatedAt'), formatStamp(summary.updatedAt, i18n.resolvedLanguage ?? i18n.language)],
   ];
 
   return (
@@ -94,41 +96,41 @@ function VersionCard({
  * Aberto apenas quando o reconcile detecta um conflito ambíguo.
  */
 export function ConflictResolutionModal({ isOpen, conflict, onChoose }: ConflictResolutionModalProps) {
+  const { t } = useTranslation('control');
   if (!conflict) return null;
 
   const local = summarize(conflict.localSession, conflict.localUpdatedAt);
   const cloud = summarize(conflict.cloudSession, conflict.cloudUpdatedAt);
 
   return (
-    <Modal isOpen={isOpen} onClose={() => onChoose("local")} title="Duas versões desta partida">
+    <Modal isOpen={isOpen} onClose={() => onChoose("local")} title={t('conflict.title')}>
       <div className="space-y-5 p-6">
         <div className="flex items-start gap-3 rounded-2xl border border-amber-400/30 bg-amber-400/10 p-3">
           <AlertTriangle className="mt-0.5 h-5 w-5 shrink-0 text-amber-500" />
           <p className="text-sm text-[var(--color-text)]">
-            Encontramos versões diferentes desta partida neste aparelho e na sua conta.
-            Escolha qual delas continuar — a outra será substituída.
+            {t('conflict.description')}
           </p>
         </div>
 
         <div className="flex flex-col gap-3 sm:flex-row">
           <VersionCard
-            title="Neste aparelho"
+            title={t('conflict.localTitle')}
             icon={<HardDrive className="h-4 w-4 text-[var(--color-primary)]" />}
             summary={local}
             onChoose={() => onChoose("local")}
-            buttonLabel="Usar a deste aparelho"
+            buttonLabel={t('conflict.useLocal')}
           />
           <VersionCard
-            title="Na sua conta"
+            title={t('conflict.cloudTitle')}
             icon={<Cloud className="h-4 w-4 text-[var(--color-primary)]" />}
             summary={cloud}
             onChoose={() => onChoose("cloud")}
-            buttonLabel="Usar a da conta"
+            buttonLabel={t('conflict.useCloud')}
           />
         </div>
 
         <p className="text-center text-xs text-[var(--color-muted)]">
-          Dica: normalmente a versão com mais "respondidas" é a partida mais avançada.
+          {t('conflict.hint')}
         </p>
       </div>
     </Modal>

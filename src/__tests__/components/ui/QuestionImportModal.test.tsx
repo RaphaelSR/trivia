@@ -37,7 +37,7 @@ describe('QuestionImportModal', () => {
         />
       )
 
-      expect(screen.getByText('Importar Perguntas')).toBeInTheDocument()
+      expect(screen.getByText('Importar perguntas')).toBeInTheDocument()
       expect(screen.getByPlaceholderText(/Cole aqui o texto/)).toBeInTheDocument()
     })
 
@@ -51,7 +51,7 @@ describe('QuestionImportModal', () => {
         />
       )
 
-      expect(screen.queryByText('Importar Perguntas')).not.toBeInTheDocument()
+      expect(screen.queryByText('Importar perguntas')).not.toBeInTheDocument()
     })
 
     it('deve mostrar formato esperado', () => {
@@ -91,7 +91,7 @@ Aquiles
       const textarea = screen.getByPlaceholderText(/Cole aqui o texto/)
       fireEvent.change(textarea, { target: { value: importText } })
 
-      const analyzeButton = screen.getByText('Analisar Texto')
+      const analyzeButton = screen.getByText('Analisar texto')
       fireEvent.click(analyzeButton)
 
       await waitFor(() => {
@@ -127,7 +127,7 @@ Resposta 2`
       const textarea = screen.getByPlaceholderText(/Cole aqui o texto/)
       fireEvent.change(textarea, { target: { value: importText } })
 
-      const analyzeButton = screen.getByText('Analisar Texto')
+      const analyzeButton = screen.getByText('Analisar texto')
       fireEvent.click(analyzeButton)
 
       await waitFor(() => {
@@ -166,7 +166,7 @@ Resposta 20`
       const textarea = screen.getByPlaceholderText(/Cole aqui o texto/)
       fireEvent.change(textarea, { target: { value: importText } })
 
-      const analyzeButton = screen.getByText('Analisar Texto')
+      const analyzeButton = screen.getByText('Analisar texto')
       fireEvent.click(analyzeButton)
 
       await waitFor(() => {
@@ -197,7 +197,7 @@ Resposta`
       const textarea = screen.getByPlaceholderText(/Cole aqui o texto/)
       fireEvent.change(textarea, { target: { value: importText } })
 
-      const analyzeButton = screen.getByText('Analisar Texto')
+      const analyzeButton = screen.getByText('Analisar texto')
       fireEvent.click(analyzeButton)
 
       await waitFor(() => {
@@ -228,7 +228,7 @@ Nível 5
       const textarea = screen.getByPlaceholderText(/Cole aqui o texto/)
       fireEvent.change(textarea, { target: { value: importText } })
 
-      const analyzeButton = screen.getByText('Analisar Texto')
+      const analyzeButton = screen.getByText('Analisar texto')
       fireEvent.click(analyzeButton)
 
       await waitFor(() => {
@@ -249,7 +249,7 @@ Nível 5
         />
       )
 
-      const analyzeButton = screen.getByText('Analisar Texto')
+      const analyzeButton = screen.getByText('Analisar texto')
       expect(analyzeButton).toBeDisabled()
     })
 
@@ -266,7 +266,7 @@ Nível 5
       const textarea = screen.getByPlaceholderText(/Cole aqui o texto/)
       fireEvent.change(textarea, { target: { value: 'Texto de teste' } })
 
-      const analyzeButton = screen.getByText('Analisar Texto')
+      const analyzeButton = screen.getByText('Analisar texto')
       expect(analyzeButton).not.toBeDisabled()
     })
   })
@@ -290,11 +290,11 @@ Resposta`
       const textarea = screen.getByPlaceholderText(/Cole aqui o texto/)
       fireEvent.change(textarea, { target: { value: importText } })
 
-      const analyzeButton = screen.getByText('Analisar Texto')
+      const analyzeButton = screen.getByText('Analisar texto')
       fireEvent.click(analyzeButton)
 
       await waitFor(() => {
-        const importButtons = screen.getAllByText('Importar Perguntas')
+        const importButtons = screen.getAllByText('Importar perguntas')
         const button = importButtons.find(btn => btn.tagName === 'BUTTON')
         expect(button).toBeInTheDocument()
         if (button) {
@@ -339,11 +339,11 @@ Resposta`
       const textarea = screen.getByPlaceholderText(/Cole aqui o texto/)
       fireEvent.change(textarea, { target: { value: importText } })
 
-      const analyzeButton = screen.getByText('Analisar Texto')
+      const analyzeButton = screen.getByText('Analisar texto')
       fireEvent.click(analyzeButton)
 
       await waitFor(() => {
-        const importButtons = screen.getAllByText('Importar Perguntas')
+        const importButtons = screen.getAllByText('Importar perguntas')
         const button = importButtons.find(btn => btn.tagName === 'BUTTON')
         expect(button).toBeDisabled()
       }, { timeout: 3000 })
@@ -371,7 +371,7 @@ Resposta`
       const textarea = screen.getByPlaceholderText(/Cole aqui o texto/)
       fireEvent.change(textarea, { target: { value: importText } })
 
-      const analyzeButton = screen.getByText('Analisar Texto')
+      const analyzeButton = screen.getByText('Analisar texto')
       fireEvent.click(analyzeButton)
 
       await waitFor(() => {
@@ -401,4 +401,3 @@ Resposta`
     })
   })
 })
-

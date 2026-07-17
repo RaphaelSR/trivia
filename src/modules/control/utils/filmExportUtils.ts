@@ -1,4 +1,5 @@
 import type { TriviaColumn, TriviaQuestionTile } from '@/modules/trivia/types'
+import { i18n } from '@/shared/i18n'
 
 export type FilmExportData = {
   version: string
@@ -97,7 +98,7 @@ export function importFilmsWithQuestions(
     return {
       success: false,
       films: [],
-      errors: ['Formato JSON inválido. Estrutura esperada não encontrada.'],
+      errors: [i18n.t('game:library.importIssues.invalidFormat')],
       warnings: [],
     }
   }
@@ -107,12 +108,12 @@ export function importFilmsWithQuestions(
 
   for (const film of importData.films) {
     if (!film.name || film.name.trim() === '') {
-      errors.push('Filme sem nome encontrado')
+      errors.push(i18n.t('game:library.importIssues.unnamedFilm'))
       continue
     }
 
     if (!Array.isArray(film.questions) || film.questions.length === 0) {
-      warnings.push(`Filme "${film.name}" não possui perguntas`)
+      warnings.push(i18n.t('game:library.importIssues.filmWithoutQuestions', { film: film.name }))
     }
 
     const existingFilm = existingFilms.find(
@@ -120,7 +121,7 @@ export function importFilmsWithQuestions(
     )
 
     if (existingFilm) {
-      warnings.push(`Filme "${film.name}" já existe no board. Será adicionado como novo filme.`)
+      warnings.push(i18n.t('game:library.importIssues.existingFilm', { film: film.name }))
     }
 
     films.push({
@@ -133,11 +134,14 @@ export function importFilmsWithQuestions(
       addedBy: film.addedBy,
       questions: film.questions.filter((q) => {
         if (!q.question || q.question.trim() === '') {
-          warnings.push(`Pergunta sem texto encontrada no filme "${film.name}"`)
+          warnings.push(i18n.t('game:library.importIssues.questionWithoutText', { film: film.name }))
           return false
         }
         if (q.points <= 0) {
-          warnings.push(`Pergunta com pontos inválidos (${q.points}) no filme "${film.name}"`)
+          warnings.push(i18n.t('game:library.importIssues.invalidPoints', {
+            film: film.name,
+            points: q.points,
+          }))
           return false
         }
         return true

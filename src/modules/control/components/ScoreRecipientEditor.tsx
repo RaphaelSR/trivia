@@ -1,5 +1,6 @@
 import type { TriviaParticipant, TriviaTeam } from '@/modules/trivia/types'
 import type { PointDistribution } from '../types/control.types'
+import { useTranslation } from '@/shared/i18n'
 
 type ScoreRecipientEditorProps = {
   team: TriviaTeam
@@ -22,6 +23,7 @@ export function ScoreRecipientEditor({
   onPointsChange,
   onParticipantChange,
 }: ScoreRecipientEditorProps) {
+  const { t } = useTranslation(['control', 'common'])
   const isEnabled = Boolean(distribution)
   const pointsValue = distribution?.points ?? suggestedPoints
 
@@ -43,7 +45,7 @@ export function ScoreRecipientEditor({
             <span className="truncate text-xs font-semibold text-[var(--color-text)]">{team.name}</span>
             {isActiveTeam ? (
               <span className="rounded-full bg-[var(--color-primary)]/10 px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-[0.14em] text-[var(--color-primary)]">
-                Da vez
+                {t('scoring.activeTeam', { ns: 'control' })}
               </span>
             ) : null}
           </div>
@@ -58,7 +60,7 @@ export function ScoreRecipientEditor({
               : 'border border-[var(--color-border)] bg-[var(--color-surface)] text-[var(--color-text)]'
           }`}
         >
-          {isEnabled ? 'Remover' : 'Adicionar'}
+          {isEnabled ? t('actions.remove', { ns: 'common' }) : t('actions.add', { ns: 'common' })}
         </button>
       </div>
 
@@ -66,7 +68,7 @@ export function ScoreRecipientEditor({
         <div className="mt-2 grid gap-2 sm:grid-cols-[72px_minmax(0,1fr)]">
           <label className="space-y-1">
             <span className="text-[10px] font-semibold uppercase tracking-[0.12em] text-[var(--color-muted)]">
-              Pontos
+              {t('scoring.points', { ns: 'control' })}
             </span>
             <input
               type="number"
@@ -80,14 +82,14 @@ export function ScoreRecipientEditor({
 
           <label className="space-y-1">
             <span className="text-[10px] font-semibold uppercase tracking-[0.12em] text-[var(--color-muted)]">
-              Crédito
+              {t('scoring.credit', { ns: 'control' })}
             </span>
             <select
               value={distribution?.participantId ?? ''}
               onChange={(event) => onParticipantChange(event.target.value || undefined)}
               className="w-full rounded-lg border border-[var(--color-border)] bg-[var(--color-background)] px-2 py-1.5 text-xs text-[var(--color-text)] outline-none transition focus:border-[var(--color-primary)]"
             >
-              <option value="">Time inteiro</option>
+              <option value="">{t('scoring.wholeTeam', { ns: 'control' })}</option>
               {participants.map((participant) => (
                 <option key={participant.id} value={participant.id}>
                   {participant.name}

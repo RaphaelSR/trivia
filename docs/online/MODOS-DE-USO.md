@@ -1,12 +1,12 @@
-# Online: Modos de Uso
+# Conta: Modos de Uso
 
-## Hospedar sem conta
+## Partida completa sem conta
 
 O jogo funciona normalmente como sessão local. Não há QR, histórico na conta ou restauração entre dispositivos. Pontuação, trivia e mímica não dependem de autenticação.
 
-## Hospedar com conta
+## Partida completa com conta
 
-No modo `online`, o snapshot é sincronizado em background. O host pode restaurar outra versão, consultar o histórico normalizado e abrir `Gestão de times > Convidar jogadores`.
+O snapshot é sincronizado em background independentemente de a rota antiga carregar `mode=offline` ou `mode=online`. O host pode restaurar outra versão, consultar o histórico normalizado e abrir `Gestão de times > Convidar jogadores`.
 
 Antes de mostrar o QR, o app força o envio da versão atual. Se falhar, oferece nova tentativa e mantém o jogo intacto.
 

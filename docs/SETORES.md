@@ -2,10 +2,11 @@
 
 Mapa enxuto para navegar pelo produto sem depender de notas operacionais ou contexto pessoal.
 
-## Entrada e modos
+## Entrada e estilos
 
 - Rotas: `/` e `/control?mode=demo|offline|online`.
-- `demo` prepara uma sessão pronta; `offline` persiste localmente; `online` acrescenta conta e sincronização sem bloquear o jogo local.
+- A landing apresenta `Demo` e `Partida completa`; `offline|online` permanecem apenas como compatibilidade interna.
+- Conta/sincronização é uma capacidade separada do estilo: partida completa salva localmente e, quando autenticada, também sincroniza.
 - Fonte principal: [REGRAS-DE-NEGOCIO.md](./REGRAS-DE-NEGOCIO.md).
 
 ## Jogo, times e turnos
@@ -14,7 +15,7 @@ Mapa enxuto para navegar pelo produto sem depender de notas operacionais ou cont
 - Composição: `src/modules/game/application` e provider legado em `src/modules/trivia`.
 - Regra central: alternância entre times sempre que possível; times menores repetem integrantes antes de times maiores completarem uma rodada.
 - Alterações de elenco preservam o turno e o passado, reconciliando somente o futuro.
-- Antes de salvar uma alteração real de elenco em sessão offline/online, o estado anterior vira um checkpoint restaurável.
+- Antes de salvar uma alteração real de elenco em partida completa, o estado anterior vira um checkpoint restaurável.
 - No pré-jogo, o host pode sortear uma formação balanceada a partir de uma lista única. A ação produz apenas um rascunho revisável e usa o salvamento/checkpoint já existente.
 - O sorteio é bloqueado assim que uma pergunta é revelada ou qualquer pontuação/evento é registrado.
 - Exemplo de referência `1/2/3`: `A1 -> B1 -> C1 -> A1 -> B2 -> C2 -> A1 -> B1 -> C3`.
@@ -59,14 +60,14 @@ Mapa enxuto para navegar pelo produto sem depender de notas operacionais ou cont
 - O jogo é local-first; sincronização em nuvem é assíncrona e não pode bloquear uma jogada.
 - Checkpoints preservam pontos de retorno antes de jogadas e ações destrutivas.
 
-## Conta e online
+## Conta e recursos conectados
 
 - Autenticação e histórico: `src/modules/auth`.
 - Backend oficial: Supabase com RLS e PII mínima.
-- Convite ao vivo: um QR por sessão online, gerado localmente depois de forçar o sync.
+- Convite ao vivo: um QR por partida completa sincronizada, gerado localmente depois de forçar o sync.
 - Claims usam IDs estáveis de participantes, índices de unicidade e ledger auditável fora do estado do jogo.
 - Finalização ao vivo é idempotente por conta + ID da sessão; as RPCs legadas continuam compatíveis.
-- Avatares são identidade de conta fora do snapshot: upload owner-only no Storage, leitura contextual por RPC e fallback por iniciais sem rede em `demo/offline`.
+- Avatares são identidade de conta fora do snapshot: upload owner-only no Storage, leitura contextual por RPC e fallback por iniciais em demo ou sem conta.
 - Detalhes: [online/README.md](./online/README.md).
 
 ## Interface e temas
@@ -74,6 +75,13 @@ Mapa enxuto para navegar pelo produto sem depender de notas operacionais ou cont
 - Temas válidos: `light`, `dark`, `cinema`, `retro`, `matrix`, `brazil` e `easter`.
 - Default: `light`.
 - Tokens e aplicação: `src/app/providers` e `src/shared/constants/theme.ts`.
+
+## Idiomas e conteúdo estático
+
+- Bootstrap e recursos: `src/shared/i18n`.
+- Namespaces: `common`, `landing`, `control`, `auth` e `game`.
+- `pt-BR` é o fallback atual; espanhol e inglês estão previstos para próximos PRs.
+- `npm run i18n:check` impede novos textos de interface literais em `.ts`/`.tsx`.
 
 ## Documentacao e Obsidian
 

@@ -1,5 +1,6 @@
 import { Modal } from './Modal'
 import { FaqPanel } from '@/modules/control/ui/FaqPanel'
+import { useTranslation } from '@/shared/i18n'
 
 type InfoModalProps = {
   isOpen: boolean
@@ -8,12 +9,13 @@ type InfoModalProps = {
 }
 
 export function InfoModal({ isOpen, onClose, onOpenOnboarding }: InfoModalProps) {
+  const { t } = useTranslation('control')
   return (
     <Modal
       isOpen={isOpen}
       onClose={onClose}
-      title="FAQ / Ajuda"
-      description="Versão modal da ajuda do host. O conteúdo segue o mesmo FAQ exibido na lateral do controle."
+      title={t('help.modalTitle')}
+      description={t('help.modalDescription')}
       size="xl"
     >
       <FaqPanel onOpenOnboarding={onOpenOnboarding ?? onClose} />

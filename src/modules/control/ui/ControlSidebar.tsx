@@ -1,6 +1,7 @@
 import { Menu, X } from 'lucide-react'
 import { Button } from '@/components/ui/Button'
 import type { ReactNode } from 'react'
+import { useTranslation } from '@/shared/i18n'
 
 interface ControlSidebarProps {
   collapsed?: boolean
@@ -12,6 +13,7 @@ interface ControlSidebarProps {
 }
 
 function SidebarBody({ collapsed, title, onToggleCollapsed, children }: Omit<ControlSidebarProps, 'mobileOpen' | 'onCloseMobile'>) {
+  const { t } = useTranslation('control')
   return (
     <aside className="sidebar-surface flex h-full flex-col p-2.5">
       <div className="mb-2 flex items-center justify-between gap-2 border-b border-white/12 pb-2">
@@ -22,7 +24,7 @@ function SidebarBody({ collapsed, title, onToggleCollapsed, children }: Omit<Con
           variant="ghost"
           size="icon"
           onClick={onToggleCollapsed}
-          aria-label="Alternar menu lateral"
+          aria-label={t('sidebar.toggle')}
           className="ml-auto text-[var(--sidebar-muted)] hover:text-[var(--sidebar-text)]"
         >
           <Menu size={14} />
@@ -34,6 +36,7 @@ function SidebarBody({ collapsed, title, onToggleCollapsed, children }: Omit<Con
 }
 
 export function ControlSidebar(props: ControlSidebarProps) {
+  const { t } = useTranslation('control')
   return (
     <>
       <SidebarBody {...props} />
@@ -47,7 +50,7 @@ export function ControlSidebar(props: ControlSidebarProps) {
                   variant="ghost"
                   size="icon"
                   onClick={props.onCloseMobile}
-                  aria-label="Fechar menu lateral"
+                  aria-label={t('sidebar.close')}
                   className="text-[var(--sidebar-muted)] hover:text-[var(--sidebar-text)]"
                 >
                   <X size={14} />

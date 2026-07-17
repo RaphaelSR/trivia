@@ -9,6 +9,7 @@ import { GameDetailView } from './GameDetailView'
 import { isValidEmail } from '@/shared/utils/email'
 import { DeleteGameDialog } from './DeleteGameDialog'
 import { ProfileAvatarEditor } from './ProfileAvatarEditor'
+import { useTranslation } from '@/shared/i18n'
 
 type Tab = 'signin' | 'signup'
 
@@ -34,9 +35,9 @@ interface LoggedInPanelProps {
   onClose: () => void
 }
 
-function formatDatePtBR(iso: string): string {
+function formatDate(iso: string, locale: string): string {
   try {
-    return new Date(iso).toLocaleDateString('pt-BR', {
+    return new Date(iso).toLocaleDateString(locale, {
       day: '2-digit',
       month: '2-digit',
       year: 'numeric',
@@ -52,10 +53,11 @@ function buildScoreLine(entry: NormalizedGameSummary): string {
 }
 
 function LoggedInPanel({ user, loading, onLogout, onClose }: LoggedInPanelProps) {
+  const { t, i18n } = useTranslation(['auth', 'common'])
   const name =
     (user.user_metadata as Record<string, string> | undefined)?.display_name ??
     user.email?.split('@')[0] ??
-    'Usuário'
+    t('form.userFallback', { ns: 'auth' })
 
   const [history, setHistory] = useState<NormalizedGameSummary[]>([])
   const [historyLoading, setHistoryLoading] = useState(true)
@@ -109,7 +111,7 @@ function LoggedInPanel({ user, loading, onLogout, onClose }: LoggedInPanelProps)
   return (
     <div className="relative w-full max-w-sm rounded-2xl border border-white/10 bg-zinc-900/95 p-6 shadow-2xl backdrop-blur-xl">
       <button
-        aria-label="Fechar"
+        aria-label={t('form.close', { ns: 'auth' })}
         onClick={onClose}
         className="absolute right-4 top-4 text-zinc-400 transition-colors hover:text-zinc-100"
       >
@@ -127,7 +129,7 @@ function LoggedInPanel({ user, loading, onLogout, onClose }: LoggedInPanelProps)
           className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-4 py-2 text-sm text-zinc-400 transition-colors hover:border-white/20 hover:text-zinc-100 disabled:opacity-50"
         >
           <LogOut className="h-3.5 w-3.5" />
-          {loading ? 'Saindo…' : 'Sair'}
+          {loading ? t('panel.signingOut', { ns: 'auth' }) : t('panel.signOut', { ns: 'auth' })}
         </button>
       </div>
 
@@ -141,26 +143,26 @@ function LoggedInPanel({ user, loading, onLogout, onClose }: LoggedInPanelProps)
       <div className="my-2 h-px bg-white/10" />
 
       {/* Seção: Minhas partidas */}
-      <section aria-label="Minhas partidas">
+      <section aria-label={t('panel.myGames', { ns: 'auth' })}>
         <p className="mb-3 text-xs font-semibold uppercase tracking-wider text-zinc-400">
-          Minhas partidas
+          {t('panel.myGames', { ns: 'auth' })}
         </p>
 
         {historyLoading && (
           <p className="text-xs text-zinc-400" aria-live="polite">
-            Carregando…
+            {t('panel.loadingHistory', { ns: 'auth' })}
           </p>
         )}
 
         {!historyLoading && historyError && (
           <p className="text-xs text-zinc-400" aria-live="polite">
-            Não foi possível carregar o histórico.
+            {t('panel.historyError', { ns: 'auth' })}
           </p>
         )}
 
         {!historyLoading && !historyError && history.length === 0 && (
           <p className="text-xs text-zinc-400" aria-live="polite">
-            Nenhuma partida registrada ainda.
+            {t('panel.historyEmpty', { ns: 'auth' })}
           </p>
         )}
 
@@ -171,7 +173,7 @@ function LoggedInPanel({ user, loading, onLogout, onClose }: LoggedInPanelProps)
                 <button
                   onClick={() => setSelectedGameId(entry.id)}
                   className="min-w-0 flex-1 rounded-lg border border-white/5 bg-white/5 px-3 py-2 text-left transition-colors hover:border-white/10 hover:bg-white/8"
-                  aria-label={`Ver detalhes de ${entry.title}`}
+                  aria-label={t('panel.viewGame', { ns: 'auth', title: entry.title })}
                 >
                   <div className="flex items-center gap-2">
                     <p className="min-w-0 flex-1 truncate text-xs font-medium text-zinc-100">
@@ -179,13 +181,13 @@ function LoggedInPanel({ user, loading, onLogout, onClose }: LoggedInPanelProps)
                     </p>
                     {entry.source === 'import' && (
                       <span className="shrink-0 rounded px-1.5 py-0.5 text-[10px] font-medium bg-white/10 text-zinc-400">
-                        importado
+                        {t('panel.imported', { ns: 'auth' })}
                       </span>
                     )}
                   </div>
                   <div className="mt-0.5 flex flex-wrap items-center gap-x-2 gap-y-0.5">
                     <span className="text-xs text-zinc-400">
-                      {formatDatePtBR(entry.playedAt ?? entry.endedAt ?? '')}
+                      {formatDate(entry.playedAt ?? entry.endedAt ?? '', i18n.resolvedLanguage ?? i18n.language)}
                     </span>
                     {entry.winner != null && (
                       <span className="text-xs text-[var(--color-primary)]">
@@ -193,7 +195,7 @@ function LoggedInPanel({ user, loading, onLogout, onClose }: LoggedInPanelProps)
                       </span>
                     )}
                     {entry.winner == null && (
-                      <span className="text-xs text-zinc-400">Empate</span>
+                      <span className="text-xs text-zinc-400">{t('panel.tie', { ns: 'auth' })}</span>
                     )}
                   </div>
                   {buildScoreLine(entry) && (
@@ -205,7 +207,7 @@ function LoggedInPanel({ user, loading, onLogout, onClose }: LoggedInPanelProps)
                 {/* Botão de exclusão por partida */}
                 <button
                   onClick={() => setDeleteTarget({ id: entry.id, title: entry.title })}
-                  aria-label={`Excluir partida ${entry.title}`}
+                  aria-label={t('panel.deleteGame', { ns: 'auth', title: entry.title })}
                   className="flex shrink-0 items-center justify-center rounded-lg border border-white/5 bg-white/5 px-2 text-zinc-400 transition-colors hover:border-red-500/30 hover:bg-red-500/10 hover:text-red-400"
                 >
                   <Trash2 className="h-3.5 w-3.5" />
@@ -244,6 +246,7 @@ interface ConfirmationPendingPanelProps {
 }
 
 function ConfirmationPendingPanel({ email, onClose, onResend }: ConfirmationPendingPanelProps) {
+  const { t } = useTranslation('auth')
   const [cooldown, setCooldown] = useState(0)
   const [resendError, setResendError] = useState<string | null>(null)
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null)
@@ -281,7 +284,7 @@ function ConfirmationPendingPanel({ email, onClose, onResend }: ConfirmationPend
   return (
     <div className="relative w-full max-w-sm rounded-2xl border border-white/10 bg-zinc-900/95 p-6 shadow-2xl backdrop-blur-xl">
       <button
-        aria-label="Fechar"
+        aria-label={t('form.close')}
         onClick={onClose}
         className="absolute right-4 top-4 text-zinc-400 transition-colors hover:text-zinc-100"
       >
@@ -289,11 +292,9 @@ function ConfirmationPendingPanel({ email, onClose, onResend }: ConfirmationPend
       </button>
 
       <div className="flex flex-col gap-4 pt-2">
-        <p className="text-sm font-semibold text-zinc-100">Confirme seu e-mail</p>
+        <p className="text-sm font-semibold text-zinc-100">{t('confirmation.title')}</p>
         <p className="text-sm leading-relaxed text-zinc-400">
-          Conta criada! Enviamos um link de confirmação para{' '}
-          <span className="font-medium text-zinc-100">{email}</span>. Clique no link para
-          entrar.
+          {t('confirmation.description', { email })}
         </p>
 
         {resendError && (
@@ -308,8 +309,8 @@ function ConfirmationPendingPanel({ email, onClose, onResend }: ConfirmationPend
           className="w-full rounded-lg border border-white/10 bg-white/5 py-2 text-sm text-zinc-400 transition-colors hover:border-white/20 hover:text-zinc-100 disabled:cursor-not-allowed disabled:opacity-50"
         >
           {cooldown > 0
-            ? `Reenviado ✓ (aguarde ${cooldown}s)`
-            : 'Reenviar e-mail'}
+            ? t('confirmation.resentCooldown', { seconds: cooldown })
+            : t('confirmation.resend')}
         </button>
       </div>
     </div>
@@ -329,6 +330,7 @@ interface ForgotPasswordPanelProps {
 }
 
 function ForgotPasswordPanel({ initialEmail, onBack, onClose, onRequestReset }: ForgotPasswordPanelProps) {
+  const { t } = useTranslation('auth')
   const [email, setEmail] = useState(initialEmail)
   const [error, setError] = useState<string | null>(null)
   const [sentTo, setSentTo] = useState<string | null>(null)
@@ -361,7 +363,7 @@ function ForgotPasswordPanel({ initialEmail, onBack, onClose, onRequestReset }: 
     setError(null)
 
     if (!isValidEmail(email)) {
-      setError('Informe um endereço de email válido.')
+      setError(t('form.invalidEmail'))
       return
     }
 
@@ -379,17 +381,17 @@ function ForgotPasswordPanel({ initialEmail, onBack, onClose, onRequestReset }: 
   }
 
   const buttonLabel = sending
-    ? 'Enviando…'
+    ? t('passwordReset.sending')
     : sentTo
       ? cooldown > 0
-        ? `Enviado ✓ · reenviar em ${cooldown}s`
-        : 'Reenviar link'
-      : 'Enviar link de redefinição'
+        ? t('passwordReset.sentCooldown', { seconds: cooldown })
+        : t('passwordReset.resend')
+      : t('passwordReset.send')
 
   return (
     <div className="relative w-full max-w-sm rounded-2xl border border-white/10 bg-zinc-900/95 p-6 shadow-2xl backdrop-blur-xl">
       <button
-        aria-label="Fechar"
+        aria-label={t('form.close')}
         onClick={onClose}
         className="absolute right-4 top-4 text-zinc-400 transition-colors hover:text-zinc-100"
       >
@@ -401,19 +403,18 @@ function ForgotPasswordPanel({ initialEmail, onBack, onClose, onRequestReset }: 
         className="mb-4 flex items-center gap-1.5 text-xs text-zinc-400 transition-colors hover:text-zinc-100"
       >
         <ArrowLeft className="h-3.5 w-3.5" />
-        Voltar para entrar
+        {t('passwordReset.back')}
       </button>
 
-      <h2 className="text-lg font-semibold text-zinc-100">Redefinir senha</h2>
+      <h2 className="text-lg font-semibold text-zinc-100">{t('passwordReset.title')}</h2>
       <p className="mt-1.5 mb-4 text-sm leading-relaxed text-zinc-400">
-        Informe o e-mail da sua conta e enviaremos um link para criar uma nova senha. Não precisa
-        lembrar a senha atual.
+        {t('passwordReset.description')}
       </p>
 
       <form onSubmit={handleSubmit} noValidate className="flex flex-col gap-3">
         <div>
           <label htmlFor="forgot-email" className="mb-1 block text-xs text-zinc-400">
-            Email
+            {t('form.email')}
           </label>
           <input
             id="forgot-email"
@@ -421,7 +422,7 @@ function ForgotPasswordPanel({ initialEmail, onBack, onClose, onRequestReset }: 
             type="email"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
-            placeholder="seu@email.com"
+            placeholder={t('form.emailPlaceholder')}
             autoComplete="email"
             className="w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm text-zinc-100 placeholder-zinc-500 outline-none transition-colors focus:border-[var(--color-primary)]/50 focus:bg-white/8"
           />
@@ -435,8 +436,7 @@ function ForgotPasswordPanel({ initialEmail, onBack, onClose, onRequestReset }: 
 
         {sentTo && !error && (
           <p className="rounded-lg border border-emerald-500/20 bg-emerald-500/10 px-3 py-2 text-xs leading-relaxed text-emerald-400">
-            Link enviado para <span className="font-medium">{sentTo}</span>. Abra o e-mail neste
-            aparelho e clique no link — confira também a caixa de spam.
+            {t('passwordReset.sentMessage', { email: sentTo })}
           </p>
         )}
 
@@ -457,6 +457,7 @@ function ForgotPasswordPanel({ initialEmail, onBack, onClose, onRequestReset }: 
 // ---------------------------------------------------------------------------
 
 export function AuthPanel({ onClose, initialTab = 'signin' }: AuthPanelProps) {
+  const { t } = useTranslation('auth')
   const { user, loading, login, register, logout, resend, requestReset } = useAuth()
 
   const [tab, setTab] = useState<Tab>(initialTab)
@@ -471,9 +472,9 @@ export function AuthPanel({ onClose, initialTab = 'signin' }: AuthPanelProps) {
   const [showPassword, setShowPassword] = useState(false)
 
   function validate(): string | null {
-    if (!isValidEmail(email)) return 'Informe um endereço de email válido.'
-    if (password.length < 8) return 'A senha deve ter pelo menos 8 caracteres.'
-    if (tab === 'signup' && displayName.trim().length === 0) return 'Informe seu nome de exibição.'
+    if (!isValidEmail(email)) return t('form.invalidEmail')
+    if (password.length < 8) return t('form.shortPassword')
+    if (tab === 'signup' && displayName.trim().length === 0) return t('form.missingDisplayName')
     return null
   }
 
@@ -549,7 +550,7 @@ export function AuthPanel({ onClose, initialTab = 'signin' }: AuthPanelProps) {
   return (
     <div className="relative w-full max-w-sm rounded-2xl border border-white/10 bg-zinc-900/95 p-6 shadow-2xl backdrop-blur-xl">
       <button
-        aria-label="Fechar"
+        aria-label={t('form.close')}
         onClick={onClose}
         className="absolute right-4 top-4 text-zinc-400 transition-colors hover:text-zinc-100"
       >
@@ -558,18 +559,18 @@ export function AuthPanel({ onClose, initialTab = 'signin' }: AuthPanelProps) {
 
       {/* Tabs */}
       <div className="mb-5 flex gap-1 rounded-xl border border-white/5 bg-white/5 p-1">
-        {(['signin', 'signup'] as const).map((t) => (
+        {(['signin', 'signup'] as const).map((tabKey) => (
           <button
-            key={t}
-            onClick={() => switchTab(t)}
+            key={tabKey}
+            onClick={() => switchTab(tabKey)}
             className={[
               'flex-1 rounded-lg py-1.5 text-sm font-medium transition-all',
-              tab === t
+              tab === tabKey
                 ? 'bg-white/10 text-zinc-100 shadow-sm'
                 : 'text-zinc-400 hover:text-zinc-100',
             ].join(' ')}
           >
-            {t === 'signin' ? 'Entrar' : 'Criar conta'}
+            {tabKey === 'signin' ? t('panel.signIn') : t('panel.signUp')}
           </button>
         ))}
       </div>
@@ -577,14 +578,14 @@ export function AuthPanel({ onClose, initialTab = 'signin' }: AuthPanelProps) {
       <form onSubmit={handleSubmit} noValidate className="flex flex-col gap-3">
         {tab === 'signup' && (
           <div>
-            <label htmlFor="auth-display-name" className="mb-1 block text-xs text-zinc-400">Nome de exibição</label>
+            <label htmlFor="auth-display-name" className="mb-1 block text-xs text-zinc-400">{t('form.displayName')}</label>
             <input
               id="auth-display-name"
               name="name"
               type="text"
               value={displayName}
               onChange={(e) => setDisplayName(e.target.value)}
-              placeholder="Como você quer ser chamado"
+              placeholder={t('form.displayNamePlaceholder')}
               maxLength={40}
               autoComplete="name"
               className="w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm text-zinc-100 placeholder-zinc-500 outline-none transition-colors focus:border-[var(--color-primary)]/50 focus:bg-white/8"
@@ -593,14 +594,14 @@ export function AuthPanel({ onClose, initialTab = 'signin' }: AuthPanelProps) {
         )}
 
         <div>
-          <label htmlFor="auth-email" className="mb-1 block text-xs text-zinc-400">Email</label>
+          <label htmlFor="auth-email" className="mb-1 block text-xs text-zinc-400">{t('form.email')}</label>
           <input
             id="auth-email"
             name="email"
             type="email"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
-            placeholder="seu@email.com"
+            placeholder={t('form.emailPlaceholder')}
             autoComplete={tab === 'signin' ? 'username' : 'email'}
             className="w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm text-zinc-100 placeholder-zinc-500 outline-none transition-colors focus:border-[var(--color-primary)]/50 focus:bg-white/8"
           />
@@ -608,7 +609,7 @@ export function AuthPanel({ onClose, initialTab = 'signin' }: AuthPanelProps) {
 
         <div>
           <div className="mb-1 flex items-center justify-between">
-            <label htmlFor="auth-password" className="block text-xs text-zinc-400">Senha</label>
+            <label htmlFor="auth-password" className="block text-xs text-zinc-400">{t('form.password')}</label>
             {tab === 'signin' && (
               <button
                 type="button"
@@ -618,7 +619,7 @@ export function AuthPanel({ onClose, initialTab = 'signin' }: AuthPanelProps) {
                 }}
                 className="text-xs text-zinc-400 underline-offset-2 transition-colors hover:text-zinc-100 hover:underline"
               >
-                Esqueci minha senha
+                {t('panel.forgotPassword')}
               </button>
             )}
           </div>
@@ -629,13 +630,13 @@ export function AuthPanel({ onClose, initialTab = 'signin' }: AuthPanelProps) {
               type={showPassword ? 'text' : 'password'}
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              placeholder={tab === 'signin' ? '••••••••' : 'Mínimo 8 caracteres'}
+              placeholder={tab === 'signin' ? '••••••••' : t('form.minimumPassword')}
               autoComplete={tab === 'signin' ? 'current-password' : 'new-password'}
               className="w-full rounded-lg border border-white/10 bg-white/5 py-2 pl-3 pr-10 text-sm text-zinc-100 placeholder-zinc-500 outline-none transition-colors focus:border-[var(--color-primary)]/50 focus:bg-white/8"
             />
             <button
               type="button"
-              aria-label={showPassword ? 'Ocultar senha' : 'Mostrar senha'}
+              aria-label={showPassword ? t('form.hidePassword') : t('form.showPassword')}
               onClick={() => setShowPassword((v) => !v)}
               className="absolute right-2.5 top-1/2 -translate-y-1/2 text-zinc-400 transition-colors hover:text-zinc-100"
             >
@@ -657,11 +658,11 @@ export function AuthPanel({ onClose, initialTab = 'signin' }: AuthPanelProps) {
         >
           {loading
             ? tab === 'signin'
-              ? 'Entrando…'
-              : 'Criando conta…'
+              ? t('panel.signingIn')
+              : t('panel.signingUp')
             : tab === 'signin'
-              ? 'Entrar'
-              : 'Criar conta'}
+              ? t('panel.signIn')
+              : t('panel.signUp')}
         </button>
       </form>
     </div>

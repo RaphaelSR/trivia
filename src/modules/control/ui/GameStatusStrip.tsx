@@ -3,6 +3,7 @@ import { Eye, EyeOff } from 'lucide-react'
 import type { TriviaParticipant, TriviaTeam } from '@/modules/trivia/types'
 import { ParticipantAvatar } from '@/shared/components/ParticipantAvatar'
 import type { ParticipantIdentity } from '@/modules/auth/services/profile-avatar.service'
+import { useTranslation } from '@/shared/i18n'
 
 interface ScoreboardItem {
   team: TriviaTeam
@@ -29,6 +30,7 @@ export function GameStatusStrip({
   nextTeam = null,
   participantIdentities = {},
 }: GameStatusStripProps) {
+  const { t } = useTranslation('control')
   const [scoresVisible, setScoresVisible] = useState(true)
 
   return (
@@ -49,7 +51,7 @@ export function GameStatusStrip({
           />
         ) : null}
         <span className="font-semibold text-[var(--color-text)]">
-          {activeParticipant ? activeParticipant.name : 'Aguardando'}
+          {activeParticipant ? activeParticipant.name : t('gameStatus.waiting')}
         </span>
         {activeTeam ? (
           <span className="text-[var(--color-muted)]">· {activeTeam.name}</span>
@@ -60,7 +62,7 @@ export function GameStatusStrip({
 
       {/* Rodada / Turno */}
       <span className="shrink-0 font-mono text-[var(--color-muted)]">
-        Turno {currentTurnLabel}
+        {t('gameStatus.turn', { label: currentTurnLabel })}
       </span>
 
       {nextParticipant ? (
@@ -72,7 +74,7 @@ export function GameStatusStrip({
               src={participantIdentities[nextParticipant.id]?.avatarUrl}
               size={20}
             />
-            <span>Próximo: {nextParticipant.name}</span>
+            <span>{t('gameStatus.next', { name: nextParticipant.name })}</span>
             {nextTeam ? <span>· {nextTeam.name}</span> : null}
           </div>
         </>
@@ -90,7 +92,7 @@ export function GameStatusStrip({
                   className="h-1.5 w-1.5 rounded-full"
                   style={{ backgroundColor: team.color }}
                 />
-                <span className="text-[var(--color-muted)]">{position}º</span>
+                <span className="text-[var(--color-muted)]">{t('gameStatus.position', { position })}</span>
                 <span className="font-semibold text-[var(--color-text)]">{team.name}</span>
                 <span className="rounded-full bg-white/8 px-1.5 py-0.5 font-mono font-semibold text-[var(--color-primary)]">
                   {scoresVisible ? points : '••'}
@@ -104,7 +106,7 @@ export function GameStatusStrip({
             type="button"
             onClick={() => setScoresVisible((v) => !v)}
             className="ml-1 shrink-0 rounded-md p-1 text-[var(--color-muted)] transition-colors hover:bg-white/10 hover:text-[var(--color-text)]"
-            title={scoresVisible ? 'Ocultar pontuações' : 'Mostrar pontuações'}
+            title={scoresVisible ? t('gameStatus.hideScores') : t('gameStatus.showScores')}
           >
             {scoresVisible ? (
               <Eye className="h-3.5 w-3.5" />

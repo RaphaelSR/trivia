@@ -3,6 +3,7 @@ import { Button } from "./Button";
 import { Modal } from "./Modal";
 import { Trophy, ChevronDown, Medal } from "lucide-react";
 import type { TriviaTeam, TriviaParticipant, TriviaColumn } from "../../modules/trivia/types";
+import { useTranslation } from "@/shared/i18n";
 
 interface GameEndModalProps {
   isOpen: boolean;
@@ -21,6 +22,7 @@ export function GameEndModal({
   board = [],
   onShowMimica,
 }: GameEndModalProps) {
+  const { t } = useTranslation(['game', 'common']);
   const [showRanking, setShowRanking] = useState(false);
   const [expandedTeams, setExpandedTeams] = useState<Record<string, boolean>>({});
 
@@ -70,18 +72,18 @@ export function GameEndModal({
     <Modal
       isOpen={isOpen}
       onClose={handleClose}
-      title="🎉 Trivia Finalizado!"
-      description="Todas as perguntas foram respondidas!"
+      title={t('end.title', { ns: 'game' })}
+      description={t('end.description', { ns: 'game' })}
     >
       <div className="space-y-6">
         {/* Mensagem de Parabéns */}
         <div className="p-6 rounded-2xl bg-gradient-to-br from-[var(--color-primary)]/10 to-[var(--color-secondary)]/10 border-2 border-[var(--color-primary)]/30 text-center">
           <Trophy className="h-16 w-16 mx-auto mb-4 text-[var(--color-primary)]" />
           <h2 className="text-2xl font-bold text-[var(--color-text)] mb-2">
-            Parabéns a todos os participantes!
+            {t('end.congratulations', { ns: 'game' })}
           </h2>
           <p className="text-[var(--color-muted)]">
-            O trivia cinematográfico chegou ao fim. Esperamos que tenham se divertido!
+            {t('end.message', { ns: 'game' })}
           </p>
         </div>
 
@@ -93,7 +95,7 @@ export function GameEndModal({
             className="w-full"
           >
             <Medal className="h-4 w-4 mr-2" />
-            Ver Ranking Final
+            {t('end.showRanking', { ns: 'game' })}
           </Button>
         )}
 
@@ -102,7 +104,7 @@ export function GameEndModal({
           <div className="space-y-3">
             <h3 className="text-lg font-semibold text-[var(--color-text)] flex items-center gap-2">
               <Medal className="h-5 w-5 text-[var(--color-primary)]" />
-              Ranking Final
+              {t('end.ranking', { ns: 'game' })}
             </h3>
 
             {sortedTeams.map((team, index) => {
@@ -145,7 +147,7 @@ export function GameEndModal({
                     </div>
                     <div className="flex items-center gap-2">
                       <span className="text-lg font-bold text-[var(--color-primary)]">
-                        {team.score || 0} pts
+                        {t('entities.point', { ns: 'common', count: team.score || 0 })}
                       </span>
                       <ChevronDown
                         className={`h-4 w-4 text-[var(--color-muted)] transition-transform ${
@@ -172,7 +174,7 @@ export function GameEndModal({
                                   {participant.name}
                                 </span>
                                 <span className="text-xs font-bold text-[var(--color-primary)]">
-                                  {score} pts
+                                  {t('entities.point', { ns: 'common', count: score })}
                                 </span>
                               </div>
                             );
@@ -194,22 +196,21 @@ export function GameEndModal({
               onClick={handleShowMimica}
               className="flex-1"
             >
-              Jogar Mímica
+              {t('end.playMimica', { ns: 'game' })}
             </Button>
           )}
           <Button variant="primary" onClick={handleClose} className="flex-1">
-            Fechar
+            {t('actions.close', { ns: 'common' })}
           </Button>
         </div>
 
         {/* Nota sobre Mímica */}
         {onShowMimica && (
           <p className="text-xs text-center text-[var(--color-muted)] italic">
-            💡 Lembre-se: pontos da Mímica serão somados ao placar atual
+            {t('end.mimicaNote', { ns: 'game' })}
           </p>
         )}
       </div>
     </Modal>
   );
 }
-

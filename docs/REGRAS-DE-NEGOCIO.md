@@ -1,13 +1,15 @@
 # Regras de Negocio
 
-## Modos de jogo
-- `demo`: inicia com dados de exemplo prontos para demonstração e aceita presets de times, jogadores por time e quantidade de perguntas.
-- `offline`: inicia vazio e persiste a sessão localmente.
-- `online`: usa o mesmo fluxo local-first e acrescenta autenticação, backup no Supabase, histórico normalizado e convite de jogadores sem bloquear o jogo.
+## Estilos de partida e conta
+- A interface oferece dois estilos: `Demo` e `Partida completa`.
+- `Demo`: inicia com dados de exemplo, aceita presets de times/jogadores/perguntas, não persiste progresso e não acessa serviços de conta.
+- `Partida completa`: inicia a configuração real, salva automaticamente neste navegador e funciona sem login ou rede.
+- Conta é opcional. Quando autenticada e com Supabase disponível, a partida completa também sincroniza, cria histórico remoto e libera convite/identidade.
+- O contrato interno `GameMode = demo | offline | online` permanece compatível com URLs e dados antigos. Esses valores não devem ser usados como substituto do estado real de autenticação/sincronização.
 
 ## Sessao
 - Uma sessão contém: metadados, tema, times, participantes, board, turno ativo e histórico de mímica.
-- Em `offline` e `online`, a sessão ativa pode ser restaurada.
+- A partida completa ativa pode ser restaurada do armazenamento local, independentemente de login.
 - O histórico mantém no máximo 20 sessões salvas.
 
 ## Board
@@ -35,7 +37,7 @@
 - Alterar times ou participantes durante o trivia preserva o turno atual e tudo que já foi jogado; somente a ordem futura é reconciliada.
 - Um participante adicionado durante o trivia entra na primeira posição futura justa do seu time. Se não houver perguntas suficientes até essa posição, ele não recebe turno retroativo.
 - A ação manual de reorganizar turnos nunca reescreve o passado da sessão.
-- Salvar uma alteração de times ou participantes durante uma sessão ativa cria antes um checkpoint local `Antes de alterar times e participantes`, exceto em `demo`.
+- Salvar uma alteração de times ou participantes durante uma partida ativa cria antes um checkpoint local `Antes de alterar times e participantes`, exceto em `Demo`.
 - Esse checkpoint guarda o elenco e a ordem anteriores; a sessão atualizada continua seguindo o autosave local e, com login, a sincronização online normal.
 
 ### Exemplo canonico com tres times desiguais
@@ -75,13 +77,13 @@
 ## PIN e biblioteca
 - O PIN padrão é compartilhado por constante do sistema.
 - `demo` usa PIN padrão fixo.
-- `offline` e `online` podem sobrescrever o PIN por repositório.
+- A partida completa pode sobrescrever o PIN pelo repositório correspondente.
 - Se não houver PIN customizado configurado, a biblioteca pode abrir sem bloqueio.
 
-## Conta e reivindicacao online
+## Conta e reivindicação
 - Conta, claim e avatar não fazem parte de `TriviaSession` e nunca alteram pontuação, turnos ou alternância.
-- `demo` e `offline` não fazem chamadas de conta ou claim.
-- No modo online autenticado, o host pode gerar um único link `/claim?session=` depois de sincronizar o elenco atual.
+- `Demo` não faz chamadas de conta, claim ou avatar. Uma partida completa deslogada também não faz essas chamadas.
+- Em uma partida completa autenticada e sincronizável, o host pode gerar um único link `/claim?session=` depois de enviar o elenco atual.
 - Uma conta pode ocupar no máximo um participante por sessão; um participante pode ter no máximo um claim ativo.
 - Repetir o próprio claim do mesmo participante é idempotente.
 - E-mail opcional válido reserva o slot para o mesmo e-mail autenticado; vazio ou inválido não reserva e não bloqueia o jogo.
@@ -89,12 +91,12 @@
 - A correção do host apenas desvincula, com confirmação e registro de ator/data; outra pessoa reivindica depois.
 - O mesmo token continua válido no histórico normalizado após o fim da partida.
 - Links antigos `/claim?token=` e `/claim?game=` permanecem compatíveis.
-- Finalizar novamente a mesma sessão online deve devolver o mesmo jogo normalizado, sem duplicar histórico.
+- Finalizar novamente a mesma partida sincronizada deve devolver o mesmo jogo normalizado, sem duplicar histórico.
 - Avatar é opcional, pertence à conta e não renomeia o participante dentro de uma partida.
 - A origem aceita JPEG, PNG ou WebP de até 5 MB; antes do upload, o navegador recorta ao centro, redimensiona para `512x512` e gera WebP de até 1 MB.
 - Troca e remoção preservam o avatar anterior quando a operação não pode ser concluída; falhas de imagem ou rede usam iniciais e não bloqueiam o jogo.
 - O host vê avatar apenas de contas com claim ativo em sua sessão; no histórico, somente dono e participantes vinculados consultam as identidades daquele jogo.
-- `demo` e `offline` usam somente iniciais e não chamam Storage nem RPCs de avatar.
+- `Demo` e partidas completas sem conta usam somente iniciais e não chamam Storage nem RPCs de avatar.
 
 ## Roleta de filmes
 - A roleta é independente do trivia atual e não importa filmes do board ou da Biblioteca.
@@ -107,6 +109,13 @@
 - O projeto mantém um tema sazonal `easter` além dos temas base.
 - A direção visual alvo continua `dark glassmorphism`, mantendo os outros temas funcionais.
 
-## Onboarding offline
-- O onboarding offline deve abrir automaticamente na primeira vez.
-- Após visto, o sistema pode sugeri-lo novamente sem forçar a abertura.
+## Configuração inicial
+- O assistente da partida completa abre automaticamente na primeira vez, mas pode ser cancelado sem bloquear o painel.
+- O tema inicial selecionado é `light`; a Biblioteca deve preservar a escolha feita no assistente.
+- Após visto, o sistema pode sugerir o assistente novamente sem forçar a abertura.
+
+## Idioma
+- Textos de interface, acessibilidade, confirmação, toast e erro operacional pertencem aos catálogos i18n.
+- Português do Brasil é o idioma padrão e fallback enquanto espanhol e inglês não forem publicados.
+- Regras de domínio não retornam frases localizadas; retornam valores estruturados para a camada de apresentação traduzir.
+- Nomes de pessoas, times, filmes, perguntas e demais conteúdos criados pelo usuário são preservados no idioma em que foram escritos.

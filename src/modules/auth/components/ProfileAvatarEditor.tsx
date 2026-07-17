@@ -8,6 +8,7 @@ import {
   uploadProfileAvatar,
   type ProfileIdentity,
 } from '../services/profile-avatar.service'
+import { useTranslation } from '@/shared/i18n'
 
 type ProfileAvatarEditorProps = {
   name: string
@@ -20,6 +21,7 @@ export function ProfileAvatarEditor({
   variant = 'account',
   onChanged,
 }: ProfileAvatarEditorProps) {
+  const { t } = useTranslation(['auth', 'common'])
   const inputRef = useRef<HTMLInputElement>(null)
   const [identity, setIdentity] = useState<ProfileIdentity | null>(null)
   const [loading, setLoading] = useState(true)
@@ -76,15 +78,15 @@ export function ProfileAvatarEditor({
           <ParticipantAvatar name={name} src={identity?.avatarUrl} size={claim ? 52 : 72} />
           {loading || busy ? (
             <span className="absolute inset-0 flex items-center justify-center rounded-full bg-black/55">
-              <Loader2 className="h-4 w-4 animate-spin text-white" aria-label="Atualizando avatar" />
+              <Loader2 className="h-4 w-4 animate-spin text-white" aria-label={t('avatar.updating', { ns: 'auth' })} />
             </span>
           ) : null}
         </div>
         {claim ? (
           <div className="min-w-0 flex-1">
-            <p className="text-xs font-semibold text-[var(--color-text)]">Quer adicionar uma foto?</p>
+            <p className="text-xs font-semibold text-[var(--color-text)]">{t('avatar.claimTitle', { ns: 'auth' })}</p>
             <p className="mt-1 text-[10px] leading-4 text-[var(--color-muted)]">
-              Opcional. A imagem fica no seu perfil e não altera seu nome na partida.
+              {t('avatar.claimDescription', { ns: 'auth' })}
             </p>
           </div>
         ) : null}
@@ -95,7 +97,7 @@ export function ProfileAvatarEditor({
         type="file"
         accept="image/jpeg,image/png,image/webp"
         className="sr-only"
-        aria-label="Selecionar avatar"
+        aria-label={t('avatar.select', { ns: 'auth' })}
         onChange={(event) => void handleFile(event.target.files?.[0])}
       />
 
@@ -107,7 +109,7 @@ export function ProfileAvatarEditor({
           disabled={loading || busy}
           onClick={() => inputRef.current?.click()}
         >
-          <Camera size={14} /> {identity?.avatarPath ? 'Trocar foto' : 'Adicionar foto'}
+          <Camera size={14} /> {identity?.avatarPath ? t('avatar.change', { ns: 'auth' }) : t('avatar.add', { ns: 'auth' })}
         </Button>
         {identity?.avatarPath ? (
           <Button
@@ -117,7 +119,7 @@ export function ProfileAvatarEditor({
             disabled={busy}
             onClick={() => void handleRemove()}
           >
-            <Trash2 size={14} /> Remover
+            <Trash2 size={14} /> {t('actions.remove', { ns: 'common' })}
           </Button>
         ) : null}
       </div>
@@ -128,7 +130,7 @@ export function ProfileAvatarEditor({
         </p>
       ) : null}
       {!claim ? (
-        <p className="text-center text-[10px] text-zinc-500">JPEG, PNG ou WebP · até 5 MB</p>
+        <p className="text-center text-[10px] text-zinc-500">{t('avatar.formats', { ns: 'auth' })}</p>
       ) : null}
     </div>
   )

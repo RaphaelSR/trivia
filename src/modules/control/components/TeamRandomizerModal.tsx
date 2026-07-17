@@ -13,13 +13,16 @@ import { convertDraftsToParticipants, convertDraftsToTeams } from '../utils/sess
 import { isValidEmail } from '@/shared/utils/email'
 import type { InvitedContact } from '@/modules/auth/services/normalized-history.service'
 import { TurnOrderPreview } from './TurnOrderPreview'
+import { useTranslation } from '@/shared/i18n'
 
 type TeamRandomizerModalProps = {
   isOpen: boolean
   onClose: () => void
   onApply: (drafts: TeamDraft[]) => void
   teamDrafts: TeamDraft[]
-  gameMode: string
+  connectedFeaturesEnabled?: boolean
+  /** @deprecated Compatibilidade temporária com consumidores anteriores. */
+  gameMode?: string
   inviteContacts: InvitedContact[]
   previewQuestionCount: number
 }
@@ -33,11 +36,15 @@ export function TeamRandomizerModal({
   onClose,
   onApply,
   teamDrafts,
+  connectedFeaturesEnabled,
   gameMode,
   inviteContacts,
   previewQuestionCount,
 }: TeamRandomizerModalProps) {
-  const isOnline = gameMode === 'online'
+  const { t } = useTranslation('control')
+  const canUseConnectedFeatures = gameMode === 'demo'
+    ? false
+    : connectedFeaturesEnabled ?? gameMode === 'online'
   const [candidates, setCandidates] = useState<ParticipantDraft[]>([])
   const [teamCount, setTeamCount] = useState(2)
   const [result, setResult] = useState<TeamDraft[] | null>(null)
@@ -112,8 +119,8 @@ export function TeamRandomizerModal({
   return (
     <Modal
       isOpen={isOpen}
-      title="Sortear times"
-      description="Reúna as pessoas, escolha quantos times jogarão e confira a formação antes de aplicá-la."
+      title={t('teamRandomizer.title')}
+      description={t('teamRandomizer.description')}
       onClose={onClose}
       size="xl"
     >
@@ -121,10 +128,10 @@ export function TeamRandomizerModal({
         <section className="space-y-4">
           <div className="rounded-2xl border border-[var(--color-border)] bg-[var(--color-background)] p-4">
             <label className="block text-sm font-semibold text-[var(--color-text)]" htmlFor="draw-team-count">
-              Quantidade de times
+              {t('teamRandomizer.teamCount')}
             </label>
             <p className="mt-1 text-xs text-[var(--color-muted)]">
-              Os tamanhos serão equilibrados automaticamente.
+              {t('teamRandomizer.balanceHint')}
             </p>
             <input
               id="draw-team-count"
@@ -143,13 +150,13 @@ export function TeamRandomizerModal({
           <div className="rounded-2xl border border-[var(--color-border)] bg-[var(--color-background)] p-4">
             <div className="flex items-center justify-between gap-3">
               <div>
-                <h3 className="text-sm font-semibold text-[var(--color-text)]">Pessoas</h3>
+                <h3 className="text-sm font-semibold text-[var(--color-text)]">{t('teamRandomizer.people')}</h3>
                 <p className="text-xs text-[var(--color-muted)]">
-                  {namedCandidates.length} participante{namedCandidates.length === 1 ? '' : 's'} pronto{namedCandidates.length === 1 ? '' : 's'}.
+                  {t('teamRandomizer.ready', { count: namedCandidates.length })}
                 </p>
               </div>
               <Button variant="outline" size="sm" onClick={addCandidate}>
-                <UserPlus size={14} /> Adicionar
+                <UserPlus size={14} /> {t('teamRandomizer.add')}
               </Button>
             </div>
 
@@ -161,14 +168,14 @@ export function TeamRandomizerModal({
                     <input
                       value={candidate.name}
                       onChange={(event) => updateCandidate(candidate.id, { name: event.target.value })}
-                      placeholder="Nome da pessoa"
-                      aria-label={`Nome da pessoa ${index + 1}`}
+                      placeholder={t('teamRandomizer.personName')}
+                      aria-label={t('teamRandomizer.personNameLabel', { number: index + 1 })}
                       className="min-w-0 flex-1 rounded-lg border border-[var(--color-border)] bg-[var(--color-background)] px-3 py-2 text-sm text-[var(--color-text)]"
                     />
                     <Button
                       variant="ghost"
                       size="icon"
-                      aria-label={`Remover pessoa ${index + 1}`}
+                      aria-label={t('teamRandomizer.removePerson', { number: index + 1 })}
                       onClick={() => removeCandidate(candidate.id)}
                     >
                       <Trash2 size={15} />
@@ -176,22 +183,22 @@ export function TeamRandomizerModal({
                   </div>
                   {candidate.role !== 'player' ? (
                     <p className="mt-2 pl-8 text-xs text-[var(--color-muted)]">
-                      Papel preservado: {candidate.role === 'host' ? 'anfitrião' : 'assistente'}.
+                      {t('teamRandomizer.preservedRole', { role: candidate.role === 'host' ? t('teams.roles.host').toLocaleLowerCase() : t('teams.roles.assistant').toLocaleLowerCase() })}
                     </p>
                   ) : null}
-                  {isOnline ? (
+                  {canUseConnectedFeatures ? (
                     <div className="mt-2 pl-8">
                       <input
                         type="email"
                         list="draw-invite-contacts"
                         value={candidate.email ?? ''}
                         onChange={(event) => updateCandidate(candidate.id, { email: event.target.value })}
-                        placeholder="e-mail opcional"
-                        aria-label={`E-mail de ${candidate.name || `pessoa ${index + 1}`}`}
+                        placeholder={t('teamRandomizer.emailPlaceholder')}
+                        aria-label={t('teamRandomizer.personEmail', { name: candidate.name || t('teamRandomizer.personFallback', { number: index + 1 }) })}
                         className="w-full rounded-lg border border-[var(--color-border)] bg-[var(--color-background)] px-3 py-2 text-sm text-[var(--color-text)]"
                       />
                       {candidate.email?.trim() && !isValidEmail(candidate.email.trim()) ? (
-                        <p className="mt-1 text-xs text-amber-500">Formato inválido: não reservará uma conta.</p>
+                        <p className="mt-1 text-xs text-amber-500">{t('teamRandomizer.invalidEmail')}</p>
                       ) : null}
                     </div>
                   ) : null}
@@ -199,7 +206,7 @@ export function TeamRandomizerModal({
               ))}
             </div>
 
-            {isOnline ? (
+            {canUseConnectedFeatures ? (
               <datalist id="draw-invite-contacts">
                 {inviteContacts.map((contact) => (
                   <option key={contact.email} value={contact.email} label={contact.lastName} />
@@ -209,17 +216,17 @@ export function TeamRandomizerModal({
 
             {duplicateEmails.length > 0 ? (
               <p className="mt-3 rounded-xl border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-xs text-amber-500">
-                E-mail repetido: uma conta poderá reivindicar somente um dos slots.
+                {t('teamRandomizer.duplicateEmail')}
               </p>
             ) : null}
           </div>
 
           <Button className="w-full" onClick={draw} disabled={!canDraw}>
-            <Shuffle size={16} /> {result ? 'Sortear novamente' : 'Sortear formação'}
+            <Shuffle size={16} /> {result ? t('teamRandomizer.drawAgain') : t('teamRandomizer.draw')}
           </Button>
           {!canDraw ? (
             <p className="text-center text-xs text-[var(--color-muted)]">
-              Informe ao menos duas pessoas e não crie mais times do que participantes.
+              {t('teamRandomizer.invalidSetup')}
             </p>
           ) : null}
         </section>
@@ -229,9 +236,9 @@ export function TeamRandomizerModal({
             <div className="flex min-h-72 flex-col items-center justify-center gap-3 text-center">
               <Shuffle size={28} className="text-[var(--color-muted)]" />
               <div>
-                <h3 className="text-sm font-semibold text-[var(--color-text)]">Prévia da formação</h3>
+                <h3 className="text-sm font-semibold text-[var(--color-text)]">{t('teamRandomizer.previewTitle')}</h3>
                 <p className="mt-1 max-w-sm text-xs text-[var(--color-muted)]">
-                  O sorteio ainda não altera a sessão. Você poderá revisar tudo antes de usar.
+                  {t('teamRandomizer.previewDescription')}
                 </p>
               </div>
             </div>
@@ -261,13 +268,13 @@ export function TeamRandomizerModal({
                 turnSequence={preview.sequence}
                 sequenceSource="draft"
                 maxGroups={2}
-                title="Primeiros turnos"
-                description="A mesma alternância balanceada usada pelo jogo."
+                title={t('teamRandomizer.firstTurns')}
+                description={t('teamRandomizer.firstTurnsDescription')}
               />
 
               <div className="flex flex-wrap justify-end gap-2">
                 <Button variant="outline" onClick={draw}>
-                  <RefreshCw size={15} /> Sortear novamente
+                  <RefreshCw size={15} /> {t('teamRandomizer.drawAgain')}
                 </Button>
                 <Button
                   onClick={() => {
@@ -275,7 +282,7 @@ export function TeamRandomizerModal({
                     onClose()
                   }}
                 >
-                  Usar esta formação
+                  {t('teamRandomizer.useFormation')}
                 </Button>
               </div>
             </div>

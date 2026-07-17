@@ -1,6 +1,7 @@
 import type { CSSProperties } from 'react'
 import type { TriviaColumn, TriviaQuestionTile } from '../../modules/trivia/types'
 import { TriviaCard } from './TriviaCard'
+import { useTranslation } from '@/shared/i18n'
 
 type TriviaBoardProps = {
   columns: TriviaColumn[]
@@ -9,6 +10,7 @@ type TriviaBoardProps = {
 }
 
 export function TriviaBoard({ columns, onSelectTile, selectedTileId = null }: TriviaBoardProps) {
+  const { t } = useTranslation('game')
   const columnCount = columns.length || 1
   const gridStyle: CSSProperties = {
     gridTemplateColumns: `repeat(${columnCount}, minmax(200px, 1fr))`,
@@ -39,7 +41,7 @@ export function TriviaBoard({ columns, onSelectTile, selectedTileId = null }: Tr
                     {column.film}
                   </p>
                   <p className="mt-2 text-[11px] font-medium uppercase tracking-[0.2em] text-[var(--film-text)]/60">
-                    {sortedTiles.length} cartas
+                    {t('board.cards', { count: sortedTiles.length })}
                   </p>
                 </div>
                 <span className="rounded-full border border-white/10 bg-black/20 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.2em] text-[var(--film-text)]/70">

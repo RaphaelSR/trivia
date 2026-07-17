@@ -12,8 +12,8 @@ Central de navegacao dos documentos oficiais do `trivia`.
 - [FUNCIONALIDADES.md](./FUNCIONALIDADES.md): inventario das funcionalidades implementadas, internas e planejadas
 - [SETORES.md](./SETORES.md): mapa curto de responsabilidades, regras e pontos de entrada por setor
 
-## Modulo online
-- [online/README.md](./online/README.md): indice dos documentos do modo `online`
+## Conta e recursos conectados
+- [online/README.md](./online/README.md): índice da sincronização, identidade e recursos conectados
 - [online/ARQUITETURA-ONLINE.md](./online/ARQUITETURA-ONLINE.md): schema, persistencia e estrategia de modelagem
 - [online/MODOS-DE-USO.md](./online/MODOS-DE-USO.md): cenarios de uso e regras do modulo
 - [online/AUTENTICACAO.md](./online/AUTENTICACAO.md): desenho de login e vinculacao de conta

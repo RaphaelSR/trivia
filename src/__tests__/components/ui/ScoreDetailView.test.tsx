@@ -129,8 +129,8 @@ describe('ScoreDetailView', () => {
     )
 
     expect(screen.getByText(/Total de Pontos/i)).toBeInTheDocument()
-    expect(screen.getByText(/30 pts/i)).toBeInTheDocument()
-    expect(screen.getByText(/75 pts/i)).toBeInTheDocument()
+    expect(screen.getByText(/30 pontos/i)).toBeInTheDocument()
+    expect(screen.getByText(/75 pontos/i)).toBeInTheDocument()
     expect(screen.getByText(/Perguntas do Trivia/i)).toBeInTheDocument()
     const mimicaElements = screen.getAllByText(/Mímicas/i)
     expect(mimicaElements.length).toBeGreaterThan(0)
@@ -177,8 +177,8 @@ describe('ScoreDetailView', () => {
 
     expect(screen.getByText(/Rodada 1 · Turno 1/i)).toBeInTheDocument()
     expect(screen.getByText(/Rodada 1 · Turno 2/i)).toBeInTheDocument()
-    expect(screen.getByText(/50 pts/i)).toBeInTheDocument()
-    expect(screen.getByText(/25 pts/i)).toBeInTheDocument()
+    expect(screen.getByText(/50 pontos/i)).toBeInTheDocument()
+    expect(screen.getByText(/25 pontos/i)).toBeInTheDocument()
   })
 
   it('deve mostrar perguntas na aba de Trivia', () => {

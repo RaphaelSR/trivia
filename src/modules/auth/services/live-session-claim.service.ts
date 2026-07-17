@@ -1,5 +1,6 @@
 import { getSupabaseClient, isSupabaseConfigured } from '@/shared/services/supabase.client'
 import { readViteEnv } from '@/shared/services/vite-env'
+import { i18n } from '@/shared/i18n'
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
 
@@ -50,7 +51,7 @@ export async function getLiveSessionInvite(
 ): Promise<{ invite: LiveSessionInvite | null; error: string | null }> {
   const client = await getAuthenticatedClient()
   if (!client) {
-    return { invite: null, error: 'Entre na sua conta para criar o convite.' }
+    return { invite: null, error: i18n.t('auth:services.liveClaim.signInToInvite') }
   }
 
   try {
@@ -68,7 +69,7 @@ export async function getLiveSessionInvite(
       console.warn('[getLiveSessionInvite] Falha:', error)
       return {
         invite: null,
-        error: 'Não consegui preparar o convite agora. O jogo continua salvo normalmente.',
+        error: i18n.t('auth:services.liveClaim.prepareSafeFailure'),
       }
     }
 
@@ -78,7 +79,7 @@ export async function getLiveSessionInvite(
     if (!row?.online_session_id || !row.join_token) {
       return {
         invite: null,
-        error: 'A sessão ainda não chegou à nuvem. Tente sincronizar novamente.',
+        error: i18n.t('auth:services.liveClaim.notSynced'),
       }
     }
 
@@ -94,7 +95,7 @@ export async function getLiveSessionInvite(
     console.warn('[getLiveSessionInvite] Falha inesperada:', error)
     return {
       invite: null,
-      error: 'Não consegui preparar o convite agora. Tente novamente.',
+      error: i18n.t('auth:services.liveClaim.prepareFailed'),
     }
   }
 }
@@ -103,10 +104,10 @@ export async function listLiveSessionParticipants(
   joinToken: string,
 ): Promise<{ participants: LiveSessionParticipant[]; error: string | null }> {
   if (!UUID_RE.test(joinToken)) {
-    return { participants: [], error: 'Link de convite inválido.' }
+    return { participants: [], error: i18n.t('auth:services.liveClaim.invalidInvite') }
   }
   const client = await getAuthenticatedClient()
-  if (!client) return { participants: [], error: 'Entre para ver os participantes.' }
+  if (!client) return { participants: [], error: i18n.t('auth:services.liveClaim.signInToView') }
 
   try {
     const { data, error } = await client.rpc('list_session_claimable_participants', {
@@ -114,7 +115,7 @@ export async function listLiveSessionParticipants(
     })
     if (error) {
       console.warn('[listLiveSessionParticipants] Falha:', error)
-      return { participants: [], error: 'Não consegui atualizar a lista agora.' }
+      return { participants: [], error: i18n.t('auth:services.liveClaim.refreshFailed') }
     }
 
     const rows = (data ?? []) as Array<{
@@ -139,21 +140,17 @@ export async function listLiveSessionParticipants(
       error: null,
     }
   } catch {
-    return { participants: [], error: 'Não consegui atualizar a lista agora.' }
+    return { participants: [], error: i18n.t('auth:services.liveClaim.refreshFailed') }
   }
 }
 
-const CLAIM_ERRORS: Record<string, string> = {
-  INVALID_TOKEN: 'Este convite não é mais válido.',
-  INVALID_PARTICIPANT: 'Este participante não está mais disponível.',
-  ALREADY_CLAIMED_IN_SESSION: 'Sua conta já está ligada a outra pessoa nesta partida.',
-  SLOT_UNAVAILABLE: 'Outra pessoa acabou de reivindicar este participante.',
-  EMAIL_RESERVED: 'Este participante está reservado para outro e-mail.',
-}
-
 function mapClaimError(error: RpcError): string {
-  const known = Object.keys(CLAIM_ERRORS).find((key) => error.message?.includes(key))
-  return known ? CLAIM_ERRORS[known] : 'Não consegui vincular agora. Tente novamente.'
+  if (error.message?.includes('INVALID_TOKEN')) return i18n.t('auth:services.liveClaim.expiredInvite')
+  if (error.message?.includes('INVALID_PARTICIPANT')) return i18n.t('auth:services.liveClaim.missingParticipant')
+  if (error.message?.includes('ALREADY_CLAIMED_IN_SESSION')) return i18n.t('auth:services.liveClaim.accountAlreadyClaimed')
+  if (error.message?.includes('SLOT_UNAVAILABLE')) return i18n.t('auth:services.liveClaim.raceLost')
+  if (error.message?.includes('EMAIL_RESERVED')) return i18n.t('auth:services.liveClaim.emailReserved')
+  return i18n.t('auth:services.liveClaim.claimFailedRetry')
 }
 
 export async function claimLiveSessionParticipant(
@@ -161,11 +158,11 @@ export async function claimLiveSessionParticipant(
   participantClientId: string,
 ): Promise<{ gameId: string | null; sessionClientId: string | null; error: string | null }> {
   if (!UUID_RE.test(joinToken) || !participantClientId.trim()) {
-    return { gameId: null, sessionClientId: null, error: 'Link de convite inválido.' }
+    return { gameId: null, sessionClientId: null, error: i18n.t('auth:services.liveClaim.invalidInvite') }
   }
   const client = await getAuthenticatedClient()
   if (!client) {
-    return { gameId: null, sessionClientId: null, error: 'Entre para reivindicar.' }
+    return { gameId: null, sessionClientId: null, error: i18n.t('auth:services.liveClaim.signInToClaim') }
   }
 
   try {
@@ -183,16 +180,16 @@ export async function claimLiveSessionParticipant(
       error: null,
     }
   } catch {
-    return { gameId: null, sessionClientId: null, error: 'Não consegui vincular agora.' }
+    return { gameId: null, sessionClientId: null, error: i18n.t('auth:services.liveClaim.claimFailed') }
   }
 }
 
 export async function revokeLiveSessionClaim(
   claimId: string,
 ): Promise<{ revoked: boolean; error: string | null }> {
-  if (!UUID_RE.test(claimId)) return { revoked: false, error: 'Claim inválido.' }
+  if (!UUID_RE.test(claimId)) return { revoked: false, error: i18n.t('auth:services.liveClaim.invalidClaim') }
   const client = await getAuthenticatedClient()
-  if (!client) return { revoked: false, error: 'Entre na conta do anfitrião.' }
+  if (!client) return { revoked: false, error: i18n.t('auth:services.liveClaim.signInAsHost') }
 
   try {
     const { data, error } = await client.rpc('revoke_participant_claim', {
@@ -200,12 +197,12 @@ export async function revokeLiveSessionClaim(
     })
     if (error) {
       console.warn('[revokeLiveSessionClaim] Falha:', error)
-      return { revoked: false, error: 'Não consegui desvincular agora.' }
+      return { revoked: false, error: i18n.t('auth:services.liveClaim.revokeFailed') }
     }
     return data
       ? { revoked: true, error: null }
-      : { revoked: false, error: 'Este vínculo já não estava ativo.' }
+      : { revoked: false, error: i18n.t('auth:services.liveClaim.alreadyRevoked') }
   } catch {
-    return { revoked: false, error: 'Não consegui desvincular agora.' }
+    return { revoked: false, error: i18n.t('auth:services.liveClaim.revokeFailed') }
   }
 }

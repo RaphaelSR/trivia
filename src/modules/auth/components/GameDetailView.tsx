@@ -22,6 +22,7 @@ import {
   listGameParticipantIdentities,
   type ParticipantIdentity,
 } from '../services/profile-avatar.service'
+import { useTranslation } from '@/shared/i18n'
 
 // ---------------------------------------------------------------------------
 // Props
@@ -36,10 +37,10 @@ interface GameDetailViewProps {
 // Helpers
 // ---------------------------------------------------------------------------
 
-function formatDatePtBR(iso: string | null): string {
+function formatDate(iso: string | null, locale: string): string {
   if (!iso) return '—'
   try {
-    return new Date(iso).toLocaleDateString('pt-BR', {
+    return new Date(iso).toLocaleDateString(locale, {
       day: '2-digit',
       month: '2-digit',
       year: 'numeric',
@@ -49,7 +50,7 @@ function formatDatePtBR(iso: string | null): string {
   }
 }
 
-function formatDuration(startedAt: string | null, endedAt: string | null): string | null {
+function getDurationParts(startedAt: string | null, endedAt: string | null): { hours: number; minutes: number; seconds: number } | null {
   if (!startedAt || !endedAt) return null
   try {
     const ms = new Date(endedAt).getTime() - new Date(startedAt).getTime()
@@ -58,17 +59,15 @@ function formatDuration(startedAt: string | null, endedAt: string | null): strin
     const h = Math.floor(totalSec / 3600)
     const m = Math.floor((totalSec % 3600) / 60)
     const s = totalSec % 60
-    if (h > 0) return `${h}h ${m}m`
-    if (m > 0) return `${m}m ${s}s`
-    return `${s}s`
+    return { hours: h, minutes: m, seconds: s }
   } catch {
     return null
   }
 }
 
-function formatTimeShort(iso: string): string {
+function formatTimeShort(iso: string, locale: string): string {
   try {
-    return new Date(iso).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })
+    return new Date(iso).toLocaleTimeString(locale, { hour: '2-digit', minute: '2-digit' })
   } catch {
     return iso
   }
@@ -79,6 +78,7 @@ function formatTimeShort(iso: string): string {
 // ---------------------------------------------------------------------------
 
 export function GameDetailView({ gameId, onBack }: GameDetailViewProps) {
+  const { t, i18n } = useTranslation(['auth', 'common'])
   const [detail, setDetail] = useState<GameDetail | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(false)
@@ -119,13 +119,13 @@ export function GameDetailView({ gameId, onBack }: GameDetailViewProps) {
       <div className="flex items-center gap-2 border-b border-white/10 px-4 py-3">
         <button
           onClick={onBack}
-          aria-label="Voltar"
+          aria-label={t('actions.back', { ns: 'common' })}
           className="shrink-0 p-1 -ml-1 text-[var(--color-muted)] transition-colors hover:text-[var(--color-text)]"
         >
           <ArrowLeft className="h-4 w-4" />
         </button>
         <p className="min-w-0 flex-1 truncate text-sm font-medium text-[var(--color-text)]">
-          {loading ? 'Carregando…' : error ? 'Detalhes da partida' : (detail?.title ?? 'Partida')}
+          {loading ? t('gameDetail.loading', { ns: 'auth' }) : error ? t('gameDetail.fallbackTitle', { ns: 'auth' }) : (detail?.title ?? t('gameDetail.gameFallback', { ns: 'auth' }))}
         </p>
       </div>
 
@@ -133,55 +133,60 @@ export function GameDetailView({ gameId, onBack }: GameDetailViewProps) {
       <div className="flex max-h-[75vh] flex-col gap-4 overflow-y-auto p-4 sm:max-h-[70vh]">
         {loading && (
           <p className="text-xs text-[var(--color-muted)]" aria-live="polite">
-            Carregando detalhes…
+            {t('gameDetail.loadingDetails', { ns: 'auth' })}
           </p>
         )}
 
         {!loading && error && (
           <p className="text-xs text-[var(--color-muted)]" aria-live="polite">
-            Não foi possível carregar os detalhes desta partida.
+            {t('gameDetail.loadError', { ns: 'auth' })}
           </p>
         )}
 
         {!loading && !error && detail && (
           <>
             {/* ── Cabeçalho ───────────────────────────────────────────── */}
-            <section aria-label="Informações da partida">
+            <section aria-label={t('gameDetail.information', { ns: 'auth' })}>
               <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
                 <span className="text-xs text-[var(--color-muted)]">
-                  {formatDatePtBR(detail.played_at ?? detail.ended_at)}
+                  {formatDate(detail.played_at ?? detail.ended_at, i18n.resolvedLanguage ?? i18n.language)}
                 </span>
-                {formatDuration(detail.started_at, detail.ended_at) && (
+                {getDurationParts(detail.started_at, detail.ended_at) && (
                   <span className="inline-flex items-center gap-1 text-xs text-[var(--color-muted)]">
                     <Clock className="h-3 w-3" />
-                    {formatDuration(detail.started_at, detail.ended_at)}
+                    {(() => {
+                      const duration = getDurationParts(detail.started_at, detail.ended_at)!
+                      if (duration.hours > 0) return t('gameDetail.durationHours', { ns: 'auth', hours: duration.hours, minutes: duration.minutes })
+                      if (duration.minutes > 0) return t('gameDetail.durationMinutes', { ns: 'auth', minutes: duration.minutes, seconds: duration.seconds })
+                      return t('gameDetail.durationSeconds', { ns: 'auth', seconds: duration.seconds })
+                    })()}
                   </span>
                 )}
                 {detail.source === 'import' && (
                   <span
-                    aria-label="Partida importada"
+                    aria-label={t('gameDetail.importedGame', { ns: 'auth' })}
                     className="inline-flex items-center gap-1 rounded px-1.5 py-0.5 text-[10px] font-medium bg-white/10 text-[var(--color-muted)]"
                   >
                     <Upload className="h-2.5 w-2.5" />
-                    importado
+                    {t('gameDetail.imported', { ns: 'auth' })}
                   </span>
                 )}
               </div>
               {detail.winner_team_name && (
                 <div className="mt-1 inline-flex items-center gap-1 text-xs text-[var(--color-primary)]">
                   <Trophy className="h-3 w-3" />
-                  Vencedor: {detail.winner_team_name}
+                  {t('gameDetail.winner', { ns: 'auth', name: detail.winner_team_name })}
                 </div>
               )}
               {!detail.winner_team_name && detail.teams.length > 0 && (
-                <p className="mt-1 text-xs text-[var(--color-muted)]">Empate</p>
+                <p className="mt-1 text-xs text-[var(--color-muted)]">{t('gameDetail.tie', { ns: 'auth' })}</p>
               )}
             </section>
 
             {/* ── Placar dos times ─────────────────────────────────────── */}
             {detail.teams.length > 0 && (
-              <section aria-label="Placar dos times">
-                <SectionTitle>Placar</SectionTitle>
+              <section aria-label={t('gameDetail.scoreboardLabel', { ns: 'auth' })}>
+                <SectionTitle>{t('gameDetail.scoreboard', { ns: 'auth' })}</SectionTitle>
                 <ul className="flex flex-col gap-1.5" role="list">
                   {[...detail.teams]
                     .sort((a, b) => b.final_score - a.final_score)
@@ -202,7 +207,7 @@ export function GameDetailView({ gameId, onBack }: GameDetailViewProps) {
                             {team.name}
                           </span>
                           {detail.winner_team_id === team.id && (
-                            <Trophy className="h-3 w-3 shrink-0 text-[var(--color-primary)]" aria-label="Vencedor" />
+                            <Trophy className="h-3 w-3 shrink-0 text-[var(--color-primary)]" aria-label={t('gameDetail.winnerLabel', { ns: 'auth' })} />
                           )}
                         </div>
                         <span className="shrink-0 text-sm font-semibold text-[var(--color-text)]">
@@ -216,8 +221,8 @@ export function GameDetailView({ gameId, onBack }: GameDetailViewProps) {
 
             {/* ── Ranking de participantes ─────────────────────────────── */}
             {detail.ranking.length > 0 && (
-              <section aria-label="Ranking de participantes">
-                <SectionTitle>Ranking</SectionTitle>
+              <section aria-label={t('gameDetail.rankingLabel', { ns: 'auth' })}>
+                <SectionTitle>{t('gameDetail.ranking', { ns: 'auth' })}</SectionTitle>
                 <ul className="flex flex-col gap-1.5" role="list">
                   {detail.ranking.map((stat, idx) => (
                     <li
@@ -238,15 +243,15 @@ export function GameDetailView({ gameId, onBack }: GameDetailViewProps) {
                         </span>
                         {stat.profile_id && (
                           <span
-                            aria-label="Participante vinculado"
+                            aria-label={t('gameDetail.linkedParticipant', { ns: 'auth' })}
                             className="inline-flex shrink-0 items-center gap-0.5 rounded px-1 py-0.5 text-[9px] font-medium bg-[var(--color-primary)]/15 text-[var(--color-primary)]"
                           >
                             <UserCheck className="h-2.5 w-2.5" aria-hidden="true" />
-                            vinculado
+                            {t('gameDetail.linked', { ns: 'auth' })}
                           </span>
                         )}
                         <span className="shrink-0 text-xs font-semibold text-[var(--color-text)]">
-                          {stat.total_points} pts
+                          {t('gameDetail.pointsShort', { ns: 'auth', points: stat.total_points })}
                         </span>
                       </div>
                       <div className="mt-0.5 flex flex-wrap gap-x-3 gap-y-0.5 pl-6">
@@ -256,10 +261,10 @@ export function GameDetailView({ gameId, onBack }: GameDetailViewProps) {
                           </span>
                         )}
                         <span className="text-[10px] text-[var(--color-muted)]">
-                          trivia {stat.trivia_points}
+                          {t('gameDetail.triviaPoints', { ns: 'auth', points: stat.trivia_points })}
                         </span>
                         <span className="text-[10px] text-[var(--color-muted)]">
-                          mímica {stat.mimica_points}
+                          {t('gameDetail.mimicaPoints', { ns: 'auth', points: stat.mimica_points })}
                         </span>
                       </div>
                     </li>
@@ -270,21 +275,21 @@ export function GameDetailView({ gameId, onBack }: GameDetailViewProps) {
 
             {/* ── Convite genérico da sessão (só para o dono) ─────────── */}
             {detail.isOwner && detail.joinToken && (
-              <section aria-label="Convite da sessão">
-                <SectionTitle>Convite da sessão</SectionTitle>
+              <section aria-label={t('gameDetail.inviteLabel', { ns: 'auth' })}>
+                <SectionTitle>{t('gameDetail.inviteTitle', { ns: 'auth' })}</SectionTitle>
                 <div className="flex flex-col gap-2 rounded-xl border border-white/10 bg-white/5 px-3 py-3 backdrop-blur-sm">
                   <div className="flex items-center gap-1.5">
                     <Link2 className="h-3.5 w-3.5 shrink-0 text-[var(--color-muted)]" aria-hidden="true" />
                     <span className="min-w-0 flex-1 text-xs font-medium text-[var(--color-text)]">
-                      Link único para todos
+                      {t('gameDetail.oneLink', { ns: 'auth' })}
                     </span>
                   </div>
                   <p className="text-[10px] text-[var(--color-muted)]">
-                    Compartilhe um único link com todos — cada um escolhe seu nome.
+                    {t('gameDetail.inviteDescription', { ns: 'auth' })}
                   </p>
                   <ShareChannels
                     url={buildSessionClaimUrl(detail.joinToken)}
-                    label="da sessão"
+                    label={t('gameDetail.sessionShareLabel', { ns: 'auth' })}
                   />
                 </div>
               </section>
@@ -292,8 +297,8 @@ export function GameDetailView({ gameId, onBack }: GameDetailViewProps) {
 
             {/* ── Convites por participante ────────────────────────────── */}
             {detail.participants.some((p) => p.profile_id === null && p.claim_token !== null) && (
-              <section aria-label="Links de convite por participante">
-                <SectionTitle>Convidar participantes</SectionTitle>
+              <section aria-label={t('gameDetail.participantInviteLabel', { ns: 'auth' })}>
+                <SectionTitle>{t('gameDetail.participantInviteTitle', { ns: 'auth' })}</SectionTitle>
                 <ul className="flex flex-col gap-2" role="list">
                   {detail.participants.map((p) => (
                     <li key={p.id}>
@@ -306,8 +311,8 @@ export function GameDetailView({ gameId, onBack }: GameDetailViewProps) {
 
             {/* ── Board: filmes e perguntas ────────────────────────────── */}
             {detail.films.length > 0 && (
-              <section aria-label="Perguntas por filme">
-                <SectionTitle>Perguntas</SectionTitle>
+              <section aria-label={t('gameDetail.questionsByFilm', { ns: 'auth' })}>
+                <SectionTitle>{t('gameDetail.questions', { ns: 'auth' })}</SectionTitle>
                 <div className="flex flex-col gap-3">
                   {[...detail.films]
                     .sort((a, b) => a.order - b.order)
@@ -350,17 +355,17 @@ export function GameDetailView({ gameId, onBack }: GameDetailViewProps) {
                                           : 'bg-white/5 text-[var(--color-muted)]',
                                       ].join(' ')}
                                     >
-                                      {q.points} pts
+                                      {t('gameDetail.pointsShort', { ns: 'auth', points: q.points })}
                                     </span>
                                   </div>
                                   {q.answer && (
                                     <p className="mt-0.5 text-[10px] text-[var(--color-muted)]">
-                                      R: {q.answer}
+                                      {t('gameDetail.answerPrefix', { ns: 'auth', answer: q.answer })}
                                     </p>
                                   )}
                                   {answererName && (
                                     <p className="mt-0.5 text-[10px] text-[var(--color-primary)]">
-                                      Acertou: {answererName}
+                                      {t('gameDetail.answeredBy', { ns: 'auth', name: answererName })}
                                     </p>
                                   )}
                                 </li>
@@ -376,8 +381,8 @@ export function GameDetailView({ gameId, onBack }: GameDetailViewProps) {
 
             {/* ── Timeline ─────────────────────────────────────────────── */}
             {detail.timeline.length > 0 && (
-              <section aria-label="Timeline de eventos">
-                <SectionTitle>Timeline</SectionTitle>
+              <section aria-label={t('gameDetail.timelineLabel', { ns: 'auth' })}>
+                <SectionTitle>{t('gameDetail.timeline', { ns: 'auth' })}</SectionTitle>
                 <div className="overflow-x-auto">
                   <ul className="flex min-w-0 flex-col gap-1" role="list">
                     {detail.timeline.map((entry) => (
@@ -407,8 +412,9 @@ function SectionTitle({ children }: { children: React.ReactNode }) {
 }
 
 function TimelineRow({ entry }: { entry: TimelineEntry }) {
-  const label = entry.type === 'trivia' ? 'Trivia' : 'Mímica'
-  const pts = entry.voided ? 'anulado' : `+${entry.points} pts`
+  const { t, i18n } = useTranslation('auth')
+  const label = entry.type === 'trivia' ? t('gameDetail.trivia') : t('gameDetail.mimica')
+  const pts = entry.voided ? t('gameDetail.voided') : `+${t('gameDetail.pointsShort', { points: entry.points })}`
   return (
     <li
       className={[
@@ -419,7 +425,7 @@ function TimelineRow({ entry }: { entry: TimelineEntry }) {
         .filter(Boolean)
         .join(' ')}
     >
-      <span className="shrink-0 text-[var(--color-muted)]">{formatTimeShort(entry.occurred_at)}</span>
+      <span className="shrink-0 text-[var(--color-muted)]">{formatTimeShort(entry.occurred_at, i18n.resolvedLanguage ?? i18n.language)}</span>
       <span
         className={[
           'shrink-0 rounded px-1 py-0.5 font-medium',

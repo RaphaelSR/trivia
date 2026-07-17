@@ -3,8 +3,10 @@ import { getFilmMetadata } from '../../../data/films'
 import { slugify } from '../../../utils/slugify'
 import type { TriviaColumn, TriviaQuestionTile, TriviaSession } from '../../trivia/types'
 import { syncTurnSequenceWithBoard } from '../domain/session'
+import { useTranslation } from '@/shared/i18n'
 
 export function useBoardOperations(setSession: Dispatch<SetStateAction<TriviaSession>>) {
+  const { t } = useTranslation('game')
   const updateTileState = useCallback((tileId: string, state: TriviaQuestionTile['state']) => {
     setSession((prev) => ({
       ...prev,
@@ -35,7 +37,8 @@ export function useBoardOperations(setSession: Dispatch<SetStateAction<TriviaSes
     }))
   }, [setSession])
 
-  const addFilmColumn = useCallback((displayName = 'Novo Filme') => {
+  const addFilmColumn = useCallback((requestedDisplayName?: string) => {
+    const displayName = requestedDisplayName ?? t('library.defaults.film')
     const metadata = getFilmMetadata(displayName)
     // Sufixo aleatório além do timestamp: imports em massa criam várias colunas
     // no mesmo milissegundo, então `Date.now()` sozinho geraria ids colidentes.
@@ -51,7 +54,7 @@ export function useBoardOperations(setSession: Dispatch<SetStateAction<TriviaSes
     setSession((prev) => syncTurnSequenceWithBoard(prev, [...prev.board, newColumn]))
 
     return columnId
-  }, [setSession])
+  }, [setSession, t])
 
   const removeFilmColumn = useCallback((columnId: string) => {
     setSession((prev) => syncTurnSequenceWithBoard(
@@ -75,7 +78,7 @@ export function useBoardOperations(setSession: Dispatch<SetStateAction<TriviaSes
           id: tileId,
           film: column.film,
           points: defaults.points ?? 10,
-          question: defaults.question ?? 'Nova pergunta',
+          question: defaults.question ?? t('library.defaults.question'),
           answer: defaults.answer ?? '',
           state: 'available',
         }
@@ -91,7 +94,7 @@ export function useBoardOperations(setSession: Dispatch<SetStateAction<TriviaSes
     })
 
     return tileId
-  }, [setSession])
+  }, [setSession, t])
 
   /**
    * Substitui TODAS as perguntas de um filme (re-import atualizando valores).
@@ -106,7 +109,7 @@ export function useBoardOperations(setSession: Dispatch<SetStateAction<TriviaSes
             id: `${columnId}-tile-${Date.now()}-${index}-${Math.random().toString(16).slice(2)}`,
             film: column.film,
             points: tileDefaults.points ?? 10,
-            question: tileDefaults.question ?? 'Nova pergunta',
+            question: tileDefaults.question ?? t('library.defaults.question'),
             answer: tileDefaults.answer ?? '',
             state: 'available' as const,
           }))
@@ -115,7 +118,7 @@ export function useBoardOperations(setSession: Dispatch<SetStateAction<TriviaSes
       })
       return syncTurnSequenceWithBoard(prev, nextBoard)
     })
-  }, [setSession])
+  }, [setSession, t])
 
   const removeQuestionTile = useCallback((columnId: string, tileId: string) => {
     setSession((prev) => {

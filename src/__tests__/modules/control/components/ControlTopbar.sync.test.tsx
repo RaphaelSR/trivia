@@ -12,7 +12,7 @@ import { ControlTopbar } from '@/modules/control/ui/ControlTopbar'
 
 const baseProps = {
   title: 'Sessão de Teste',
-  modeLabel: 'Offline',
+  modeLabel: 'Partida completa',
   mode: 'offline' as const,
   onOpenSessions: jest.fn(),
   onExit: jest.fn(),
@@ -34,12 +34,12 @@ describe('ControlTopbar — SyncStatusIndicator gate', () => {
   })
 
   it('renderiza o indicador com "Salvo na sua conta" em modo online (sincronizado)', () => {
-    render(<ControlTopbar {...baseProps} mode="online" modeLabel="Online" syncStatus="synced" />)
+    render(<ControlTopbar {...baseProps} mode="online" modeLabel="Partida completa" syncStatus="synced" />)
     expect(screen.getByText('Salvo na sua conta')).toBeInTheDocument()
   })
 
   it('renderiza o indicador com "Salvando…" em modo online (sincronizando)', () => {
-    render(<ControlTopbar {...baseProps} mode="online" modeLabel="Online" syncStatus="syncing" />)
+    render(<ControlTopbar {...baseProps} mode="online" modeLabel="Partida completa" syncStatus="syncing" />)
     expect(screen.getByText('Salvando…')).toBeInTheDocument()
   })
 

@@ -13,6 +13,7 @@ import {
   type FilmImportResult,
 } from '@/modules/control/utils/filmExportUtils'
 import { toast } from 'sonner'
+import { useTranslation } from '@/shared/i18n'
 
 type QuestionLibraryModalProps = {
   isOpen: boolean
@@ -43,20 +44,20 @@ type QuestionLibraryModalProps = {
   ) => void
 }
 
-function sortColumns(columns: TriviaColumn[], mode: 'az' | 'questions' | 'points') {
+function sortColumns(columns: TriviaColumn[], mode: 'az' | 'questions' | 'points', locale: string) {
   const next = [...columns]
   switch (mode) {
     case 'questions':
-      return next.sort((a, b) => b.tiles.length - a.tiles.length || a.film.localeCompare(b.film, 'pt-BR'))
+      return next.sort((a, b) => b.tiles.length - a.tiles.length || a.film.localeCompare(b.film, locale))
     case 'points':
       return next.sort((a, b) => {
         const pointsA = a.tiles.reduce((sum, tile) => sum + tile.points, 0)
         const pointsB = b.tiles.reduce((sum, tile) => sum + tile.points, 0)
-        return pointsB - pointsA || a.film.localeCompare(b.film, 'pt-BR')
+        return pointsB - pointsA || a.film.localeCompare(b.film, locale)
       })
     case 'az':
     default:
-      return next.sort((a, b) => a.film.localeCompare(b.film, 'pt-BR'))
+      return next.sort((a, b) => a.film.localeCompare(b.film, locale))
   }
 }
 
@@ -89,6 +90,8 @@ export function QuestionLibraryModal({
   onRemoveFilm,
   onImportFilms,
 }: QuestionLibraryModalProps) {
+  const { t, i18n } = useTranslation(['game', 'common'])
+  const locale = i18n.resolvedLanguage ?? i18n.language
   const [internalSelectedFilmId, setInternalSelectedFilmId] = useState<string | null>(selectedFilmId ?? null)
   const [internalSearchQuery, setInternalSearchQuery] = useState(searchQuery ?? '')
   const [internalFilterPoints, setInternalFilterPoints] = useState<number | null>(filterPoints ?? null)
@@ -126,10 +129,10 @@ export function QuestionLibraryModal({
   // "pontos"). Recongela ao abrir e ao trocar o critério — não a cada tecla.
   const [frozenColumnOrder, setFrozenColumnOrder] = useState<string[]>([])
   useEffect(() => {
-    setFrozenColumnOrder(sortColumns(board, activeSortMode).map((column) => column.id))
+    setFrozenColumnOrder(sortColumns(board, activeSortMode, locale).map((column) => column.id))
     // Intencional: NÃO depende de `board` — é justamente o congelamento.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isOpen, activeSortMode])
+  }, [isOpen, activeSortMode, locale])
 
   const filteredBoard = useMemo(() => {
     const query = activeSearchQuery.trim().toLowerCase()
@@ -216,10 +219,10 @@ export function QuestionLibraryModal({
       <div className="card-surface flex max-h-[92vh] w-full max-w-[1500px] flex-col overflow-hidden rounded-[32px] bg-[var(--color-background)]">
         <div className="flex flex-col gap-4 border-b border-white/8 px-6 py-6 xl:flex-row xl:items-start xl:justify-between">
           <div>
-            <p className="text-[10px] font-semibold uppercase tracking-[0.35em] text-[var(--color-primary)]">Biblioteca</p>
-            <h2 className="mt-2 text-3xl font-semibold text-[var(--color-text)]">Perguntas e filmes</h2>
+            <p className="text-[10px] font-semibold uppercase tracking-[0.35em] text-[var(--color-primary)]">{t('library.eyebrow', { ns: 'game' })}</p>
+            <h2 className="mt-2 text-3xl font-semibold text-[var(--color-text)]">{t('library.title', { ns: 'game' })}</h2>
             <p className="mt-2 text-sm text-[var(--color-muted)]">
-              Organize o board em modo editor: escolha um filme à esquerda e ajuste as perguntas no painel principal. {totalQuestions} pergunta{totalQuestions !== 1 ? 's' : ''} no total.
+              {t('library.description', { ns: 'game', questions: t('entities.question', { ns: 'common', count: totalQuestions }) })}
             </p>
           </div>
           <div className="flex flex-wrap gap-2">
@@ -234,17 +237,17 @@ export function QuestionLibraryModal({
               className="gap-2"
             >
               <Download size={16} />
-              Exportar
+              {t('library.export', { ns: 'game' })}
             </Button>
             <Button variant="outline" size="sm" onClick={() => setShowImportModal(true)} className="gap-2">
               <Upload size={16} />
-              Importar
+              {t('library.import', { ns: 'game' })}
             </Button>
             <Button variant="outline" size="sm" onClick={onAddFilm} className="gap-2">
               <Plus size={16} />
-              Adicionar filme
+              {t('library.addFilm', { ns: 'game' })}
             </Button>
-            <Button variant="ghost" size="icon" aria-label="Fechar" onClick={onClose}>
+            <Button variant="ghost" size="icon" aria-label={t('actions.close', { ns: 'common' })} onClick={onClose}>
               <X size={18} />
             </Button>
           </div>
@@ -255,7 +258,7 @@ export function QuestionLibraryModal({
             <div className="flex-1">
               <input
                 type="text"
-                placeholder="Buscar por filme, pergunta ou resposta..."
+                placeholder={t('library.searchPlaceholder', { ns: 'game' })}
                 value={activeSearchQuery}
                 onChange={(event) => setSearch(event.target.value)}
                 className="w-full rounded-2xl border border-white/10 bg-white/[0.03] px-4 py-3 text-sm text-[var(--color-text)] placeholder:text-[var(--color-muted)] focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)]"
@@ -267,22 +270,22 @@ export function QuestionLibraryModal({
                 onChange={(event) => setSort(event.target.value as 'az' | 'questions' | 'points')}
                 className="rounded-2xl border border-white/10 bg-white/[0.03] px-4 py-3 text-sm text-[var(--color-text)]"
               >
-                <option value="az">A-Z</option>
-                <option value="questions">Mais perguntas</option>
-                <option value="points">Mais pontos</option>
+                <option value="az">{t('library.sortAlphabetical', { ns: 'game' })}</option>
+                <option value="questions">{t('library.sortQuestions', { ns: 'game' })}</option>
+                <option value="points">{t('library.sortPoints', { ns: 'game' })}</option>
               </select>
               <select
                 value={activeFilterPoints === null ? '' : activeFilterPoints}
                 onChange={(event) => setPointsFilter(event.target.value ? Number(event.target.value) : null)}
                 className="rounded-2xl border border-white/10 bg-white/[0.03] px-4 py-3 text-sm text-[var(--color-text)]"
               >
-                <option value="">Todos os pontos</option>
-                <option value="5">5 pts</option>
-                <option value="10">10 pts</option>
-                <option value="15">15 pts</option>
-                <option value="20">20 pts</option>
-                <option value="30">30 pts</option>
-                <option value="50">50 pts</option>
+                <option value="">{t('library.allPoints', { ns: 'game' })}</option>
+                <option value="5">{t('entities.pointsShort', { ns: 'common', count: 5 })}</option>
+                <option value="10">{t('entities.pointsShort', { ns: 'common', count: 10 })}</option>
+                <option value="15">{t('entities.pointsShort', { ns: 'common', count: 15 })}</option>
+                <option value="20">{t('entities.pointsShort', { ns: 'common', count: 20 })}</option>
+                <option value="30">{t('entities.pointsShort', { ns: 'common', count: 30 })}</option>
+                <option value="50">{t('entities.pointsShort', { ns: 'common', count: 50 })}</option>
               </select>
             </div>
           </div>
@@ -292,13 +295,13 @@ export function QuestionLibraryModal({
           <aside className="border-b border-white/8 bg-black/10 xl:border-b-0 xl:border-r xl:border-white/8">
             <div className="flex h-full min-h-0 flex-col">
               <div className="border-b border-white/8 px-5 py-4">
-                <p className="text-[10px] font-semibold uppercase tracking-[0.35em] text-[var(--color-muted)]">Filmes</p>
+                <p className="text-[10px] font-semibold uppercase tracking-[0.35em] text-[var(--color-muted)]">{t('library.films', { ns: 'game' })}</p>
               </div>
               <div className="min-h-0 flex-1 overflow-y-auto px-3 py-3">
                 {filteredBoard.length === 0 ? (
                   <EmptyStatePanel
-                    title="Nada encontrado"
-                    description={board.length === 0 ? 'Adicione o primeiro filme para começar a montar o board.' : 'Nenhum filme corresponde aos filtros atuais.'}
+                    title={t('library.nothingFound', { ns: 'game' })}
+                    description={board.length === 0 ? t('library.emptyBoard', { ns: 'game' }) : t('library.noFilterResult', { ns: 'game' })}
                   />
                 ) : (
                   <div className="space-y-2">
@@ -315,9 +318,9 @@ export function QuestionLibraryModal({
                           <div className="flex items-start justify-between gap-3">
                             <div className="min-w-0 flex-1">
                               <p className="truncate text-sm font-semibold text-[var(--color-text)]">{column.film}</p>
-                              <p className="mt-1 text-xs text-[var(--color-muted)]">{column.tiles.length} pergunta{column.tiles.length !== 1 ? 's' : ''}</p>
+                              <p className="mt-1 text-xs text-[var(--color-muted)]">{t('entities.question', { ns: 'common', count: column.tiles.length })}</p>
                             </div>
-                            <span className="rounded-full border border-white/8 bg-black/20 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.2em] text-[var(--color-muted)]">editor</span>
+                            <span className="rounded-full border border-white/8 bg-black/20 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.2em] text-[var(--color-muted)]">{t('library.editor', { ns: 'game' })}</span>
                           </div>
                           <div className="mt-3 flex flex-wrap gap-2">
                             {Object.entries(pointSummary).slice(0, 4).map(([points, count]) => (
@@ -338,25 +341,25 @@ export function QuestionLibraryModal({
           <section className="editor-pane min-h-0 overflow-y-auto px-6 py-5">
             {!selectedColumn ? (
               <EmptyStatePanel
-                title="Selecione um filme"
-                description="Escolha um item na coluna da esquerda para editar título, pontos, perguntas e respostas."
+                title={t('library.selectFilm', { ns: 'game' })}
+                description={t('library.selectFilmDescription', { ns: 'game' })}
               />
             ) : (
               <div className="space-y-5">
                 <div className="flex flex-col gap-4 rounded-[28px] border border-white/10 bg-black/10 p-5 xl:flex-row xl:items-start xl:justify-between">
                   <div className="min-w-0 flex-1">
-                    <p className="text-[10px] font-semibold uppercase tracking-[0.35em] text-[var(--color-muted)]">Filme selecionado</p>
+                    <p className="text-[10px] font-semibold uppercase tracking-[0.35em] text-[var(--color-muted)]">{t('library.selectedFilm', { ns: 'game' })}</p>
                     <input
                       value={selectedColumn.film}
                       onChange={(event) => onUpdateColumnTitle(selectedColumn.id, event.target.value)}
                       className="mt-3 w-full rounded-2xl border border-white/10 bg-white/[0.03] px-4 py-3 text-lg font-semibold text-[var(--color-text)] focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)]"
                     />
-                    <p className="mt-2 text-sm text-[var(--color-muted)]">{selectedColumn.tiles.length} pergunta{selectedColumn.tiles.length !== 1 ? 's' : ''} conectadas a este filme.</p>
+                    <p className="mt-2 text-sm text-[var(--color-muted)]">{t('library.connectedQuestions', { ns: 'game', questions: t('entities.question', { ns: 'common', count: selectedColumn.tiles.length }) })}</p>
                   </div>
                   <div className="flex flex-wrap gap-2 xl:justify-end">
                     <Button variant="secondary" size="sm" onClick={() => onAddQuestion(selectedColumn.id)} className="gap-2">
                       <Plus size={16} />
-                      Adicionar pergunta
+                      {t('library.addQuestion', { ns: 'game' })}
                     </Button>
                     <Button
                       variant="ghost"
@@ -369,19 +372,19 @@ export function QuestionLibraryModal({
                       className="gap-2 text-[var(--color-danger)] hover:bg-[var(--color-danger)]/10 hover:text-[var(--color-danger)]"
                     >
                       <Trash2 size={16} />
-                      Remover filme
+                      {t('library.removeFilm', { ns: 'game' })}
                     </Button>
                   </div>
                 </div>
 
                 {editorTiles.length === 0 ? (
                   <EmptyStatePanel
-                    title="Sem perguntas neste filme"
-                    description="Adicione a primeira pergunta para começar a preencher o tabuleiro deste filme."
+                    title={t('library.noQuestions', { ns: 'game' })}
+                    description={t('library.noQuestionsDescription', { ns: 'game' })}
                     action={
                       <Button variant="outline" size="sm" onClick={() => onAddQuestion(selectedColumn.id)} className="gap-2">
                         <Plus size={16} />
-                        Criar primeira pergunta
+                        {t('library.firstQuestion', { ns: 'game' })}
                       </Button>
                     }
                   />
@@ -392,7 +395,7 @@ export function QuestionLibraryModal({
                         <div className="flex flex-col gap-4 xl:flex-row xl:items-start xl:justify-between">
                           <div className="flex items-center gap-3">
                             <div className="rounded-2xl border border-[var(--color-primary)]/20 bg-[var(--color-primary)]/10 px-4 py-3">
-                              <p className="text-[10px] font-semibold uppercase tracking-[0.25em] text-[var(--color-muted)]">Pontos</p>
+                              <p className="text-[10px] font-semibold uppercase tracking-[0.25em] text-[var(--color-muted)]">{t('library.points', { ns: 'game' })}</p>
                               <input
                                 type="number"
                                 min={0}
@@ -407,7 +410,7 @@ export function QuestionLibraryModal({
                             variant="ghost"
                             size="icon"
                             onClick={() => onRemoveQuestion(selectedColumn.id, tile.id)}
-                            aria-label="Remover pergunta"
+                            aria-label={t('library.removeQuestion', { ns: 'game' })}
                             className="text-[var(--color-danger)] hover:bg-[var(--color-danger)]/10 hover:text-[var(--color-danger)]"
                           >
                             <Trash2 size={18} />
@@ -416,21 +419,21 @@ export function QuestionLibraryModal({
 
                         <div className="mt-5 grid gap-4 xl:grid-cols-2">
                           <label className="block">
-                            <span className="mb-2 block text-[10px] font-semibold uppercase tracking-[0.35em] text-[var(--color-muted)]">Pergunta</span>
+                            <span className="mb-2 block text-[10px] font-semibold uppercase tracking-[0.35em] text-[var(--color-muted)]">{t('library.question', { ns: 'game' })}</span>
                             <textarea
                               value={tile.question}
                               onChange={(event) => onUpdateTileContent(tile.id, { question: event.target.value })}
                               className="min-h-[150px] w-full rounded-2xl border border-white/10 bg-black/20 px-4 py-3 text-base text-[var(--color-text)] focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)]"
-                              placeholder="Digite a pergunta..."
+                              placeholder={t('library.questionPlaceholder', { ns: 'game' })}
                             />
                           </label>
                           <label className="block">
-                            <span className="mb-2 block text-[10px] font-semibold uppercase tracking-[0.35em] text-[var(--color-muted)]">Resposta</span>
+                            <span className="mb-2 block text-[10px] font-semibold uppercase tracking-[0.35em] text-[var(--color-muted)]">{t('library.answer', { ns: 'game' })}</span>
                             <textarea
                               value={tile.answer}
                               onChange={(event) => onUpdateTileContent(tile.id, { answer: event.target.value })}
                               className="min-h-[150px] w-full rounded-2xl border border-white/10 bg-black/20 px-4 py-3 text-base text-[var(--color-text)] focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)]"
-                              placeholder="Digite a resposta..."
+                              placeholder={t('library.answerPlaceholder', { ns: 'game' })}
                             />
                           </label>
                         </div>
@@ -447,8 +450,8 @@ export function QuestionLibraryModal({
       {showImportModal ? (
         <Modal
           isOpen={showImportModal}
-          title={importPreview ? 'Preview de Importação' : 'Importar filmes e perguntas'}
-          description={importPreview ? 'Revise o conteúdo antes de aplicar ao board.' : 'Selecione um arquivo JSON exportado pela própria biblioteca.'}
+          title={importPreview ? t('library.importPreviewTitle', { ns: 'game' }) : t('library.importTitle', { ns: 'game' })}
+          description={importPreview ? t('library.importPreviewDescription', { ns: 'game' }) : t('library.importDescription', { ns: 'game' })}
           onClose={() => {
             setShowImportModal(false)
             setImportPreview(null)
@@ -461,11 +464,11 @@ export function QuestionLibraryModal({
                   <div className="flex items-start gap-3">
                     <AlertCircle className="mt-0.5 h-5 w-5 flex-shrink-0 text-[var(--color-primary)]" />
                     <div className="flex-1 text-sm text-[var(--color-text)]">
-                      <p className="mb-2 font-semibold">Como importar</p>
+                      <p className="mb-2 font-semibold">{t('library.howToImport', { ns: 'game' })}</p>
                       <ol className="list-inside list-decimal space-y-1 text-xs text-[var(--color-muted)]">
-                        <li>Exporte a biblioteca atual.</li>
-                        <li>Ou monte um JSON no mesmo formato.</li>
-                        <li>Selecione o arquivo e revise o preview.</li>
+                        <li>{t('library.exportStep', { ns: 'game' })}</li>
+                        <li>{t('library.formatStep', { ns: 'game' })}</li>
+                        <li>{t('library.reviewStep', { ns: 'game' })}</li>
                       </ol>
                     </div>
                   </div>
@@ -474,7 +477,7 @@ export function QuestionLibraryModal({
                   <label className="inline-flex cursor-pointer items-center gap-2 rounded-xl border border-[var(--color-primary)] bg-[var(--color-primary)]/10 px-6 py-3 transition hover:bg-[var(--color-primary)]/20">
                     <span className="flex items-center gap-2 text-sm font-semibold text-[var(--color-primary)]">
                       <Upload size={18} />
-                      Selecionar JSON
+                      {t('library.selectJson', { ns: 'game' })}
                     </span>
                     <input
                       type="file"
@@ -492,7 +495,7 @@ export function QuestionLibraryModal({
                             const result = importFilmsWithQuestions(data, board)
                             setImportPreview(result)
                           } catch {
-                            toast.error('Erro ao processar arquivo. Verifique se é um JSON válido.')
+                            toast.error(t('library.invalidJson', { ns: 'game' }))
                           }
                         }
                         reader.readAsText(file)
@@ -510,10 +513,10 @@ export function QuestionLibraryModal({
                       <CheckCircle2 className="mt-0.5 h-5 w-5 flex-shrink-0 text-[var(--color-success)]" />
                       <div>
                         <p className="text-sm font-semibold text-[var(--color-text)]">
-                          {importPreview.films.length} filme{importPreview.films.length !== 1 ? 's' : ''} pronto{importPreview.films.length !== 1 ? 's' : ''} para importar.
+                          {t('library.readyFilms', { ns: 'game', films: t('entities.film', { ns: 'common', count: importPreview.films.length }) })}
                         </p>
                         <p className="mt-1 text-xs text-[var(--color-muted)]">
-                          Total de perguntas: {importPreview.films.reduce((sum, film) => sum + film.questions.length, 0)}
+                          {t('library.totalQuestions', { ns: 'game', count: importPreview.films.reduce<number>((sum, film) => sum + film.questions.length, 0) })}
                         </p>
                       </div>
                     </div>
@@ -525,7 +528,7 @@ export function QuestionLibraryModal({
                     <div className="flex items-start gap-3">
                       <AlertCircle className="mt-0.5 h-5 w-5 flex-shrink-0 text-[var(--color-danger)]" />
                       <div className="flex-1">
-                        <p className="mb-2 text-sm font-semibold text-[var(--color-text)]">Erros encontrados</p>
+                        <p className="mb-2 text-sm font-semibold text-[var(--color-text)]">{t('library.importErrors', { ns: 'game' })}</p>
                         <ul className="space-y-1 text-xs text-[var(--color-muted)]">
                           {importPreview.errors.map((error, index) => (
                             <li key={index}>• {error}</li>
@@ -541,7 +544,7 @@ export function QuestionLibraryModal({
                     <div className="flex items-start gap-3">
                       <AlertCircle className="mt-0.5 h-5 w-5 flex-shrink-0 text-[var(--color-secondary)]" />
                       <div className="flex-1">
-                        <p className="mb-2 text-sm font-semibold text-[var(--color-text)]">Avisos</p>
+                        <p className="mb-2 text-sm font-semibold text-[var(--color-text)]">{t('library.importWarnings', { ns: 'game' })}</p>
                         <ul className="max-h-32 space-y-1 overflow-y-auto text-xs text-[var(--color-muted)]">
                           {importPreview.warnings.map((warning, index) => (
                             <li key={index}>• {warning}</li>
@@ -558,13 +561,13 @@ export function QuestionLibraryModal({
                       <div className="flex items-center justify-between gap-3">
                         <h4 className="text-sm font-semibold text-[var(--color-text)]">{film.name}</h4>
                         <span className="rounded-full bg-[var(--color-primary)]/10 px-2 py-1 text-xs font-semibold text-[var(--color-primary)]">
-                          {film.questions.length} pergunta{film.questions.length !== 1 ? 's' : ''}
+                          {t('entities.question', { ns: 'common', count: film.questions.length })}
                         </span>
                       </div>
                       <div className="mt-3 space-y-1">
                         {film.questions.slice(0, 3).map((question, questionIndex) => (
                           <div key={questionIndex} className="flex items-start gap-2 text-xs text-[var(--color-muted)]">
-                            <span className="font-semibold text-[var(--color-primary)]">{question.points}pts</span>
+                            <span className="font-semibold text-[var(--color-primary)]">{t('entities.pointsShort', { ns: 'common', count: question.points })}</span>
                             <span className="line-clamp-1 flex-1">{question.question}</span>
                           </div>
                         ))}
@@ -575,7 +578,7 @@ export function QuestionLibraryModal({
 
                 <div className="flex gap-3">
                   <Button variant="outline" onClick={() => setImportPreview(null)} className="flex-1">
-                    Voltar
+                    {t('actions.back', { ns: 'common' })}
                   </Button>
                   <Button
                     variant="secondary"
@@ -594,7 +597,7 @@ export function QuestionLibraryModal({
                     }}
                   >
                     <CheckCircle2 className="mr-2 h-4 w-4" />
-                    Importar filmes
+                    {t('library.importFilms', { ns: 'game' })}
                   </Button>
                 </div>
               </div>

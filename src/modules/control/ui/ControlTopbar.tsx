@@ -2,6 +2,7 @@ import { Cloud, Database, HardDrive, LogOut, Menu, MonitorPlay, UserCircle } fro
 import { Button } from '@/components/ui/Button'
 import type { CloudSyncStatus } from '@/modules/game/application/useCloudSync'
 import { SyncStatusIndicator } from './SyncStatusIndicator'
+import { useTranslation } from '@/shared/i18n'
 
 interface ControlTopbarProps {
   title: string
@@ -30,11 +31,12 @@ const modeBgClasses = {
 }
 
 export function ControlTopbar({ title, modeLabel, mode, syncStatus, lastSyncedAt, onForceSync, onOpenSessions, onExit, onToggleSidebar, onOpenAccount }: ControlTopbarProps) {
+  const { t } = useTranslation('control')
   const ModeIcon = modeIcons[mode]
 
   return (
     <header className="flex h-12 shrink-0 items-center gap-3 border-b border-white/8 bg-[var(--glass-bg)]/95 px-3 backdrop-blur-xl lg:px-4">
-      <Button variant="ghost" size="icon" onClick={onToggleSidebar} className="xl:hidden" aria-label="Abrir menu lateral">
+      <Button variant="ghost" size="icon" onClick={onToggleSidebar} className="xl:hidden" aria-label={t('sidebar.open')}>
         <Menu size={16} />
       </Button>
 
@@ -53,14 +55,14 @@ export function ControlTopbar({ title, modeLabel, mode, syncStatus, lastSyncedAt
 
       <div className="flex shrink-0 items-center gap-1.5">
         {onOpenAccount !== undefined ? (
-          <Button variant="ghost" size="icon" aria-label="Minha conta" onClick={onOpenAccount}>
+          <Button variant="ghost" size="icon" aria-label={t('topbar.account')} onClick={onOpenAccount}>
             <UserCircle size={15} />
           </Button>
         ) : null}
-        <Button variant="ghost" size="icon" aria-label="Gerenciar sessões" onClick={onOpenSessions}>
+        <Button variant="ghost" size="icon" aria-label={t('topbar.sessions')} onClick={onOpenSessions}>
           <Database size={15} />
         </Button>
-        <Button variant="ghost" size="icon" aria-label="Encerrar contexto" onClick={onExit}>
+        <Button variant="ghost" size="icon" aria-label={t('topbar.exit')} onClick={onExit}>
           <LogOut size={15} />
         </Button>
       </div>

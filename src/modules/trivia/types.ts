@@ -7,7 +7,7 @@ export type TriviaParticipant = {
   name: string;
   role: TriviaRole;
   teamId?: string;
-  /** E-mail opcional para vinculação de conta (capturado apenas no modo online) */
+  /** E-mail opcional para vinculação quando os recursos conectados estão ativos. */
   email?: string;
 };
 

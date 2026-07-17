@@ -28,21 +28,21 @@ describe('OfflineOnboardingModal', () => {
       />,
     )
 
-    expect(screen.getByRole('button', { name: /Tema Claro/ })).toHaveClass(
+    expect(screen.getByRole('button', { name: /tema claro/i })).toHaveClass(
       'border-[var(--color-primary)]',
     )
 
-    await user.click(screen.getByRole('button', { name: /Tema Cinema/ }))
+    await user.click(screen.getByRole('button', { name: /tema cinema/i }))
     expect(setTheme).toHaveBeenCalledWith('cinema')
 
     await user.click(screen.getByRole('button', { name: 'Continuar' }))
     await user.click(screen.getByRole('button', { name: 'Continuar' }))
     await user.click(screen.getByRole('button', { name: 'Continuar' }))
 
-    await user.click(screen.getByRole('button', { name: 'Adicionar Time' }))
-    await user.click(screen.getByRole('button', { name: 'Adicionar Time' }))
+    await user.click(screen.getByRole('button', { name: 'Adicionar time' }))
+    await user.click(screen.getByRole('button', { name: 'Adicionar time' }))
 
-    const memberInputs = screen.getAllByPlaceholderText('Nome do membro')
+    const memberInputs = screen.getAllByPlaceholderText('Nome do participante')
     await user.type(memberInputs[0], 'Ana{enter}')
     await user.type(memberInputs[1], 'Bia{enter}')
 
@@ -72,7 +72,7 @@ describe('OfflineOnboardingModal', () => {
       />,
     )
 
-    expect(screen.getByRole('button', { name: /Tema Matrix/ })).toHaveClass(
+    expect(screen.getByRole('button', { name: /tema Matrix/i })).toHaveClass(
       'border-[var(--color-primary)]',
     )
   })

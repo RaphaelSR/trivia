@@ -3,6 +3,7 @@ import { Button } from '@/components/ui/Button'
 import type { TriviaParticipant, TriviaTeam } from '@/modules/trivia/types'
 import type { PointDistribution } from '../types/control.types'
 import { ScoreRecipientEditor } from './ScoreRecipientEditor'
+import { useTranslation } from '@/shared/i18n'
 
 type ScoringControlsProps = {
   teams: TriviaTeam[]
@@ -21,36 +22,6 @@ type OutcomeOption = {
   title: string
   description: string
 }
-
-const OUTCOME_OPTIONS: OutcomeOption[] = [
-  {
-    id: 'full',
-    title: 'Acertou',
-    description: 'Valor cheio',
-  },
-  {
-    id: 'half',
-    title: 'Parcial',
-    description: 'Meio valor',
-  },
-  {
-    // Regra da casa mais usada: quem erra não pontua e os OUTROS times
-    // ganham metade — antes exigia montar isso manualmente no Personalizar.
-    id: 'missed',
-    title: 'Errou',
-    description: 'Metade para os outros',
-  },
-  {
-    id: 'none',
-    title: 'Sem pontos',
-    description: 'Anular',
-  },
-  {
-    id: 'custom',
-    title: 'Personalizar',
-    description: 'Editar destino',
-  },
-]
 
 function getParticipantsByTeam(participants: TriviaParticipant[], teamId: string) {
   return participants.filter((participant) => participant.teamId === teamId)
@@ -78,6 +49,14 @@ export function ScoringControls({
   onConfirm,
   onClose,
 }: ScoringControlsProps) {
+  const { t } = useTranslation(['control', 'common'])
+  const outcomeOptions: OutcomeOption[] = [
+    { id: 'full', title: t('scoring.outcomes.full.title', { ns: 'control' }), description: t('scoring.outcomes.full.description', { ns: 'control' }) },
+    { id: 'half', title: t('scoring.outcomes.half.title', { ns: 'control' }), description: t('scoring.outcomes.half.description', { ns: 'control' }) },
+    { id: 'missed', title: t('scoring.outcomes.missed.title', { ns: 'control' }), description: t('scoring.outcomes.missed.description', { ns: 'control' }) },
+    { id: 'none', title: t('scoring.outcomes.none.title', { ns: 'control' }), description: t('scoring.outcomes.none.description', { ns: 'control' }) },
+    { id: 'custom', title: t('scoring.outcomes.custom.title', { ns: 'control' }), description: t('scoring.outcomes.custom.description', { ns: 'control' }) },
+  ]
   const [selectedOutcome, setSelectedOutcome] = useState<ScoreOutcome | null>(null)
   const [customModeOpen, setCustomModeOpen] = useState(false)
   const [suggestedPoints, setSuggestedPoints] = useState(basePoints)
@@ -190,17 +169,17 @@ export function ScoringControls({
       : distributions.some((distribution) => distribution.points > 0)
 
   const totalPoints = distributions.reduce((sum, distribution) => sum + distribution.points, 0)
-  const confirmLabel = selectedOutcome === 'none' ? 'Anular pergunta' : 'Aplicar pontuação'
+  const confirmLabel = selectedOutcome === 'none' ? t('scoring.voidQuestion', { ns: 'control' }) : t('scoring.apply', { ns: 'control' })
   const selectedSummary =
     selectedOutcome === null
-      ? 'Escolha um resultado.'
+      ? t('scoring.chooseOutcome', { ns: 'control' })
       : selectedOutcome === 'none'
-        ? 'Sem pontuação.'
+        ? t('scoring.noPoints', { ns: 'control' })
         : customModeOpen
-          ? `${distributions.length} destino(s), ${totalPoints} pts.`
+          ? t('scoring.customSummary', { ns: 'control', destinations: distributions.length, points: totalPoints })
           : selectedOutcome === 'missed'
-            ? `${activeTeam?.name ?? 'Time da vez'} errou — ${distributions.length} time(s) recebem ${suggestedPoints} pts cada.`
-            : `${activeTeam?.name ?? 'Time da vez'} recebe ${totalPoints} pts.`
+            ? t('scoring.missedSummary', { ns: 'control', team: activeTeam?.name ?? t('scoring.currentTeamFallback', { ns: 'control' }), teams: distributions.length, points: suggestedPoints })
+            : t('scoring.receivedSummary', { ns: 'control', team: activeTeam?.name ?? t('scoring.currentTeamFallback', { ns: 'control' }), points: totalPoints })
 
   return (
     <div className="space-y-3">
@@ -209,7 +188,7 @@ export function ScoringControls({
           <div className="grid gap-3">
             <div className="flex items-center justify-between gap-3">
               <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-[var(--color-muted)]">
-                Personalizar
+                {t('scoring.customize', { ns: 'control' })}
               </p>
               <button
                 type="button"
@@ -220,7 +199,7 @@ export function ScoringControls({
                 }}
                 className="text-xs font-semibold text-[var(--color-primary)] hover:underline"
               >
-                Voltar
+                {t('actions.back', { ns: 'common' })}
               </button>
             </div>
 
@@ -231,12 +210,12 @@ export function ScoringControls({
                 step="1"
                 value={customPointsInput}
                 onChange={(event) => handleCustomPointsChange(event.target.value)}
-                aria-label="Valor customizado"
+                aria-label={t('scoring.customValue', { ns: 'control' })}
                 className="h-9 w-20 rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)] px-2 text-sm font-semibold text-[var(--color-text)] outline-none transition focus:border-[var(--color-primary)]"
               />
               {[
-                { label: 'Cheio', points: basePoints },
-                { label: 'Metade', points: Math.round(basePoints / 2) },
+                { label: t('scoring.fullPreset', { ns: 'control' }), points: basePoints },
+                { label: t('scoring.halfPreset', { ns: 'control' }), points: Math.round(basePoints / 2) },
               ].map((preset) => (
                 <button
                   key={`${preset.label}-${preset.points}`}
@@ -256,7 +235,7 @@ export function ScoringControls({
             <div>
               <div className="flex items-center justify-between gap-2">
                 <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-[var(--color-muted)]">
-                  Quem recebe
+                  {t('scoring.recipients', { ns: 'control' })}
                 </p>
                 {/* Atalho para o roubo em cadeia: preenche todos exceto o time
                     da vez com metade; daí é só remover quem errou por último. */}
@@ -274,7 +253,7 @@ export function ScoringControls({
                   }}
                   className="rounded-full border border-[var(--color-border)] bg-[var(--color-surface)] px-2.5 py-1 text-[11px] font-semibold text-[var(--color-text)] transition hover:border-[var(--color-primary)]/40"
                 >
-                  Outros · metade
+                  {t('scoring.otherTeamsHalf', { ns: 'control' })}
                 </button>
               </div>
 
@@ -326,13 +305,13 @@ export function ScoringControls({
         <div className="rounded-xl border border-[var(--color-border)] bg-[var(--color-background)] p-3">
           <div className="flex items-center justify-between gap-3">
             <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-[var(--color-muted)]">
-              Resultado
+              {t('scoring.result', { ns: 'control' })}
             </p>
-            <span className="text-xs font-semibold text-[var(--color-primary)]">{basePoints} pts</span>
+            <span className="text-xs font-semibold text-[var(--color-primary)]">{t('entities.pointsShort', { ns: 'common', count: basePoints })}</span>
           </div>
 
           <div className="mt-2 grid grid-cols-2 gap-2">
-            {OUTCOME_OPTIONS.map((option) => {
+            {outcomeOptions.map((option) => {
               const isSelected = selectedOutcome === option.id
               return (
                 <button
@@ -350,7 +329,7 @@ export function ScoringControls({
                   <div className="flex items-center justify-between gap-2">
                     <span className="text-xs font-semibold text-[var(--color-text)]">{option.title}</span>
                     {isSelected ? (
-                      <span className="h-2 w-2 rounded-full bg-[var(--color-primary)]" aria-label="Selecionado" />
+                      <span className="h-2 w-2 rounded-full bg-[var(--color-primary)]" aria-label={t('scoring.selected', { ns: 'control' })} />
                     ) : null}
                   </div>
                   <p className="mt-0.5 text-[11px] leading-snug text-[var(--color-muted)]">{option.description}</p>
@@ -372,7 +351,7 @@ export function ScoringControls({
           {confirmLabel}
         </Button>
         <Button variant="ghost" onClick={onClose} size="sm">
-          Fechar
+          {t('actions.close', { ns: 'common' })}
         </Button>
       </div>
       <p className="text-center text-[11px] font-medium text-[var(--color-muted)]">{selectedSummary}</p>
