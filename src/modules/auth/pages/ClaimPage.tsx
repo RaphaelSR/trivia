@@ -32,7 +32,6 @@ import {
 import { isSupabaseConfigured } from '../../../shared/services/supabase.client'
 import { useAuth } from '../hooks/useAuth'
 import { AuthPanel } from '../components/AuthPanel'
-import { readViteEnv } from '../../../shared/services/vite-env'
 import {
   listClaimableParticipants,
   claimParticipantByGame,
@@ -58,10 +57,7 @@ type ClaimedParticipantSummary = {
 // Helpers
 // ---------------------------------------------------------------------------
 
-function getHomeUrl(): string {
-  const base = readViteEnv('BASE_URL') ?? '/'
-  return base
-}
+const HOME_ROUTE = '/'
 
 // ---------------------------------------------------------------------------
 // ClaimPage — dispatcher
@@ -422,7 +418,7 @@ function SuccessCard({
         </Button>
       )}
       <Link
-        to={getHomeUrl()}
+        to={HOME_ROUTE}
         className="mt-4 inline-flex min-h-11 items-center justify-center rounded-xl bg-[var(--color-primary)] px-5 py-2 text-sm font-semibold text-[var(--color-surface)] transition-opacity hover:opacity-90"
       >
         {t('claim.dashboard')}
@@ -659,7 +655,7 @@ function ClaimPageInner({ token }: ClaimPageInnerProps) {
           {errorMsg ?? t('claim.failureFallback')}
         </p>
         <Link
-          to={getHomeUrl()}
+          to={HOME_ROUTE}
           className="mt-4 inline-flex min-h-11 items-center rounded-xl border border-[var(--color-border)] bg-[var(--color-background)] px-4 py-2 text-sm text-[var(--color-muted)] transition-colors hover:text-[var(--color-text)]"
         >
           {t('claim.backHome')}
@@ -685,7 +681,7 @@ function PageShell({ children }: { children: React.ReactNode }) {
   return (
     <div className="min-h-dvh bg-[var(--color-background)] text-[var(--color-text)]">
       <header className="mx-auto flex w-full max-w-5xl items-center justify-between px-4 py-4 sm:px-6 sm:py-6">
-        <Link to={getHomeUrl()} className="inline-flex min-h-11 items-center gap-3 rounded-xl pr-3">
+        <Link to={HOME_ROUTE} className="inline-flex min-h-11 items-center gap-3 rounded-xl pr-3">
           <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-[var(--color-primary)] text-[var(--color-surface)] shadow-sm">
             <Film className="h-5 w-5" aria-hidden="true" />
           </span>
