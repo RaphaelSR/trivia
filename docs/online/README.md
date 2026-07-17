@@ -1,6 +1,6 @@
-# Modulo Online
+# Conta e Recursos Conectados
 
-O modo `online` esta ativo e continua local-first: jogar, pontuar e editar o elenco nao dependem da disponibilidade do Supabase. Quando o host entra na conta, a sessao tambem e replicada para a nuvem, ganha historico normalizado e recursos de identidade.
+O diretório mantém o nome `online` por compatibilidade documental. No produto, conta e sincronização são capacidades opcionais da `Partida completa`: jogar, pontuar e editar o elenco não dependem do Supabase. Quando o host entra, a partida também é replicada para a nuvem, ganha histórico normalizado e recursos de identidade.
 
 ## O que existe
 
@@ -16,7 +16,8 @@ O modo `online` esta ativo e continua local-first: jogar, pontuar e editar o ele
 
 ## Limites deliberados
 
-- `demo` e `offline` nao usam QR, RPCs de claim ou identidades remotas dentro do jogo;
+- `Demo` nunca usa QR, RPCs de claim ou identidades remotas. Partidas completas deslogadas também não fazem essas chamadas;
+- o valor interno `offline` pode sincronizar quando há conta; o gate correto é a capacidade conectada, não o nome do modo;
 - identidade e claims nao entram em `TriviaSession` nem no motor de turnos;
 - campeonatos e leaderboards entre partidas continuam planejados;
 - migrations sao aplicadas manualmente no Supabase antes do frontend correspondente.

@@ -83,14 +83,19 @@ function pruneOtherSessions(keepSessionId: string): void {
  * Descreve a jogada que um novo evento do log representa, para rotular o
  * checkpoint do estado anterior a ela.
  */
-export function describeMove(event: GameEvent | undefined): string {
-  if (!event) return 'Antes de um ajuste no placar'
+export type CheckpointMoveDescriptor =
+  | { type: 'score-adjustment' }
+  | { type: 'mimica'; points: number }
+  | { type: 'trivia-void'; film: string | null }
+  | { type: 'trivia-answer'; film: string | null; points: number }
+
+export function describeMove(event: GameEvent | undefined): CheckpointMoveDescriptor {
+  if (!event) return { type: 'score-adjustment' }
   if (event.source === 'mimica') {
-    return `Antes da mímica (${event.pointsAwarded} pts)`
+    return { type: 'mimica', points: event.pointsAwarded }
   }
-  const film = event.film ?? 'uma pergunta'
   if (event.type === 'trivia-void') {
-    return `Antes de anular ${film}`
+    return { type: 'trivia-void', film: event.film ?? null }
   }
-  return `Antes de responder ${film} (${event.pointsAwarded} pts)`
+  return { type: 'trivia-answer', film: event.film ?? null, points: event.pointsAwarded }
 }

@@ -3,6 +3,7 @@ import { Modal } from "./Modal";
 import { Button } from "./Button";
 import { useSoundSettings } from "../../hooks/useSoundSettings";
 import { playSound, type SoundName } from "../../shared/services/audio.service";
+import { useTranslation } from "@/shared/i18n";
 
 interface SoundSettingsModalProps {
   isOpen: boolean;
@@ -37,6 +38,7 @@ function Toggle({ checked, onChange, label, hint }: { checked: boolean; onChange
  * mímica e nas perguntas — o cronômetro é compartilhado pelos dois.
  */
 export function SoundSettingsModal({ isOpen, onClose }: SoundSettingsModalProps) {
+  const { t } = useTranslation(['control', 'common']);
   const { settings, update } = useSoundSettings();
 
   const test = (name: SoundName) => {
@@ -47,7 +49,7 @@ export function SoundSettingsModal({ isOpen, onClose }: SoundSettingsModalProps)
   };
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} title="Sons">
+    <Modal isOpen={isOpen} onClose={onClose} title={t('sound.title', { ns: 'control' })}>
       <div className="space-y-5 p-6">
         <div className="flex items-start gap-3 rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] p-3">
           {settings.enabled ? (
@@ -56,22 +58,20 @@ export function SoundSettingsModal({ isOpen, onClose }: SoundSettingsModalProps)
             <VolumeX className="mt-0.5 h-5 w-5 shrink-0 text-[var(--color-muted)]" />
           )}
           <p className="text-sm text-[var(--color-text)]">
-            Efeitos sonoros tocam no <strong>cronômetro</strong> (tique nos últimos segundos e fim do tempo —
-            vale para perguntas e mímica) e no <strong>feedback de resposta</strong> (acerto/erro). Comece
-            ligando aqui.
+            {t('sound.description', { ns: 'control' })}
           </p>
         </div>
 
         <Toggle
           checked={settings.enabled}
           onChange={(v) => update({ enabled: v })}
-          label="Ativar sons"
-          hint="Liga/desliga todos os efeitos sonoros"
+          label={t('sound.enabled', { ns: 'control' })}
+          hint={t('sound.enabledHint', { ns: 'control' })}
         />
 
         {/* Volume */}
         <div className={settings.enabled ? "" : "pointer-events-none opacity-50"}>
-          <label className="mb-1 block text-sm font-medium text-[var(--color-text)]">Volume</label>
+          <label className="mb-1 block text-sm font-medium text-[var(--color-text)]">{t('sound.volume', { ns: 'control' })}</label>
           <input
             type="range"
             min={0}
@@ -79,24 +79,24 @@ export function SoundSettingsModal({ isOpen, onClose }: SoundSettingsModalProps)
             value={Math.round(settings.volume * 100)}
             onChange={(e) => update({ volume: Number(e.target.value) / 100 })}
             className="w-full accent-[var(--color-primary)]"
-            aria-label="Volume dos sons"
+            aria-label={t('sound.volumeLabel', { ns: 'control' })}
           />
         </div>
 
         {/* Por momento */}
         <div className={`space-y-2 ${settings.enabled ? "" : "pointer-events-none opacity-50"}`}>
-          <h4 className="text-xs font-semibold uppercase tracking-[0.2em] text-[var(--color-muted)]">Em quais momentos</h4>
+          <h4 className="text-xs font-semibold uppercase tracking-[0.2em] text-[var(--color-muted)]">{t('sound.moments', { ns: 'control' })}</h4>
 
           <div className="flex items-center gap-2">
             <div className="flex-1">
               <Toggle
                 checked={settings.timer}
                 onChange={(v) => update({ timer: v })}
-                label="Cronômetro"
-                hint="Tique nos últimos 5s e fim do tempo (perguntas e mímica)"
+                label={t('sound.timer', { ns: 'control' })}
+                hint={t('sound.timerHint', { ns: 'control' })}
               />
             </div>
-            <Button variant="outline" size="icon" aria-label="Testar som do cronômetro" onClick={() => test("timeUp")}>
+            <Button variant="outline" size="icon" aria-label={t('sound.testTimer', { ns: 'control' })} onClick={() => test("timeUp")}>
               <Play size={16} />
             </Button>
           </div>
@@ -106,11 +106,11 @@ export function SoundSettingsModal({ isOpen, onClose }: SoundSettingsModalProps)
               <Toggle
                 checked={settings.feedback}
                 onChange={(v) => update({ feedback: v })}
-                label="Acerto / erro"
-                hint="Som ao pontuar uma pergunta ou anulá-la"
+                label={t('sound.feedback', { ns: 'control' })}
+                hint={t('sound.feedbackHint', { ns: 'control' })}
               />
             </div>
-            <Button variant="outline" size="icon" aria-label="Testar som de acerto" onClick={() => test("correct")}>
+            <Button variant="outline" size="icon" aria-label={t('sound.testCorrect', { ns: 'control' })} onClick={() => test("correct")}>
               <Play size={16} />
             </Button>
           </div>
@@ -118,7 +118,7 @@ export function SoundSettingsModal({ isOpen, onClose }: SoundSettingsModalProps)
 
         <div className="flex justify-end border-t border-[var(--color-border)] pt-4">
           <Button variant="outline" onClick={onClose}>
-            Fechar
+            {t('actions.close', { ns: 'common' })}
           </Button>
         </div>
       </div>

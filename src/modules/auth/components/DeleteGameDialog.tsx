@@ -12,6 +12,7 @@ import { useState } from 'react'
 import { Trash2, X } from 'lucide-react'
 import { verifyPassword } from '../services/auth.service'
 import { deleteNormalizedGame } from '../services/normalized-history.service'
+import { useTranslation } from '@/shared/i18n'
 
 interface DeleteGameDialogProps {
   gameId: string
@@ -21,13 +22,14 @@ interface DeleteGameDialogProps {
 }
 
 export function DeleteGameDialog({ gameId, gameTitle, onClose, onSuccess }: DeleteGameDialogProps) {
+  const { t } = useTranslation(['auth', 'common'])
   const [password, setPassword] = useState('')
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
 
   async function handleConfirm() {
     if (!password.trim()) {
-      setError('Digite sua senha para confirmar.')
+      setError(t('deleteGame.missingPassword', { ns: 'auth' }))
       return
     }
 
@@ -37,7 +39,7 @@ export function DeleteGameDialog({ gameId, gameTitle, onClose, onSuccess }: Dele
     try {
       const valid = await verifyPassword(password)
       if (!valid) {
-        setError('Senha incorreta.')
+        setError(t('deleteGame.wrongPassword', { ns: 'auth' }))
         setLoading(false)
         return
       }
@@ -51,7 +53,7 @@ export function DeleteGameDialog({ gameId, gameTitle, onClose, onSuccess }: Dele
 
       onSuccess()
     } catch {
-      setError('Ocorreu um erro inesperado. Tente novamente.')
+      setError(t('deleteGame.unexpectedError', { ns: 'auth' }))
       setLoading(false)
     }
   }
@@ -72,7 +74,7 @@ export function DeleteGameDialog({ gameId, gameTitle, onClose, onSuccess }: Dele
       >
         {/* Botão fechar */}
         <button
-          aria-label="Fechar"
+          aria-label={t('actions.close', { ns: 'common' })}
           onClick={onClose}
           disabled={loading}
           className="absolute right-4 top-4 text-[var(--color-muted)] transition-colors hover:text-[var(--color-text)] disabled:opacity-40"
@@ -86,25 +88,25 @@ export function DeleteGameDialog({ gameId, gameTitle, onClose, onSuccess }: Dele
             <Trash2 className="h-5 w-5 text-red-400" />
           </div>
           <p id="delete-game-title" className="text-sm font-semibold text-[var(--color-text)]">
-            Excluir partida
+            {t('deleteGame.title', { ns: 'auth' })}
           </p>
         </div>
 
         {/* Aviso */}
         <p className="mb-1 text-xs leading-relaxed text-[var(--color-muted)]">
-          Você está prestes a excluir permanentemente a partida:
+          {t('deleteGame.warning', { ns: 'auth' })}
         </p>
         <p className="mb-3 truncate rounded-lg border border-white/8 bg-white/5 px-3 py-2 text-xs font-medium text-[var(--color-text)]">
           {gameTitle}
         </p>
         <p className="mb-4 text-xs leading-relaxed text-[var(--color-muted)]">
-          Esta ação <strong className="text-[var(--color-text)]">não pode ser desfeita</strong>. Times, participantes, perguntas e histórico serão removidos definitivamente.
+          {t('deleteGame.consequence', { ns: 'auth' })}
         </p>
 
         {/* Campo de senha */}
         <div className="mb-3">
           <label className="mb-1 block text-xs text-[var(--color-muted)]">
-            Confirme sua senha
+            {t('deleteGame.confirmPassword', { ns: 'auth' })}
           </label>
           <input
             type="password"
@@ -141,7 +143,7 @@ export function DeleteGameDialog({ gameId, gameTitle, onClose, onSuccess }: Dele
             disabled={loading}
             className="flex-1 rounded-lg border border-white/10 bg-white/5 py-2 text-sm text-[var(--color-muted)] transition-colors hover:border-white/20 hover:text-[var(--color-text)] disabled:opacity-40"
           >
-            Cancelar
+            {t('actions.cancel', { ns: 'common' })}
           </button>
           <button
             type="button"
@@ -149,7 +151,7 @@ export function DeleteGameDialog({ gameId, gameTitle, onClose, onSuccess }: Dele
             disabled={loading || !password.trim()}
             className="flex-1 rounded-lg bg-red-500 py-2 text-sm font-semibold text-white transition-opacity hover:opacity-90 disabled:opacity-40"
           >
-            {loading ? 'Excluindo…' : 'Excluir'}
+            {loading ? t('deleteGame.deleting', { ns: 'auth' }) : t('actions.delete', { ns: 'common' })}
           </button>
         </div>
       </div>

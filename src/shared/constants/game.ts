@@ -17,18 +17,6 @@ export const MIMICA_SCORING_MODES: MimicaScoringMode[] = [
   'void',
 ]
 
-export const GAME_MODE_LABELS: Record<GameMode, string> = {
-  demo: 'Modo Demo',
-  offline: 'Sessão Local',
-  online: 'Online (interno)',
-}
-
-export const GAME_MODE_DESCRIPTIONS: Record<GameMode, string> = {
-  demo: 'Apresentação rápida com dados de exemplo',
-  offline: 'Salva por sessão e navegador neste dispositivo',
-  online: 'Camada interna reservada para evolucao futura',
-}
-
 export const DEMO_TEAM_OPTIONS = [3, 4, 5] as const
 export const DEMO_MEMBERS_PER_TEAM_OPTIONS = [3, 4, 5] as const
 export const DEMO_QUESTION_OPTIONS = [9, 18, 27] as const

@@ -218,7 +218,7 @@ describe('rodadas completas', () => {
 
     expect(getCompleteRoundNumber(sequence[17], sequence, unevenTeams, participants, 17)).toBe(1)
     expect(getCompleteRoundNumber(sequence[18], sequence, unevenTeams, participants, 18)).toBe(2)
-    expect(getCompleteRoundLabel(sequence[18], sequence, unevenTeams, participants, 18)).toBe('Rodada 2')
+    expect(getCompleteRoundLabel(sequence[18], sequence, unevenTeams, participants, 18)).toBe('2')
   })
 })
 

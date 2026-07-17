@@ -50,7 +50,7 @@ function normalizeDemoConfig(config?: DemoSessionConfig): DemoSessionConfig {
   }
 }
 
-function buildDemoTeams(config: DemoSessionConfig): {
+function buildDemoTeams(config: DemoSessionConfig, playerFallback?: (number: number) => string): {
   teams: TriviaTeam[]
   participants: TriviaParticipant[]
 } {
@@ -60,7 +60,7 @@ function buildDemoTeams(config: DemoSessionConfig): {
     const members = Array.from({ length: config.membersPerTeam }, (_, memberIndex) => {
       const globalIndex = teamIndex * config.membersPerTeam + memberIndex
       const participantId = `participant-${globalIndex + 1}`
-      const fallbackName = `Jogador ${globalIndex + 1}`
+      const fallbackName = playerFallback?.(globalIndex + 1) ?? `#${globalIndex + 1}`
       participants.push({
         id: participantId,
         name: demoParticipantNames[globalIndex] ?? fallbackName,
@@ -160,9 +160,12 @@ function buildDemoBoard(questionCount: number) {
     .filter((column): column is NonNullable<typeof column> => column !== null)
 }
 
-export function createLocalSession(config?: DemoSessionConfig): TriviaSession {
+export function createLocalSession(
+  config?: DemoSessionConfig,
+  copy?: { title?: string; themeName?: string; demoPlayer?: (number: number) => string },
+): TriviaSession {
   const demoConfig = normalizeDemoConfig(config)
-  const { teams, participants } = buildDemoTeams(demoConfig)
+  const { teams, participants } = buildDemoTeams(demoConfig, copy?.demoPlayer)
   const board = buildDemoBoard(demoConfig.questionCount)
   const totalQuestions = board.reduce((total, column) => total + column.tiles.length, 0)
   const turnSequence = createBalancedTurnSequence(teams, totalQuestions)
@@ -170,11 +173,11 @@ export function createLocalSession(config?: DemoSessionConfig): TriviaSession {
 
   return {
     id: 'local-session',
-    title: `Trivia Demo ${demoConfig.teamCount}x${demoConfig.membersPerTeam}`,
+    title: copy?.title ?? 'Trivia',
     scheduledAt: new Date().toISOString(),
     theme: {
       id: 'default-dark',
-      name: 'Tema Escuro',
+      name: copy?.themeName ?? 'dark',
       palette: {
         background: 'var(--color-background)',
         primary: '#818cf8',

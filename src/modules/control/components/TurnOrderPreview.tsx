@@ -7,6 +7,7 @@ import {
   buildTurnPreviewGroupsFromSequence,
   getRecommendedPreviewTurnCount,
 } from '@/modules/game/domain/turn-order'
+import { useTranslation } from '@/shared/i18n'
 
 type TurnOrderPreviewProps = {
   teams: TriviaTeam[]
@@ -27,10 +28,13 @@ export function TurnOrderPreview({
   sequenceSource = 'session',
   activeTurnIndex = 0,
   maxGroups = 2,
-  title = 'Ordem prevista da partida',
-  description = 'A rodada fecha quando todos os participantes aparecerem pelo menos uma vez.',
+  title,
+  description,
   onReorganize,
 }: TurnOrderPreviewProps) {
+  const { t } = useTranslation('control')
+  const resolvedTitle = title ?? t('turnPreview.defaultTitle')
+  const resolvedDescription = description ?? t('turnPreview.defaultDescription')
   const previewGroups = useMemo(() => {
     if (turnSequence.length) {
       const allGroups = buildTurnPreviewGroupsFromSequence(teams, participants, turnSequence)
@@ -49,16 +53,16 @@ export function TurnOrderPreview({
 
   const previewHint = useMemo(() => {
     if (!teams.length || !participants.length) {
-      return 'Adicione ao menos dois times com participantes para ver a prévia.'
+      return t('turnPreview.missingTeams')
     }
     if (!turnSequence.length) {
-      return 'Prévia estimada pela ordem dos times. Ela mostra como a rotação deve acontecer quando houver perguntas suficientes.'
+      return t('turnPreview.estimated')
     }
     if (sequenceSource === 'draft') {
-      return 'Prévia calculada com o rascunho atual. Ela só passa a valer no jogo depois de salvar os times.'
+      return t('turnPreview.draft')
     }
-    return 'Esta é a sequência real salva na sessão. Turnos concluídos ficam atenuados e o turno atual aparece em destaque.'
-  }, [participants.length, sequenceSource, teams.length, turnSequence.length])
+    return t('turnPreview.session')
+  }, [participants.length, sequenceSource, t, teams.length, turnSequence.length])
 
   const playableTeams = teams.filter(team => team.members.length > 0).length
   const shownTurns = previewGroups.reduce((total, group) => total + group.entries.length, 0)
@@ -67,23 +71,23 @@ export function TurnOrderPreview({
     <section className="rounded-2xl border border-[var(--color-border)] bg-[var(--color-background)] p-4">
       <div className="flex flex-col justify-between gap-3 sm:flex-row sm:items-start">
         <div className="space-y-1">
-          <p className="text-xs font-semibold uppercase tracking-[0.28em] text-[var(--color-muted)]">Preview de turnos</p>
-          <h4 className="text-base font-semibold text-[var(--color-text)]">{title}</h4>
-          <p className="max-w-2xl text-sm leading-6 text-[var(--color-muted)]">{description}</p>
+          <p className="text-xs font-semibold uppercase tracking-[0.28em] text-[var(--color-muted)]">{t('turnPreview.eyebrow')}</p>
+          <h4 className="text-base font-semibold text-[var(--color-text)]">{resolvedTitle}</h4>
+          <p className="max-w-2xl text-sm leading-6 text-[var(--color-muted)]">{resolvedDescription}</p>
         </div>
         {onReorganize ? (
           <Button variant="outline" onClick={onReorganize} className="shrink-0">
             <RefreshCw size={15} />
-            Reorganizar próximos
+            {t('turnPreview.reorganize')}
           </Button>
         ) : null}
       </div>
 
       <div className="mt-4 grid gap-2 sm:grid-cols-3">
         {[
-          { icon: UsersRound, label: 'Times jogando', value: playableTeams },
-          { icon: UsersRound, label: 'Participantes', value: participants.length },
-          { icon: ListOrdered, label: 'Turnos exibidos', value: shownTurns },
+          { icon: UsersRound, label: t('turnPreview.playingTeams'), value: playableTeams },
+          { icon: UsersRound, label: t('turnPreview.participants'), value: participants.length },
+          { icon: ListOrdered, label: t('turnPreview.shownTurns'), value: shownTurns },
         ].map(item => (
           <div key={item.label} className="flex items-center gap-3 rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] px-3 py-2">
             <item.icon size={16} className="text-[var(--color-primary)]" />
@@ -105,10 +109,10 @@ export function TurnOrderPreview({
             <article key={`${group.label}-${group.number}`} className="rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] p-4">
               <div className="flex flex-wrap items-center justify-between gap-2">
                 <div className="flex items-center gap-2">
-                  <h5 className="text-sm font-semibold text-[var(--color-text)]">{group.label}</h5>
-                  {group.isPartial ? <span className="rounded-full border border-[var(--color-secondary)]/30 bg-[var(--color-secondary)]/10 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.2em] text-[var(--color-secondary)]">Parcial</span> : null}
+                  <h5 className="text-sm font-semibold text-[var(--color-text)]">{t('turnPreview.round', { round: group.number })}</h5>
+                  {group.isPartial ? <span className="rounded-full border border-[var(--color-secondary)]/30 bg-[var(--color-secondary)]/10 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.2em] text-[var(--color-secondary)]">{t('turnPreview.partial')}</span> : null}
                 </div>
-                <span className="text-xs text-[var(--color-muted)]">{group.entries.length} turnos</span>
+                <span className="text-xs text-[var(--color-muted)]">{t('turnPreview.turnCount', { count: group.entries.length })}</span>
               </div>
               <div className="mt-3 flex flex-wrap gap-2">
                 {group.entries.map(entry => {
@@ -119,9 +123,9 @@ export function TurnOrderPreview({
                       <span className="rounded-full bg-[var(--color-primary)]/10 px-2 py-0.5 text-[11px] font-semibold text-[var(--color-primary)]">{entry.turnNumber}</span>
                       <span className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: entry.teamColor }} aria-hidden="true" />
                       <span className="font-medium text-[var(--color-text)]">{entry.participantName}</span>
-                      <span className="text-[var(--color-muted)]">· {entry.teamName}</span>
-                      {isCurrent ? <span className="rounded-full bg-[var(--color-primary)] px-2 py-0.5 text-[10px] font-bold uppercase tracking-[0.12em] text-white">Atual</span> : null}
-                      {entry.repeatedInGroup ? <span className="rounded-full bg-[var(--color-secondary)]/10 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.18em] text-[var(--color-secondary)]">Repete</span> : null}
+                      <span className="text-[var(--color-muted)]">· {entry.teamName || t('turnPreview.teamFallback')}</span>
+                      {isCurrent ? <span className="rounded-full bg-[var(--color-primary)] px-2 py-0.5 text-[10px] font-bold uppercase tracking-[0.12em] text-white">{t('turnPreview.current')}</span> : null}
+                      {entry.repeatedInGroup ? <span className="rounded-full bg-[var(--color-secondary)]/10 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.18em] text-[var(--color-secondary)]">{t('turnPreview.repeats')}</span> : null}
                     </div>
                   )
                 })}
@@ -131,7 +135,7 @@ export function TurnOrderPreview({
         </div>
       ) : (
         <div className="mt-4 rounded-2xl border border-dashed border-[var(--color-border)] px-4 py-8 text-center text-sm text-[var(--color-muted)]">
-          A prévia aparece quando houver times e participantes suficientes para montar a ordem.
+          {t('turnPreview.empty')}
         </div>
       )}
     </section>

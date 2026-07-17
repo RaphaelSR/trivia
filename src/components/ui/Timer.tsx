@@ -2,6 +2,7 @@ import { Pause, Play, RotateCcw } from 'lucide-react'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Button } from './Button'
 import { playSound } from '../../shared/services/audio.service'
+import { useTranslation } from '@/shared/i18n'
 
 type TimerProps = {
   initialSeconds?: number
@@ -44,6 +45,7 @@ export function Timer({
   editable = false,
   showControls = true,
 }: TimerProps) {
+  const { t } = useTranslation('common')
   const [baseSeconds, setBaseSeconds] = useState(initialSeconds)
   const [seconds, setSeconds] = useState(initialSeconds)
   const [running, setRunning] = useState(false)
@@ -118,7 +120,7 @@ export function Timer({
     <div className={containerClasses}>
       <div className={headerClasses}>
         <span className="text-xs font-semibold uppercase tracking-[0.3em] text-[var(--color-muted)]">
-          Timer
+          {t('timer.label')}
         </span>
         {editing ? (
           <input
@@ -142,7 +144,7 @@ export function Timer({
             type="button"
             className={timeClasses}
             onClick={() => editable && setEditing(true)}
-            title={editable ? 'Clique para editar o tempo' : undefined}
+            title={editable ? t('timer.editHint') : undefined}
           >
             {formatTime(seconds)}
           </button>
@@ -159,8 +161,8 @@ export function Timer({
           <Button
             variant="secondary"
             size="icon"
-            aria-label={running ? 'Pausar' : 'Iniciar'}
-            title={running ? 'Pausar contador' : 'Iniciar contador'}
+            aria-label={running ? t('timer.pause') : t('timer.start')}
+            title={running ? t('timer.pauseCounter') : t('timer.startCounter')}
             onClick={() => {
               setRunning((prev) => {
                 const next = !prev
@@ -174,8 +176,8 @@ export function Timer({
           <Button
             variant="outline"
             size="icon"
-            aria-label="Resetar"
-            title="Resetar contador"
+            aria-label={t('actions.reset')}
+            title={t('timer.resetCounter')}
             onClick={() => {
               setSeconds(baseSeconds)
               setRunning(false)

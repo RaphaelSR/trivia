@@ -1,6 +1,7 @@
 import { LogOut, Database } from 'lucide-react'
 import clsx from 'clsx'
 import { Button } from './Button'
+import { useTranslation } from '@/shared/i18n'
 
 type SessionMode = 'controle' | 'exibição'
 
@@ -12,12 +13,12 @@ type NavbarProps = {
   onExit?: () => void
 }
 
-const modeLabels: Record<SessionMode, string> = {
-  controle: 'Modo Controle',
-  exibição: 'Modo Exibição',
-}
-
 export function Navbar({ className, title, mode, onOpenSessionManager, onExit }: NavbarProps) {
+  const { t } = useTranslation('control')
+  const modeLabels: Record<SessionMode, string> = {
+    controle: t('navigation.controlMode'),
+    exibição: t('navigation.displayMode'),
+  }
   return (
     <header
       className={clsx(
@@ -38,10 +39,10 @@ export function Navbar({ className, title, mode, onOpenSessionManager, onExit }:
       </div>
 
       <div className="flex items-center gap-3">
-        <Button variant="outline" size="icon" aria-label="Gerenciar sessões" onClick={onOpenSessionManager}>
+        <Button variant="outline" size="icon" aria-label={t('navigation.manageSessions')} onClick={onOpenSessionManager}>
           <Database size={18} />
         </Button>
-        <Button variant="outline" size="icon" aria-label="Sair" onClick={onExit}>
+        <Button variant="outline" size="icon" aria-label={t('navigation.exit')} onClick={onExit}>
           <LogOut size={18} />
         </Button>
       </div>

@@ -42,10 +42,11 @@ Como o projeto não mantém Supabase CLI/Docker local configurado, a validação
 ```bash
 npm test -- --runInBand
 npm run lint
+npm run i18n:check
 npm run build
 ```
 
-Também testar `demo`, `offline` e `online`, desktop e 375 px. `demo/offline` não podem chamar RPCs de convite ou avatar.
+Também testar `Demo` e `Partida completa`, com e sem conta, em desktop e 375 px. Demo não pode chamar RPCs de convite ou avatar; partida completa autenticada deve disponibilizá-las mesmo usando a rota interna `mode=offline`.
 
 ## Rollback
 

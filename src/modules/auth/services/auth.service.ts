@@ -1,6 +1,7 @@
 import type { AuthChangeEvent, Session, User } from '@supabase/supabase-js'
 import { getSupabaseClient, isSupabaseConfigured } from '../../../shared/services/supabase.client'
 import { readViteEnv } from '../../../shared/services/vite-env'
+import { i18n } from '@/shared/i18n'
 
 export interface AuthResult {
   user: User | null
@@ -68,7 +69,7 @@ export async function resendConfirmation(email: string): Promise<{ error: string
     options: { emailRedirectTo: getEmailRedirectTo() },
   })
 
-  if (error) return { error: 'Não foi possível reenviar. Tente novamente em instantes.' }
+  if (error) return { error: i18n.t('auth:services.auth.resendFailed') }
   return { error: null }
 }
 
@@ -85,7 +86,7 @@ export async function signIn(email: string, password: string): Promise<AuthResul
 
   if (error) {
     // Mensagem genérica: não revela se o email existe ou não
-    return { user: null, error: 'Email ou senha inválidos. Tente novamente.' }
+    return { user: null, error: i18n.t('auth:services.auth.invalidCredentials') }
   }
   return { user: data.user, error: null }
 }
@@ -157,9 +158,9 @@ export async function requestPasswordReset(email: string): Promise<{ error: stri
     console.warn('[auth] resetPasswordForEmail falhou:', error)
     const message = error.message?.toLowerCase() ?? ''
     if (error.status === 429 || message.includes('rate limit') || message.includes('security purposes')) {
-      return { error: 'Muitos e-mails em pouco tempo. Aguarde um minuto e tente novamente.' }
+      return { error: i18n.t('auth:services.auth.resetRateLimit') }
     }
-    return { error: 'Não foi possível enviar o e-mail agora. Tente novamente em instantes.' }
+    return { error: i18n.t('auth:services.auth.resetFailed') }
   }
   return { error: null }
 }
@@ -175,7 +176,7 @@ export async function updatePassword(newPassword: string): Promise<{ error: stri
   const { error } = await client.auth.updateUser({ password: newPassword })
 
   if (error) {
-    return { error: 'Não foi possível atualizar a senha. Tente novamente.' }
+    return { error: i18n.t('auth:services.auth.updatePasswordFailed') }
   }
   return { error: null }
 }

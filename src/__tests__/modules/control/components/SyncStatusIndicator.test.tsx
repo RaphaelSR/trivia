@@ -99,7 +99,7 @@ describe('SyncStatusIndicator — horário do último sync', () => {
 
   it('amarelo mostra a última sync — diz quanto está só neste navegador', () => {
     render(<SyncStatusIndicator status="pending" lastSyncedAt={iso} />)
-    expect(screen.getByText(/Salvo neste navegador · última sync \d{2}:\d{2}/)).toBeInTheDocument()
+    expect(screen.getByText(/Salvo neste navegador · última sincronização \d{2}:\d{2}/)).toBeInTheDocument()
   })
 
   it('sem lastSyncedAt os textos originais permanecem', () => {

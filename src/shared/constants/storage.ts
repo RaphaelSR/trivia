@@ -1,6 +1,7 @@
 import type { GameMode } from '../types/game'
 
 export const STORAGE_KEYS = {
+  language: 'trivia-language',
   themeMode: 'trivia-theme-mode',
   onboardingSeen: 'trivia-onboarding-seen',
   customFilms: 'trivia-custom-films',

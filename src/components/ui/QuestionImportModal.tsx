@@ -4,6 +4,7 @@ import { Modal } from "./Modal";
 import { Upload, AlertCircle, CheckCircle2, FileText } from "lucide-react";
 import type { TriviaColumn } from "../../modules/trivia/types";
 import { toast } from "sonner";
+import { useTranslation } from "@/shared/i18n";
 
 interface QuestionImportModalProps {
   isOpen: boolean;
@@ -35,6 +36,7 @@ export function QuestionImportModal({
   columns,
   onImport,
 }: QuestionImportModalProps) {
+  const { t } = useTranslation(['game', 'common']);
   const [text, setText] = useState("");
   const [parseResult, setParseResult] = useState<ParseResult | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
@@ -72,7 +74,9 @@ export function QuestionImportModal({
       "ERA DO GELO", "ORGULHO", "PRECONCEITO"
     ];
 
-    const levelMarkers = ["Nível 5", "Nível 10", "Nível 15", "Nível 20", "Nível 30", "Nível 50"];
+    // O protocolo de importação aceita os marcadores dos três idiomas previstos.
+    // A tradução da interface não deve invalidar um arquivo preparado em outro idioma.
+    const levelPattern = /^(?:nível|nivel|level)\s+(5|10|15|20|30|50)\b/i;
 
     for (let i = 0; i < lines.length; i++) {
       const line = lines[i];
@@ -104,16 +108,16 @@ export function QuestionImportModal({
           currentColumn = matchedColumn;
           filmQuestions = [];
         } else {
-          warnings.push(`Filme não encontrado no board: "${filmName}"`);
+          warnings.push(t('questionImport.filmNotFound', { ns: 'game', name: filmName }));
           currentFilm = null;
           currentColumn = null;
         }
         continue;
       }
 
-      const levelMatch = levelMarkers.find((marker) => line.includes(marker));
+      const levelMatch = line.match(levelPattern);
       if (levelMatch) {
-        currentLevel = parseInt(levelMatch.replace("Nível ", ""));
+        currentLevel = Number(levelMatch[1]);
         continue;
       }
 
@@ -127,7 +131,7 @@ export function QuestionImportModal({
           
           if (!nextLine) break;
           if (nextLine.match(/^(\d+)\.\s*⁠?\s*/)) break;
-          if (levelMarkers.some((m) => nextLine.includes(m))) break;
+          if (levelPattern.test(nextLine)) break;
           if (filmMarkers.some((m) => nextLine.toUpperCase().includes(m.toUpperCase()))) break;
           
           answerText += (answerText ? " " : "") + nextLine;
@@ -140,7 +144,7 @@ export function QuestionImportModal({
             answer: answerText.trim(),
           });
         } else {
-          warnings.push(`Pergunta sem resposta: "${questionText}" (${currentFilm}, ${currentLevel} pts)`);
+          warnings.push(t('questionImport.unanswered', { ns: 'game', question: questionText, film: currentFilm, points: currentLevel }));
         }
       }
     }
@@ -173,13 +177,17 @@ export function QuestionImportModal({
           (sum, imp) => sum + imp.questions.length,
           0
         );
-        toast.success(`${totalQuestions} perguntas identificadas em ${result.imports.length} filmes`);
+        toast.success(t('questionImport.identified', {
+          ns: 'game',
+          questions: t('entities.question', { ns: 'common', count: totalQuestions }),
+          films: t('entities.film', { ns: 'common', count: result.imports.length }),
+        }));
       } else if (result.errors.length > 0) {
-        toast.error("Erros encontrados no texto");
+        toast.error(t('questionImport.textErrors', { ns: 'game' }));
       }
     } catch (error) {
       console.error("Erro ao processar texto:", error);
-      toast.error("Erro ao processar o texto");
+      toast.error(t('questionImport.processError', { ns: 'game' }));
     } finally {
       setIsProcessing(false);
     }
@@ -195,7 +203,7 @@ export function QuestionImportModal({
       0
     );
     
-    toast.success(`${totalQuestions} perguntas importadas com sucesso!`);
+    toast.success(t('questionImport.imported', { ns: 'game', questions: t('entities.question', { ns: 'common', count: totalQuestions }) }));
     handleClose();
   };
 
@@ -209,20 +217,20 @@ export function QuestionImportModal({
     <Modal
       isOpen={isOpen}
       onClose={handleClose}
-      title="Importar Perguntas"
-      description="Cole o texto formatado com filmes, níveis e perguntas"
+      title={t('questionImport.title', { ns: 'game' })}
+      description={t('questionImport.description', { ns: 'game' })}
     >
       <div className="space-y-4">
         <div className="p-4 rounded-xl bg-[var(--color-primary)]/5 border border-[var(--color-primary)]/20">
           <div className="flex items-start gap-3">
             <FileText className="h-5 w-5 text-[var(--color-primary)] mt-0.5 flex-shrink-0" />
             <div className="text-sm text-[var(--color-text)]">
-              <p className="font-semibold mb-1">Formato esperado:</p>
+              <p className="font-semibold mb-1">{t('questionImport.expected', { ns: 'game' })}</p>
               <ul className="text-xs text-[var(--color-muted)] space-y-1">
-                <li>• Título do filme (ex: ⚔️ TRÓIA ou apenas TRÓIA)</li>
-                <li>• Nível de pontuação (ex: Nível 5)</li>
-                <li>• Perguntas numeradas (ex: 1. Pergunta?)</li>
-                <li>• Resposta logo abaixo da pergunta</li>
+                <li>{t('questionImport.filmLine', { ns: 'game' })}</li>
+                <li>{t('questionImport.levelLine', { ns: 'game' })}</li>
+                <li>{t('questionImport.questionLine', { ns: 'game' })}</li>
+                <li>{t('questionImport.answerLine', { ns: 'game' })}</li>
               </ul>
             </div>
           </div>
@@ -232,19 +240,19 @@ export function QuestionImportModal({
           <>
             <div>
               <label className="block text-sm font-semibold text-[var(--color-text)] mb-2">
-                Cole o texto aqui
+                {t('questionImport.pasteLabel', { ns: 'game' })}
               </label>
               <textarea
                 value={text}
                 onChange={(e) => setText(e.target.value)}
-                placeholder="Cole aqui o texto com perguntas e respostas..."
+                placeholder={t('questionImport.pastePlaceholder', { ns: 'game' })}
                 className="w-full h-64 rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] px-4 py-3 text-sm text-[var(--color-text)] placeholder:text-[var(--color-muted)] focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)] font-mono"
               />
             </div>
 
             <div className="flex gap-3">
               <Button variant="outline" onClick={handleClose} className="flex-1">
-                Cancelar
+                {t('actions.cancel', { ns: 'common' })}
               </Button>
               <Button
                 variant="primary"
@@ -253,7 +261,7 @@ export function QuestionImportModal({
                 className="flex-1"
               >
                 <Upload className="h-4 w-4 mr-2" />
-                {isProcessing ? "Processando..." : "Analisar Texto"}
+                {isProcessing ? t('questionImport.processing', { ns: 'game' }) : t('questionImport.analyze', { ns: 'game' })}
               </Button>
             </div>
           </>
@@ -266,11 +274,14 @@ export function QuestionImportModal({
                     <CheckCircle2 className="h-5 w-5 text-green-600 mt-0.5 flex-shrink-0" />
                     <div>
                       <p className="text-sm font-semibold text-green-900">
-                        Análise concluída com sucesso!
+                        {t('questionImport.success', { ns: 'game' })}
                       </p>
                       <p className="text-xs text-green-700 mt-1">
-                        {parseResult.imports.reduce((sum, imp) => sum + imp.questions.length, 0)}{" "}
-                        perguntas encontradas em {parseResult.imports.length} filmes
+                        {t('questionImport.found', {
+                          ns: 'game',
+                          questions: t('entities.question', { ns: 'common', count: parseResult.imports.reduce<number>((sum, imp) => sum + imp.questions.length, 0) }),
+                          films: t('entities.film', { ns: 'common', count: parseResult.imports.length }),
+                        })}
                       </p>
                     </div>
                   </div>
@@ -282,7 +293,7 @@ export function QuestionImportModal({
                   <div className="flex items-start gap-3">
                     <AlertCircle className="h-5 w-5 text-red-600 mt-0.5 flex-shrink-0" />
                     <div className="flex-1">
-                      <p className="text-sm font-semibold text-red-900 mb-2">Erros encontrados:</p>
+                      <p className="text-sm font-semibold text-red-900 mb-2">{t('questionImport.errors', { ns: 'game' })}</p>
                       <ul className="text-xs text-red-700 space-y-1">
                         {parseResult.errors.map((error, i) => (
                           <li key={i}>• {error}</li>
@@ -298,7 +309,7 @@ export function QuestionImportModal({
                   <div className="flex items-start gap-3">
                     <AlertCircle className="h-5 w-5 text-yellow-600 mt-0.5 flex-shrink-0" />
                     <div className="flex-1">
-                      <p className="text-sm font-semibold text-yellow-900 mb-2">Avisos:</p>
+                      <p className="text-sm font-semibold text-yellow-900 mb-2">{t('questionImport.warnings', { ns: 'game' })}</p>
                       <ul className="text-xs text-yellow-700 space-y-1">
                         {parseResult.warnings.map((warning, i) => (
                           <li key={i}>• {warning}</li>
@@ -319,7 +330,7 @@ export function QuestionImportModal({
                       {imp.filmName}
                     </h4>
                     <span className="text-xs font-medium text-[var(--color-primary)] bg-[var(--color-primary)]/10 px-2 py-1 rounded-full">
-                      {imp.questions.length} perguntas
+                      {t('entities.question', { ns: 'common', count: imp.questions.length })}
                     </span>
                   </div>
                   <div className="space-y-1">
@@ -329,7 +340,7 @@ export function QuestionImportModal({
                         className="text-xs text-[var(--color-muted)] flex items-start gap-2"
                       >
                         <span className="font-semibold text-[var(--color-primary)]">
-                          {q.points}pts
+                          {t('entities.pointsShort', { ns: 'common', count: q.points })}
                         </span>
                         <span className="flex-1 line-clamp-1">{q.question}</span>
                       </div>
@@ -348,7 +359,7 @@ export function QuestionImportModal({
                 }}
                 className="flex-1"
               >
-                Voltar
+                {t('actions.back', { ns: 'common' })}
               </Button>
               <Button
                 variant="primary"
@@ -357,7 +368,7 @@ export function QuestionImportModal({
                 className="flex-1"
               >
                 <CheckCircle2 className="h-4 w-4 mr-2" />
-                Importar Perguntas
+                {t('questionImport.import', { ns: 'game' })}
               </Button>
             </div>
           </>
@@ -366,4 +377,3 @@ export function QuestionImportModal({
     </Modal>
   );
 }
-

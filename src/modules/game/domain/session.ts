@@ -5,14 +5,24 @@ import { createLocalSession } from '../../trivia/utils/createLocalSession'
 import { buildTurnSequence, resolveTurnIndex } from './turn-order'
 import { countAnsweredTiles, countTotalTiles, dedupeTileIds, releaseActiveTiles } from './board.utils'
 
-export function createSessionForMode(gameMode: GameMode, demoConfig?: DemoSessionConfig): TriviaSession {
+export type SessionCreationCopy = {
+  title?: string
+  themeName?: string
+  demoPlayer?: (number: number) => string
+}
+
+export function createSessionForMode(
+  gameMode: GameMode,
+  demoConfig?: DemoSessionConfig,
+  copy?: SessionCreationCopy,
+): TriviaSession {
   switch (gameMode) {
     case 'offline':
     case 'online':
-      return createEmptySession()
+      return createEmptySession(copy)
     case 'demo':
     default:
-      return createLocalSession(demoConfig)
+      return createLocalSession(demoConfig, copy)
   }
 }
 

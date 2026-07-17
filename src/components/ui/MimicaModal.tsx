@@ -14,6 +14,7 @@ import {
   type MimicaOrderMode,
   type MimicaStartMode,
 } from '../../modules/game/domain/mimica-turn-order'
+import { useTranslation } from '@/shared/i18n'
 
 type MimicaModalProps = {
   isOpen: boolean
@@ -50,6 +51,7 @@ export function MimicaModal({
   participantIdentities = {},
   onScore,
 }: MimicaModalProps) {
+  const { t } = useTranslation(['game', 'common'])
   const [scoringMode, setScoringMode] = useState<ScoringMode | null>(null)
   const [selectedTeam, setSelectedTeam] = useState<string | null>(null)
   const [mimicaPoints, setMimicaPoints] = useState(50)
@@ -156,13 +158,13 @@ export function MimicaModal({
       if (currentParticipantIndex < alternateParticipants.length - 1) {
         setCurrentParticipantIndex(index => index + 1)
         if (nextParticipant) {
-          toast.success(`Próximo turno: ${nextParticipant.name}`)
+          toast.success(t('mimica.nextTurn', { ns: 'game', name: nextParticipant.name }))
         }
       } else {
         setRoundNumber(prev => prev + 1)
         setCurrentParticipantIndex(0)
         if (alternateParticipants[0]) {
-          toast.success(`Rodada ${roundNumber + 1} iniciada! Próximo turno: ${alternateParticipants[0].name}`)
+          toast.success(t('mimica.newRound', { ns: 'game', round: roundNumber + 1, name: alternateParticipants[0].name }))
         }
       }
     }, 500)
@@ -171,9 +173,9 @@ export function MimicaModal({
   const scoringOptions: Array<{ id: ScoringMode; label: string; pts: number }> = [
     { id: 'full-current', label: '100%', pts: mimicaPoints },
     { id: 'half-current', label: '50%', pts: Math.round(mimicaPoints / 2) },
-    { id: 'steal', label: 'Roubo', pts: mimicaPoints },
-    { id: 'everyone', label: 'Todos', pts: Math.round(mimicaPoints / teams.length) },
-    { id: 'void', label: 'Anular', pts: 0 },
+    { id: 'steal', label: t('mimica.options.steal', { ns: 'game' }), pts: mimicaPoints },
+    { id: 'everyone', label: t('mimica.options.everyone', { ns: 'game' }), pts: Math.round(mimicaPoints / teams.length) },
+    { id: 'void', label: t('mimica.options.void', { ns: 'game' }), pts: 0 },
   ]
 
   const canConfirm = scoringMode !== null && (scoringMode !== 'steal' || (scoringMode === 'steal' && selectedTeam !== null))
@@ -181,8 +183,8 @@ export function MimicaModal({
   return (
     <Modal
       isOpen={isOpen}
-      title="Modo Mímica"
-      description="Os times alternam como no trivia; times menores repetem participantes para manter a rotação."
+      title={t('mimica.title', { ns: 'game' })}
+      description={t('mimica.description', { ns: 'game' })}
       onClose={handleClose}
     >
       <div className="space-y-5 text-[var(--color-text)]">
@@ -190,7 +192,7 @@ export function MimicaModal({
         <div className="flex items-center justify-between rounded-xl border border-[var(--color-primary)]/30 bg-[var(--color-primary)]/5 px-4 py-3">
           <div className="flex items-center gap-3">
             <ParticipantAvatar
-              name={activeParticipant?.name ?? 'Aguardando'}
+              name={activeParticipant?.name ?? t('mimica.waiting', { ns: 'game' })}
               src={activeParticipant ? participantIdentities[activeParticipant.id]?.avatarUrl : null}
               size={38}
             />
@@ -201,11 +203,11 @@ export function MimicaModal({
             <div>
               <p className="text-sm font-semibold">
                 <span data-testid="mimica-active-participant">
-                  {activeParticipant?.name ?? 'Aguardando'}
+                  {activeParticipant?.name ?? t('mimica.waiting', { ns: 'game' })}
                 </span>
               </p>
               <p className="text-xs text-[var(--color-muted)]">
-                {activeTeam?.name} · Rodada {roundNumber} · Turno {turnNumber}
+                {t('mimica.roundTurn', { ns: 'game', team: activeTeam?.name ?? '', round: roundNumber, turn: turnNumber })}
               </p>
             </div>
           </div>
@@ -217,7 +219,7 @@ export function MimicaModal({
                 size={28}
               />
             ) : null}
-            <span>Próximo: </span>
+            <span>{t('mimica.next', { ns: 'game' })} </span>
             <span className="font-medium text-[var(--color-text)]">{nextParticipant?.name ?? '—'}</span>
           </div>
         </div>
@@ -225,7 +227,7 @@ export function MimicaModal({
         {/* Timer com presets */}
         <div className="space-y-2">
           <div className="flex items-center gap-2">
-            <span className="text-xs font-semibold uppercase tracking-[0.2em] text-[var(--color-muted)]">Timer</span>
+            <span className="text-xs font-semibold uppercase tracking-[0.2em] text-[var(--color-muted)]">{t('mimica.timer', { ns: 'game' })}</span>
             <div className="flex items-center gap-1 ml-auto">
               {TIMER_PRESETS.map((preset) => (
                 <button
@@ -238,7 +240,7 @@ export function MimicaModal({
                       : 'bg-[var(--color-border)]/40 text-[var(--color-muted)] hover:bg-[var(--color-border)]'
                   }`}
                 >
-                  {preset}s
+                  {t('mimica.seconds', { ns: 'game', seconds: preset })}
                 </button>
               ))}
               <div className="flex items-center gap-0.5 ml-1">
@@ -246,7 +248,7 @@ export function MimicaModal({
                   type="button"
                   onClick={() => setTimerSeconds(s => Math.max(10, s - 10))}
                   className="rounded-md p-1 text-[var(--color-muted)] hover:bg-[var(--color-border)]/40"
-                  title="−10 segundos"
+                  title={t('mimica.decreaseSeconds', { ns: 'game' })}
                 >
                   <Minus className="h-3.5 w-3.5" />
                 </button>
@@ -254,7 +256,7 @@ export function MimicaModal({
                   type="button"
                   onClick={() => setTimerSeconds(s => Math.min(300, s + 10))}
                   className="rounded-md p-1 text-[var(--color-muted)] hover:bg-[var(--color-border)]/40"
-                  title="+10 segundos"
+                  title={t('mimica.increaseSeconds', { ns: 'game' })}
                 >
                   <Plus className="h-3.5 w-3.5" />
                 </button>
@@ -273,23 +275,23 @@ export function MimicaModal({
         <div className="space-y-3">
           <div className="flex items-center justify-between">
             <span className="text-xs font-semibold uppercase tracking-[0.2em] text-[var(--color-muted)]">
-              Pontuação
+              {t('mimica.scoring', { ns: 'game' })}
             </span>
             <div className="flex items-center gap-1.5">
               <button
                 type="button"
                 onClick={() => setMimicaPoints(p => Math.max(10, p - 10))}
                 className="rounded-md p-1 text-[var(--color-muted)] hover:bg-[var(--color-border)]/40"
-                title="−10 pontos"
+                title={t('mimica.decreasePoints', { ns: 'game' })}
               >
                 <Minus className="h-3.5 w-3.5" />
               </button>
-              <span className="min-w-[3rem] text-center text-sm font-bold text-[var(--color-primary)]">{mimicaPoints} pts</span>
+              <span className="min-w-[3rem] text-center text-sm font-bold text-[var(--color-primary)]">{t('entities.point', { ns: 'common', count: mimicaPoints })}</span>
               <button
                 type="button"
                 onClick={() => setMimicaPoints(p => Math.min(500, p + 10))}
                 className="rounded-md p-1 text-[var(--color-muted)] hover:bg-[var(--color-border)]/40"
-                title="+10 pontos"
+                title={t('mimica.increasePoints', { ns: 'game' })}
               >
                 <Plus className="h-3.5 w-3.5" />
               </button>
@@ -309,14 +311,14 @@ export function MimicaModal({
                 }`}
               >
                 <span className="text-xs font-semibold text-[var(--color-text)]">{opt.label}</span>
-                <span className="text-[10px] text-[var(--color-muted)]">{opt.pts} pts</span>
+                <span className="text-[10px] text-[var(--color-muted)]">{t('entities.point', { ns: 'common', count: opt.pts })}</span>
               </button>
             ))}
           </div>
 
           {scoringMode === 'steal' && (
             <div className="flex items-center gap-2">
-              <span className="text-xs text-[var(--color-muted)]">Para:</span>
+              <span className="text-xs text-[var(--color-muted)]">{t('mimica.toTeam', { ns: 'game' })}</span>
               <div className="flex gap-1.5">
                 {stealTargets.map((team) => (
                   <button
@@ -343,7 +345,7 @@ export function MimicaModal({
             onClick={() => handleScore(scoringMode ?? 'full-current', scoringMode === 'steal' ? selectedTeam ?? undefined : undefined)}
             className="w-full"
           >
-            Confirmar e avançar
+            {t('mimica.confirmAdvance', { ns: 'game' })}
           </Button>
         </div>
 
@@ -352,26 +354,26 @@ export function MimicaModal({
           <summary className="flex cursor-pointer items-center justify-between gap-3 px-4 py-3 text-xs font-semibold uppercase tracking-[0.2em] text-[var(--color-muted)] transition hover:bg-[var(--color-border)]/15">
             <span className="flex items-center gap-2">
               <UsersRound size={14} />
-              Ordem ({alternateParticipants.length})
+              {t('mimica.orderCount', { ns: 'game', count: alternateParticipants.length })}
             </span>
             <span className="text-right text-[10px] font-medium normal-case tracking-normal">
-              {startMode === 'continue' ? 'Do trivia' : 'Do primeiro'} ·{' '}
-              {orderMode === 'alternate' ? 'Alternada' : orderMode === 'shuffle' ? 'Aleatória' : 'Por time'}
+              {startMode === 'continue' ? t('mimica.startSummary.continue', { ns: 'game' }) : t('mimica.startSummary.restart', { ns: 'game' })} ·{' '}
+              {orderMode === 'alternate' ? t('mimica.orderSummary.alternate', { ns: 'game' }) : orderMode === 'shuffle' ? t('mimica.orderSummary.shuffle', { ns: 'game' }) : t('mimica.orderSummary.team', { ns: 'game' })}
             </span>
           </summary>
           <div className="space-y-4 border-t border-[var(--color-border)] bg-[var(--color-surface)]/40 px-4 py-4">
             <div className="grid gap-3 sm:grid-cols-2">
               <div className="space-y-2">
                 <div className="flex items-center gap-1.5">
-                  <span className="text-[10px] font-semibold uppercase tracking-[0.18em] text-[var(--color-muted)]">Início</span>
-                  <Tooltip content="Escolhe apenas onde a mímica começa. O turno do trivia não é alterado.">
+                  <span className="text-[10px] font-semibold uppercase tracking-[0.18em] text-[var(--color-muted)]">{t('mimica.start', { ns: 'game' })}</span>
+                  <Tooltip content={t('mimica.startHelp', { ns: 'game' })}>
                     <HelpCircle size={13} className="cursor-help text-[var(--color-muted)]" />
                   </Tooltip>
                 </div>
                 <div className="grid grid-cols-2 rounded-lg bg-[var(--color-border)]/35 p-1">
                   {([
-                    { id: 'continue', label: 'Do trivia', ariaLabel: 'Continuar do trivia' },
-                    { id: 'restart', label: 'Do primeiro', ariaLabel: 'Começar do primeiro' },
+                    { id: 'continue', label: t('mimica.continueLabel', { ns: 'game' }), ariaLabel: t('mimica.continueAria', { ns: 'game' }) },
+                    { id: 'restart', label: t('mimica.restartLabel', { ns: 'game' }), ariaLabel: t('mimica.restartAria', { ns: 'game' }) },
                   ] as const).map(option => (
                     <button
                       key={option.id}
@@ -392,16 +394,16 @@ export function MimicaModal({
 
               <div className="space-y-2">
                 <div className="flex items-center gap-1.5">
-                  <span className="text-[10px] font-semibold uppercase tracking-[0.18em] text-[var(--color-muted)]">Organização</span>
-                  <Tooltip content="Alternada troca os times como no trivia. Times menores repetem participantes quando necessário.">
+                  <span className="text-[10px] font-semibold uppercase tracking-[0.18em] text-[var(--color-muted)]">{t('mimica.organization', { ns: 'game' })}</span>
+                  <Tooltip content={t('mimica.organizationHelp', { ns: 'game' })}>
                     <HelpCircle size={13} className="cursor-help text-[var(--color-muted)]" />
                   </Tooltip>
                 </div>
                 <div className="grid grid-cols-3 rounded-lg bg-[var(--color-border)]/35 p-1">
                   {([
-                    { id: 'alternate', label: 'Alternada' },
-                    { id: 'shuffle', label: 'Aleatória' },
-                    { id: 'team-shuffle', label: 'Por time' },
+                    { id: 'alternate', label: t('mimica.alternate', { ns: 'game' }) },
+                    { id: 'shuffle', label: t('mimica.shuffle', { ns: 'game' }) },
+                    { id: 'team-shuffle', label: t('mimica.byTeam', { ns: 'game' }) },
                   ] as const).map(option => (
                     <button
                       key={option.id}
@@ -458,7 +460,7 @@ export function MimicaModal({
                       <span className="mt-0.5 block truncate text-[10px] text-[var(--color-muted)]">{participantTeam?.name}</span>
                     </span>
                     {isActive ? (
-                      <span className="rounded-full bg-[var(--color-primary)]/15 px-2 py-0.5 text-[9px] font-bold uppercase tracking-[0.12em] text-[var(--color-primary)]">Agora</span>
+                      <span className="rounded-full bg-[var(--color-primary)]/15 px-2 py-0.5 text-[9px] font-bold uppercase tracking-[0.12em] text-[var(--color-primary)]">{t('mimica.now', { ns: 'game' })}</span>
                     ) : null}
                   </div>
                 )
@@ -468,7 +470,7 @@ export function MimicaModal({
         </details>
 
         <Button variant="outline" onClick={handleClose} className="w-full">
-          Fechar mímica
+          {t('mimica.close', { ns: 'game' })}
         </Button>
       </div>
     </Modal>

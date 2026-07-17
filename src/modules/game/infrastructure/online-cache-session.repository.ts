@@ -4,6 +4,7 @@ import { storageService } from '../../../shared/services/storage.service'
 import type { GameMode } from '../../../shared/types/game'
 import type { TriviaSession } from '../../trivia/types'
 import type { SessionHistoryMetadata, SessionRecord, SessionRepository } from './session.repository'
+import { i18n } from '@/shared/i18n'
 
 function calculateSessionDuration(createdAt: string): number {
   const created = new Date(createdAt)
@@ -28,7 +29,9 @@ export class OnlineCacheSessionRepository implements SessionRepository {
   ): SessionRecord | null {
     const now = new Date().toISOString()
     const sessionId = session.id || `online-session-${Date.now()}`
-    const name = sessionName || session.title || `Sessão online ${new Date().toLocaleDateString('pt-BR')}`
+    const name = sessionName || session.title || i18n.t('game:sessionCreation.repositoryFallback', {
+      date: new Date().toLocaleDateString(i18n.resolvedLanguage ?? i18n.language),
+    })
 
     const sessionData: SessionRecord = {
       metadata: {

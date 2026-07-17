@@ -81,7 +81,7 @@ describe('auth.service — com configuração', () => {
     const result = await signIn('a@b.com', 'wrongpass')
     expect(result.user).toBeNull()
     // Mensagem genérica — não revela detalhes do erro original
-    expect(result.error).toBe('Email ou senha inválidos. Tente novamente.')
+    expect(result.error).toBe('E-mail ou senha inválidos. Tente novamente.')
   })
 
   it('signIn retorna user quando login tem sucesso', async () => {

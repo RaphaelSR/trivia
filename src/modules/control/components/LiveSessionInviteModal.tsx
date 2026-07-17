@@ -16,6 +16,7 @@ import {
   listLiveParticipantIdentities,
   type ParticipantIdentity,
 } from '@/modules/auth/services/profile-avatar.service'
+import { useTranslation } from '@/shared/i18n'
 
 type LiveSessionInviteModalProps = {
   isOpen: boolean
@@ -30,6 +31,7 @@ export function LiveSessionInviteModal({
   sessionClientId,
   onPrepareSync,
 }: LiveSessionInviteModalProps) {
+  const { t } = useTranslation(['control', 'common'])
   const [invite, setInvite] = useState<LiveSessionInvite | null>(null)
   const [participants, setParticipants] = useState<LiveSessionParticipant[]>([])
   const [identities, setIdentities] = useState<Record<string, ParticipantIdentity>>({})
@@ -57,7 +59,7 @@ export function LiveSessionInviteModal({
     const synced = await onPrepareSync()
     if (!synced) {
       setPreparing(false)
-      setError('A sessão ainda não sincronizou. Tente novamente; o jogo não foi interrompido.')
+      setError(t('liveInvite.syncError', { ns: 'control' }))
       return
     }
 
@@ -68,7 +70,7 @@ export function LiveSessionInviteModal({
     if (result.invite) {
       await refreshParticipants(result.invite.joinToken, true)
     }
-  }, [onPrepareSync, refreshParticipants, sessionClientId])
+  }, [onPrepareSync, refreshParticipants, sessionClientId, t])
 
   useEffect(() => {
     if (!isOpen) return
@@ -94,7 +96,7 @@ export function LiveSessionInviteModal({
       setCopied(true)
       window.setTimeout(() => setCopied(false), 2000)
     } catch {
-      setError('Selecione o link abaixo e copie manualmente.')
+      setError(t('liveInvite.manualCopy', { ns: 'control' }))
     }
   }
 
@@ -111,8 +113,8 @@ export function LiveSessionInviteModal({
     <>
       <Modal
         isOpen={isOpen}
-        title="Convidar jogadores"
-        description="Um único QR para cada pessoa escolher e reivindicar o próprio nome."
+        title={t('liveInvite.title', { ns: 'control' })}
+        description={t('liveInvite.description', { ns: 'control' })}
         onClose={onClose}
         size="lg"
       >
@@ -120,9 +122,9 @@ export function LiveSessionInviteModal({
           <div className="flex min-h-56 flex-col items-center justify-center gap-3 text-center">
             <Loader2 className="h-6 w-6 animate-spin text-[var(--color-primary)]" aria-hidden="true" />
             <div>
-              <p className="text-sm font-medium text-[var(--color-text)]">Sincronizando o elenco…</p>
+              <p className="text-sm font-medium text-[var(--color-text)]">{t('liveInvite.syncingRoster', { ns: 'control' })}</p>
               <p className="mt-1 text-xs text-[var(--color-muted)]">
-                O QR só aparece depois que a versão atual chegou à nuvem.
+                {t('liveInvite.syncingDescription', { ns: 'control' })}
               </p>
             </div>
           </div>
@@ -131,21 +133,21 @@ export function LiveSessionInviteModal({
             <div className="flex flex-col items-center gap-3 rounded-2xl border border-[var(--color-border)] bg-[var(--color-background)] p-4">
               <LocalQrCode
                 value={invite.url}
-                label="QR Code para reivindicar participação"
+                label={t('liveInvite.qrLabel', { ns: 'control' })}
                 size={190}
               />
               <p className="text-center text-xs text-[var(--color-muted)]">
-                Aponte a câmera. O QR é gerado aqui, sem enviar o token a terceiros.
+                {t('liveInvite.qrDescription', { ns: 'control' })}
               </p>
               <Button variant="secondary" size="sm" onClick={() => void copyLink()}>
                 {copied ? <Check size={14} /> : <Copy size={14} />}
-                {copied ? 'Copiado' : 'Copiar link'}
+                {copied ? t('liveInvite.copied', { ns: 'control' }) : t('liveInvite.copy', { ns: 'control' })}
               </Button>
               <input
                 readOnly
                 value={invite.url}
                 onFocus={(event) => event.currentTarget.select()}
-                aria-label="Link do convite"
+                aria-label={t('liveInvite.linkLabel', { ns: 'control' })}
                 className="w-full rounded-lg border border-[var(--color-border)] bg-[var(--color-background)] px-2 py-2 text-[10px] text-[var(--color-muted)]"
               />
             </div>
@@ -153,15 +155,15 @@ export function LiveSessionInviteModal({
             <div className="min-w-0 space-y-3">
               <div className="flex items-start justify-between gap-3">
                 <div>
-                  <h3 className="text-sm font-semibold text-[var(--color-text)]">Status do elenco</h3>
+                  <h3 className="text-sm font-semibold text-[var(--color-text)]">{t('liveInvite.rosterStatus', { ns: 'control' })}</h3>
                   <p className="mt-1 text-xs text-[var(--color-muted)]">
-                    Atualiza a cada 5 segundos. Mover ou renomear preserva o vínculo.
+                    {t('liveInvite.rosterDescription', { ns: 'control' })}
                   </p>
                 </div>
                 <Button
                   variant="ghost"
                   size="icon"
-                  aria-label="Atualizar status dos convites"
+                  aria-label={t('liveInvite.refreshStatus', { ns: 'control' })}
                   disabled={refreshing}
                   onClick={() => void refreshParticipants(invite.joinToken, true)}
                 >
@@ -191,19 +193,19 @@ export function LiveSessionInviteModal({
                         {participant.displayName}
                       </p>
                       <p className="text-xs text-[var(--color-muted)]">
-                        {participant.teamName ?? 'Sem time'}
+                        {participant.teamName ?? t('liveInvite.noTeam', { ns: 'control' })}
                       </p>
                     </div>
                     {participant.claimed ? (
                       <div className="flex shrink-0 items-center gap-2">
                         <span className="inline-flex items-center gap-1 text-xs text-[var(--color-primary)]">
-                          <UserCheck size={13} /> reivindicado
+                          <UserCheck size={13} /> {t('liveInvite.claimed', { ns: 'control' })}
                         </span>
                         {participant.claimId ? (
                           <Button
                             variant="ghost"
                             size="icon"
-                            aria-label={`Desvincular ${participant.displayName}`}
+                            aria-label={t('liveInvite.unlinkPerson', { ns: 'control', name: participant.displayName })}
                             onClick={() => setPendingRevoke(participant)}
                           >
                             <Unlink size={14} />
@@ -211,7 +213,7 @@ export function LiveSessionInviteModal({
                         ) : null}
                       </div>
                     ) : (
-                      <span className="shrink-0 text-xs text-[var(--color-muted)]">aguardando</span>
+                      <span className="shrink-0 text-xs text-[var(--color-muted)]">{t('liveInvite.waiting', { ns: 'control' })}</span>
                     )}
                   </li>
                 ))}
@@ -221,10 +223,10 @@ export function LiveSessionInviteModal({
         ) : (
           <div className="space-y-4 rounded-2xl border border-[var(--color-border)] bg-[var(--color-background)] p-5 text-center">
             <p className="text-sm text-[var(--color-muted)]">
-              {error ?? 'Não foi possível preparar o convite.'}
+              {error ?? t('liveInvite.prepareError', { ns: 'control' })}
             </p>
             <Button variant="secondary" onClick={() => void prepare()}>
-              <RefreshCw size={15} /> Tentar novamente
+              <RefreshCw size={15} /> {t('actions.retry', { ns: 'common' })}
             </Button>
           </div>
         )}
@@ -234,9 +236,9 @@ export function LiveSessionInviteModal({
         isOpen={pendingRevoke !== null}
         onClose={() => setPendingRevoke(null)}
         onConfirm={() => void confirmRevoke()}
-        title="Desvincular reivindicação?"
-        description={`O vínculo de ${pendingRevoke?.displayName ?? 'participante'} será revogado e ficará registrado. Depois, a pessoa correta poderá reivindicar o slot.`}
-        confirmLabel="Desvincular"
+        title={t('liveInvite.unlinkTitle', { ns: 'control' })}
+        description={t('liveInvite.unlinkDescription', { ns: 'control', name: pendingRevoke?.displayName ?? t('liveInvite.participantFallback', { ns: 'control' }) })}
+        confirmLabel={t('liveInvite.unlink', { ns: 'control' })}
         variant="warning"
       />
     </>

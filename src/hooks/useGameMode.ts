@@ -6,11 +6,10 @@ import {
   DEMO_MEMBERS_PER_TEAM_OPTIONS,
   DEMO_QUESTION_OPTIONS,
   DEMO_TEAM_OPTIONS,
-  GAME_MODE_DESCRIPTIONS,
-  GAME_MODE_LABELS,
   GAME_MODES,
 } from '../shared/constants/game'
 import type { DemoSessionConfig, GameMode } from '../shared/types/game'
+import { useTranslation } from '@/shared/i18n'
 
 function readDemoOption(
   rawValue: string | null,
@@ -26,6 +25,7 @@ function readDemoOption(
  * @returns Objeto com o modo atual e funções utilitárias
  */
 export function useGameMode() {
+  const { t } = useTranslation('control')
   const [searchParams] = useSearchParams()
 
   const gameMode = useMemo((): GameMode => {
@@ -58,11 +58,11 @@ export function useGameMode() {
   const isOnline = gameMode === 'online'
 
   const getModeDisplayName = (mode: GameMode): string => {
-    return GAME_MODE_LABELS[mode] ?? GAME_MODE_LABELS.demo
+    return mode === 'demo' ? t('mode.demo') : t('mode.game')
   }
 
   const getModeDescription = (mode: GameMode): string => {
-    return GAME_MODE_DESCRIPTIONS[mode] ?? GAME_MODE_DESCRIPTIONS.demo
+    return mode === 'demo' ? t('mode.demoDescription') : t('mode.gameDescription')
   }
 
   return {

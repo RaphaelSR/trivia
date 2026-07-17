@@ -207,7 +207,7 @@ describe('useQuestionManagement', () => {
         result.current.addFilm()
       })
 
-      expect(mockAddFilmColumn).toHaveBeenCalledWith('Novo Filme')
+      expect(mockAddFilmColumn).toHaveBeenCalledWith('Novo filme')
     })
   })
 
@@ -255,4 +255,3 @@ describe('useQuestionManagement', () => {
     })
   })
 })
-

@@ -308,9 +308,9 @@ describe('resolveTurnIndex', () => {
 
   // Teste original de getTurnLabel (mantido aqui pois usa resolveTurnIndex indiretamente)
   it('formats the current turn label', () => {
-    expect(getTurnLabel('b1', ['a1', 'b1', 'a2'])).toBe('2 de 3')
-    expect(getTurnLabel(null, ['a1'])).toBe('Aguardando sequência')
-    expect(getTurnLabel('missing', ['a1'])).toBe('Aguardando sequência')
+    expect(getTurnLabel('b1', ['a1', 'b1', 'a2'])).toBe('2/3')
+    expect(getTurnLabel(null, ['a1'])).toBe('—')
+    expect(getTurnLabel('missing', ['a1'])).toBe('—')
   })
 
   // INV-8/9/10 combinados
@@ -709,7 +709,7 @@ describe('preview de turnos', () => {
 
     expect(groups).toHaveLength(1)
     expect(groups[0]).toMatchObject({
-      label: 'Rodada 1',
+      label: '1',
       isPartial: false,
     })
     expect(groups[0]?.entries).toHaveLength(18)

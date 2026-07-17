@@ -59,21 +59,32 @@ export function getCompleteRoundLabel(
     activeTurnIndex,
   )
 
-  return `Rodada ${roundNumber}`
+  return String(roundNumber)
 }
 
+export type TurnPosition = {
+  current: number
+  total: number
+}
+
+export function getTurnPosition(
+  activeParticipantId: string | null,
+  turnSequence: string[],
+  activeTurnIndex?: number,
+): TurnPosition | null {
+  const currentTurnIndex = resolveTurnIndex(activeTurnIndex, activeParticipantId, turnSequence)
+  if (currentTurnIndex === -1) return null
+  return { current: currentTurnIndex + 1, total: turnSequence.length }
+}
+
+/** @deprecated Prefira getTurnPosition e formate a posição na camada de interface. */
 export function getTurnLabel(
   activeParticipantId: string | null,
   turnSequence: string[],
   activeTurnIndex?: number,
 ): string {
-  const currentTurnIndex = resolveTurnIndex(activeTurnIndex, activeParticipantId, turnSequence)
-
-  if (currentTurnIndex === -1) {
-    return 'Aguardando sequência'
-  }
-
-  return `${currentTurnIndex + 1} de ${turnSequence.length}`
+  const position = getTurnPosition(activeParticipantId, turnSequence, activeTurnIndex)
+  return position ? `${position.current}/${position.total}` : '—'
 }
 
 export function getRecommendedPreviewTurnCount(
@@ -212,7 +223,7 @@ export function groupCompleteRounds(
     if (seenParticipants.size === participantTarget) {
       groups.push({
         number: groups.length + 1,
-        label: `Rodada ${groups.length + 1}`,
+        label: String(groups.length + 1),
         isPartial: false,
         entries: mapEntries(currentGroup, teams, participants, currentStartIndex),
       })
@@ -225,7 +236,7 @@ export function groupCompleteRounds(
   if (currentGroup.length) {
     groups.push({
       number: groups.length + 1,
-      label: `Rodada ${groups.length + 1}`,
+      label: String(groups.length + 1),
       isPartial: true,
       entries: mapEntries(currentGroup, teams, participants, currentStartIndex),
     })
@@ -259,7 +270,7 @@ function mapEntries(
         participantId,
         participantName: participant.name,
         teamId: participant.teamId,
-        teamName: teamById.get(participant.teamId)?.name ?? 'Time',
+        teamName: teamById.get(participant.teamId)?.name ?? '',
         teamColor: teamById.get(participant.teamId)?.color ?? 'var(--color-primary)',
         repeatedInGroup,
       },

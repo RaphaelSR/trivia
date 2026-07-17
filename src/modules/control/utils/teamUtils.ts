@@ -1,6 +1,7 @@
 import type { TeamDraft, ParticipantDraft } from '../types/control.types'
 import type { TriviaParticipant, TriviaTeam } from '@/modules/trivia/types'
 import { drawBalancedGroups, type RandomSource } from '@/modules/game/domain/team-draw'
+import { i18n } from '@/shared/i18n'
 
 const DRAW_TEAM_COLORS = [
   '#7c3aed',
@@ -58,12 +59,12 @@ export function createParticipantId(): string {
 export function createNewTeamDraft(index: number): TeamDraft {
   return {
     id: createTeamId(),
-    name: `Novo time ${index + 1}`,
+    name: i18n.t('control:teams.defaults.newTeam', { number: index + 1 }),
     color: 'var(--color-primary)',
     members: [
       {
         id: createParticipantId(),
-        name: 'Participante',
+        name: i18n.t('control:teams.defaults.participant'),
         role: 'player',
       },
     ],
@@ -76,7 +77,7 @@ export function createNewTeamDraft(index: number): TeamDraft {
 export function createNewParticipantDraft(): ParticipantDraft {
   return {
     id: createParticipantId(),
-    name: 'Participante',
+    name: i18n.t('control:teams.defaults.participant'),
     role: 'player',
   }
 }
@@ -250,7 +251,7 @@ export function buildRandomizedTeamDrafts(
     const existing = currentDrafts[index]
     return {
       id: existing?.id ?? createTeamId(),
-      name: existing?.name.trim() || `Time ${index + 1}`,
+      name: existing?.name.trim() || i18n.t('control:teams.defaults.team', { number: index + 1 }),
       color: existing?.color || DRAW_TEAM_COLORS[index % DRAW_TEAM_COLORS.length],
       members,
     }

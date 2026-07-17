@@ -110,26 +110,36 @@ describe('session-checkpoint.service', () => {
 
 describe('describeMove', () => {
   it('acerto de trivia: filme e pontos', () => {
-    expect(describeMove(makeEvent())).toBe('Antes de responder Matrix (10 pts)')
+    expect(describeMove(makeEvent())).toEqual({
+      type: 'trivia-answer',
+      film: 'Matrix',
+      points: 10,
+    })
   })
 
   it('anulação: sem pontos no rótulo', () => {
-    expect(describeMove(makeEvent({ type: 'trivia-void', pointsAwarded: 0 }))).toBe(
-      'Antes de anular Matrix',
-    )
+    expect(describeMove(makeEvent({ type: 'trivia-void', pointsAwarded: 0 }))).toEqual({
+      type: 'trivia-void',
+      film: 'Matrix',
+    })
   })
 
   it('mímica: rótulo próprio', () => {
-    expect(describeMove(makeEvent({ source: 'mimica', type: 'mimica-award', film: undefined, pointsAwarded: 15 }))).toBe(
-      'Antes da mímica (15 pts)',
-    )
+    expect(describeMove(makeEvent({ source: 'mimica', type: 'mimica-award', film: undefined, pointsAwarded: 15 }))).toEqual({
+      type: 'mimica',
+      points: 15,
+    })
   })
 
   it('sem filme: fallback genérico', () => {
-    expect(describeMove(makeEvent({ film: undefined }))).toBe('Antes de responder uma pergunta (10 pts)')
+    expect(describeMove(makeEvent({ film: undefined }))).toEqual({
+      type: 'trivia-answer',
+      film: null,
+      points: 10,
+    })
   })
 
   it('sem evento (ajuste manual): fallback', () => {
-    expect(describeMove(undefined)).toBe('Antes de um ajuste no placar')
+    expect(describeMove(undefined)).toEqual({ type: 'score-adjustment' })
   })
 })

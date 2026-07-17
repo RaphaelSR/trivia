@@ -5,6 +5,7 @@ import {
   processQuestionImports,
   createQuestionTileId
 } from "../utils/questionUtils";
+import { useTranslation } from '@/shared/i18n'
 
 /**
  * Hook para gerenciar perguntas e board
@@ -22,6 +23,9 @@ export function useQuestionManagement(
   addFilmColumn: (displayName?: string) => string,
   removeFilmColumn: (columnId: string) => void
 ) {
+  const { t } = useTranslation('game')
+  const { t: tCommon } = useTranslation('common')
+
   const importQuestions = (imports: ParsedImport[]) => {
     try {
       const tiles = processQuestionImports(imports);
@@ -35,40 +39,42 @@ export function useQuestionManagement(
         });
         totalImported++;
       });
-      toast.success(`${totalImported} perguntas importadas com sucesso!`);
+      toast.success(t('library.notifications.imported', {
+        questions: tCommon('entities.question', { count: totalImported }),
+      }));
     } catch (error) {
       console.error("Erro ao importar perguntas:", error);
-      toast.error("Erro ao importar perguntas");
+      toast.error(t('library.notifications.importError'));
     }
   };
 
   const addQuestion = (columnId: string) => {
     addQuestionTile(columnId, {
       points: 10,
-      question: "Nova pergunta",
+      question: t('library.defaults.question'),
       answer: ""
     });
-    toast.success("Pergunta adicionada");
+    toast.success(t('library.notifications.questionAdded'));
   };
 
   const removeQuestion = (columnId: string, tileId: string) => {
-    if (window.confirm("Remover esta pergunta?")) {
+    if (window.confirm(t('library.confirmations.removeQuestion'))) {
       removeQuestionTile(columnId, tileId);
-      toast.success("Pergunta removida");
+      toast.success(t('library.notifications.questionRemoved'));
     }
   };
 
   const addFilm = () => {
-    addFilmColumn("Novo Filme");
-    toast.success("Filme adicionado");
+    addFilmColumn(t('library.defaults.film'));
+    toast.success(t('library.notifications.filmAdded'));
   };
 
   const removeFilm = (columnId: string, filmName: string) => {
     if (
-      window.confirm(`Remover o filme "${filmName}" e todas as suas perguntas?`)
+      window.confirm(t('library.confirmations.removeFilm', { film: filmName }))
     ) {
       removeFilmColumn(columnId);
-      toast.success("Filme removido da biblioteca");
+      toast.success(t('library.notifications.filmRemoved'));
     }
   };
 

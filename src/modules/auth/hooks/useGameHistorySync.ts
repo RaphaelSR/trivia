@@ -21,6 +21,7 @@ import { saveNormalizedGame } from '../services/normalized-history.service'
 import { isValidEmail } from '@/shared/utils/email'
 import { isGameFinished } from '../../game/domain/board.utils'
 import type { TriviaSession } from '../../trivia/types'
+import { useTranslation } from '@/shared/i18n'
 
 export interface UseGameHistorySyncOptions {
   /** Sessão atual do trivia */
@@ -36,6 +37,7 @@ export function useGameHistorySync({
   gameMode,
   user,
 }: UseGameHistorySyncOptions): void {
+  const { t } = useTranslation('auth')
   /**
    * Armazena o sessionId da última partida salva nesta montagem do provider.
    * Impede salvamentos duplicados se o board for re-renderizado enquanto
@@ -96,9 +98,9 @@ export function useGameHistorySync({
       // o host precisa saber que o histórico da partida não subiu.
       savedSessionIdRef.current = null
       retryPendingRef.current = true
-      toast.error('A partida terminou, mas não consegui salvar no seu histórico.', {
+      toast.error(t('services.historySync.failed'), {
         id: 'history-save-failed',
-        description: 'Confira a conexão — tento de novo automaticamente.',
+        description: t('services.historySync.description'),
         duration: 10000,
       })
     }).catch((err: unknown) => {
@@ -106,5 +108,5 @@ export function useGameHistorySync({
       savedSessionIdRef.current = null
       retryPendingRef.current = true
     })
-  }, [session, gameMode, user])
+  }, [session, gameMode, user, t])
 }

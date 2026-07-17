@@ -1,0 +1,38 @@
+export const landing = {
+  eyebrow: 'Trivia Cinematográfico',
+  title: 'Monte a rodada e jogue sem bagunça.',
+  description: 'Explore o jogo com dados prontos ou crie a partida completa da sua noite.',
+  demo: {
+    badge: 'Configurável',
+    title: 'Explorar demo',
+    description: 'Simule o jogo inteiro com times e perguntas de exemplo, sem configurar uma partida do zero.',
+    teams: 'Times',
+    playersPerTeam: 'Jogadores por time',
+    questions: 'Perguntas',
+    playersPerTeamSummary: '{{count}} por time',
+    peopleTotal: '{{count}} pessoas no total',
+    helper: 'Ideal para conhecer o fluxo, a ordem de turnos, o placar e o ritmo da partida.',
+    action: 'Abrir demo',
+  },
+  game: {
+    badge: 'Jogo completo',
+    title: 'Partida completa',
+    description: 'Crie a partida da noite com seus times, filmes, trivia e mímica. O progresso fica salvo automaticamente.',
+    featureGame: 'Trivia + mímica',
+    featureAutosave: 'Salvamento automático',
+    featureAccount: 'Conta opcional',
+    action: 'Criar partida',
+  },
+  auth: {
+    signedInAs: 'Conectado como {{name}}',
+    signedInDescription: 'Sua partida e seu histórico estão sincronizados com a sua conta.',
+    historyAction: 'Minhas partidas',
+    signedOutTitle: 'Jogue sem conta ou conecte-se para sincronizar.',
+    signedOutDescription: 'A conta é opcional. Com ela, você recupera partidas e convida participantes por QR.',
+  },
+  footer: {
+    balancedTurns: 'Turnos balanceados',
+    triviaAndMimica: 'Trivia + mímica',
+    hostDashboard: 'Painel do host',
+  },
+} as const

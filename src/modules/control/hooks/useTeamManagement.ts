@@ -19,6 +19,7 @@ import {
   convertDraftsToParticipants,
   generateTurnSequence,
 } from '../utils/sessionUtils'
+import { useTranslation } from '@/shared/i18n'
 
 /**
  * Hook para gerenciar times e participantes
@@ -33,6 +34,7 @@ export function useTeamManagement(
     turnSequence?: string[]
   ) => void
 ) {
+  const { t } = useTranslation('control')
   const [teamDrafts, setTeamDrafts] = useState<TeamDraft[]>([])
 
   useEffect(() => {
@@ -45,7 +47,7 @@ export function useTeamManagement(
           const participant = participants.find((p) => p.id === memberId)
           return {
             id: participant?.id ?? memberId,
-            name: participant?.name ?? 'Participante',
+            name: participant?.name ?? t('teams.defaults.participant'),
             role: participant?.role ?? 'player',
             ...(participant?.email ? { email: participant.email } : {}),
           }
@@ -53,7 +55,7 @@ export function useTeamManagement(
       }))
       setTeamDrafts(drafts)
     }
-  }, [teams, participants])
+  }, [participants, t, teams])
 
   const canSave = useMemo(() => canSaveTeams(teamDrafts), [teamDrafts])
   const previewTeams = useMemo(() => convertDraftsToTeams(teamDrafts, teams), [teamDrafts, teams])
@@ -69,9 +71,9 @@ export function useTeamManagement(
   }
 
   const removeTeam = (teamId: string) => {
-    if (window.confirm('Remover este time e os participantes associados?')) {
+    if (window.confirm(t('teams.confirmations.removeTeam'))) {
       setTeamDrafts((prev) => removeTeamDraft(prev, teamId))
-      toast.success('Time removido')
+      toast.success(t('teams.notifications.removed'))
     }
   }
 
@@ -110,7 +112,7 @@ export function useTeamManagement(
     const newTurnSequence = generateTurnSequence(sortedTeams, board as TriviaColumn[])
 
     updateTeamsAndParticipants(newTeams, newParticipants, newTurnSequence)
-    toast.success('Times atualizados e sequência regenerada')
+    toast.success(t('teams.notifications.saved'))
   }
 
   const replaceTeamDrafts = (drafts: TeamDraft[]) => {

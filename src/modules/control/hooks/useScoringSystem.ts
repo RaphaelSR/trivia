@@ -13,6 +13,7 @@ import {
   isValidScoring
 } from "../utils/scoringUtils";
 import type { FlexibleScoreValue } from "@/modules/game/domain/scoring";
+import { useTranslation } from '@/shared/i18n'
 
 /**
  * Hook para gerenciar sistema de pontuação
@@ -23,6 +24,7 @@ export function useScoringSystem(
   activeParticipantId: string | null,
   basePoints: number
 ) {
+  const { t } = useTranslation('control')
   const [mode, setMode] = useState<FlexibleScoringMode>("quick");
   const [distributions, setDistributions] = useState<PointDistribution[]>([]);
   const [selectedMultiplier, setSelectedMultiplier] = useState<number>(1.0);
@@ -37,8 +39,8 @@ export function useScoringSystem(
   const quickOptions: QuickScoringOption[] = [
     {
       id: "full-current",
-      title: "Valor cheio",
-      subtitle: "Time da vez recebe 100%",
+      title: t('scoring.legacyQuick.fullTitle'),
+      subtitle: t('scoring.legacyQuick.fullDescription'),
       multiplier: 1.0,
       target: "current-team",
       scoringValue: {
@@ -48,8 +50,8 @@ export function useScoringSystem(
     },
     {
       id: "half-current",
-      title: "Meio valor",
-      subtitle: "Time da vez recebe 50% sugeridos",
+      title: t('scoring.legacyQuick.halfTitle'),
+      subtitle: t('scoring.legacyQuick.halfDescription'),
       multiplier: 0.5,
       target: "current-team",
       scoringValue: {
@@ -60,8 +62,8 @@ export function useScoringSystem(
     },
     {
       id: "void",
-      title: "Anular",
-      subtitle: "Pergunta sem pontuação",
+      title: t('scoring.legacyQuick.voidTitle'),
+      subtitle: t('scoring.legacyQuick.voidDescription'),
       multiplier: 0,
       target: "none",
       scoringValue: {

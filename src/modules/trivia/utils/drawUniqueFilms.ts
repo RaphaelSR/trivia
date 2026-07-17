@@ -67,7 +67,11 @@ export function drawUniqueFilms(
   films: CustomFilm[],
   participants: Map<string, { name: string; teamName: string }>,
   maxFilms: number,
-  allowMultiplePerPerson: boolean = false
+  allowMultiplePerPerson: boolean = false,
+  copy: { unknownParticipant: string; noTeam: string } = {
+    unknownParticipant: '—',
+    noTeam: '—',
+  },
 ): RouletteResult[] {
   if (films.length === 0 || maxFilms <= 0) {
     return []
@@ -93,8 +97,8 @@ export function drawUniqueFilms(
     )?.[0] || ''
 
     const participant = participants.get(participantId) || {
-      name: film.addedBy || 'Desconhecido',
-      teamName: 'Sem time'
+      name: film.addedBy || copy.unknownParticipant,
+      teamName: copy.noTeam,
     }
 
     results.push({
@@ -113,4 +117,3 @@ export function drawUniqueFilms(
 
   return results
 }
-

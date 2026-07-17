@@ -14,10 +14,11 @@ Mapa funcional do projeto com foco no que existe hoje, no que esta em migracao e
 - `ativo`: fallback de rotas volta para a landing page
 - `ativo`: nao existe rota `/display`
 
-## Modos de jogo
-- `ativo`: `demo` inicia com sessao pronta para demonstracao e permite variar escala de times e perguntas
-- `ativo`: `offline` permite sessao local persistida no navegador
-- `ativo`: `online` mantém o jogo local-first e acrescenta conta, backup remoto, restauração e histórico normalizado
+## Estilos de partida
+- `ativo`: `Demo` inicia com dados prontos, permite variar a escala de times/perguntas e não salva progresso
+- `ativo`: `Partida completa` inicia a configuração real e mantém autosave local no navegador
+- `interno`: `demo | offline | online` permanecem no tipo `GameMode` para compatibilidade; a interface não apresenta “offline” como estilo
+- `ativo`: conta é uma capacidade opcional da partida completa e acrescenta backup remoto, restauração, histórico, QR e identidade
 
 ## Dashboard de controle
 - `ativo`: configuracao de times e participantes
@@ -42,7 +43,7 @@ Mapa funcional do projeto com foco no que existe hoje, no que esta em migracao e
 - `ativo`: reorganizacao manual dos proximos turnos sem apagar o historico ou trocar o participante atual
 - `ativo`: alteracao de elenco durante o trivia preserva o passado e inclui participantes novos apenas na ordem futura possivel
 - `ativo`: preview usa a sequencia real, destaca o turno atual e permite reorganizar o futuro
-- `ativo`: checkpoint local antes de salvar alterações reais de times ou participantes em sessões offline/online
+- `ativo`: checkpoint local antes de salvar alterações reais de times ou participantes em qualquer partida completa
 
 ## Pontuacao
 - `ativo`: pontuacao de trivia por tile respondida
@@ -64,7 +65,7 @@ Mapa funcional do projeto com foco no que existe hoje, no que esta em migracao e
 - `ativo`: salvar sessao atual
 - `ativo`: carregar sessao salva
 - `ativo`: manter historico de ate 20 sessoes
-- `ativo`: restaurar sessao ativa em `offline` e `online`
+- `ativo`: restaurar a partida completa ativa a partir do armazenamento local
 - `ativo`: reset granular de pontos, perguntas, filmes, tema, times e participantes
 
 ## PIN e acesso
@@ -76,22 +77,28 @@ Mapa funcional do projeto com foco no que existe hoje, no que esta em migracao e
 ## Tema e interface
 - `ativo`: temas `light`, `dark`, `cinema`, `retro`, `matrix`, `brazil` e `easter`
 - `ativo`: troca de tema em runtime com persistencia local
-- `ativo`: onboarding do modo `offline`
+- `ativo`: configuração inicial opcional da partida completa, com tema claro selecionado por padrão
 - `ativo`: background sazonal para o tema `easter`
 - `em migracao`: consolidacao visual para um dashboard mais coeso
 
-## Modo online
+## Conta e recursos conectados
 - `ativo`: Supabase como backend oficial de conta, sessão, snapshots e histórico
 - `ativo`: sincronização remota em background com estado pendente e retry, sem bloquear o jogo
 - `ativo`: autenticação por e-mail e senha, recuperação e vínculo de participações
-- `ativo`: um QR/link permanente por sessão online para escolher o próprio participante
+- `ativo`: um QR/link permanente por partida sincronizada para escolher o próprio participante
 - `ativo`: reserva opcional por e-mail, atualização de status e desvinculação auditada pelo host
 - `ativo`: QR local sem envio do token para serviços externos
 - `ativo`: finalização normalizada idempotente por conta + `TriviaSession.id`
 - `ativo`: avatar opcional de perfil, processado localmente para WebP e exibido no elenco, turnos, placar, claims e histórico compartilhado
-- `ativo`: fallback por iniciais quando não há avatar ou a imagem não carrega; `demo` e `offline` não consultam identidades remotas
+- `ativo`: fallback por iniciais quando não há avatar ou a imagem não carrega; demo e partidas deslogadas não consultam identidades remotas
 - `planejado`: campeonatos e histórico agregado cross-session
 - `planejado`: leaderboards agregados por campeonato e conta
+
+## Idiomas e texto
+- `ativo`: toda a interface e mensagens operacionais usam catálogos i18n tipados por namespace
+- `ativo`: português do Brasil como idioma padrão e fallback, com preferência persistida
+- `ativo`: verificação automática `npm run i18n:check` contra novos textos estáticos fora dos catálogos
+- `planejado`: catálogos e seletor para espanhol e inglês
 
 ## Onde aprofundar
 - Regras funcionais: [REGRAS-DE-NEGOCIO.md](./REGRAS-DE-NEGOCIO.md)

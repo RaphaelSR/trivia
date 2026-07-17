@@ -108,7 +108,7 @@ it('falha de sync oferece retry sem buscar token', async () => {
     />,
   )
 
-  expect(await screen.findByText(/sessão ainda não sincronizou/i)).toBeInTheDocument()
+  expect(await screen.findByText(/partida ainda não sincronizou/i)).toBeInTheDocument()
   expect(screen.getByRole('button', { name: /tentar novamente/i })).toBeInTheDocument()
   expect(mockGetInvite).not.toHaveBeenCalled()
 })

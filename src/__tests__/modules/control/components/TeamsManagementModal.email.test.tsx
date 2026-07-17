@@ -1,10 +1,11 @@
 /**
- * Testes de gate do campo de e-mail em TeamsManagementModal.
+ * Testes de gate dos recursos conectados em TeamsManagementModal.
  *
  * Garante:
- *  - O campo de e-mail POR PARTICIPANTE aparece quando gameMode === 'online'
- *  - O campo NÃO aparece nos modos 'demo' e 'offline' (RESTRIÇÃO CRÍTICA)
- *  - datalist de autocomplete presente/ausente por gameMode
+ *  - O campo de e-mail POR PARTICIPANTE aparece quando os recursos conectados estão ativos
+ *  - Demo nunca acessa esses recursos, mesmo que uma flag incorreta seja recebida
+ *  - O legado gameMode === 'online' continua compatível durante a migração
+ *  - datalist de autocomplete segue a capacidade, não o estilo de partida
  *  - Helper text correto por validade do e-mail
  *  - canSave NÃO depende de e-mail (salvar funciona com e-mail vazio ou inválido)
  *  - Rodapé não-bloqueante exibido quando ≥1 e-mail válido em modo online
@@ -46,25 +47,38 @@ const baseProps = {
   canRandomizeRoster: true,
 }
 
-describe('TeamsManagementModal — campo de e-mail (gate por gameMode)', () => {
-  it('exibe o campo de e-mail quando gameMode === "online"', () => {
+describe('TeamsManagementModal — campo de e-mail (gate por capacidade)', () => {
+  it('mantém compatibilidade com gameMode === "online"', () => {
     render(<TeamsManagementModal {...baseProps} gameMode="online" />)
     expect(
-      screen.getByPlaceholderText('e-mail (opcional, para vincular conta)'),
+      screen.getByPlaceholderText('e-mail opcional para vincular a conta'),
     ).toBeInTheDocument()
   })
 
-  it('NÃO exibe o campo de e-mail quando gameMode === "demo"', () => {
-    render(<TeamsManagementModal {...baseProps} gameMode="demo" />)
+  it('exibe o campo na partida completa quando os recursos conectados estão ativos', () => {
+    render(
+      <TeamsManagementModal
+        {...baseProps}
+        gameMode="offline"
+        connectedFeaturesEnabled
+      />,
+    )
     expect(
-      screen.queryByPlaceholderText('e-mail (opcional, para vincular conta)'),
+      screen.getByPlaceholderText('e-mail opcional para vincular a conta'),
+    ).toBeInTheDocument()
+  })
+
+  it('NÃO exibe o campo em demo, mesmo que uma flag incorreta tente ativá-lo', () => {
+    render(<TeamsManagementModal {...baseProps} gameMode="demo" connectedFeaturesEnabled />)
+    expect(
+      screen.queryByPlaceholderText('e-mail opcional para vincular a conta'),
     ).not.toBeInTheDocument()
   })
 
-  it('NÃO exibe o campo de e-mail quando gameMode === "offline"', () => {
+  it('NÃO exibe o campo sem recursos conectados', () => {
     render(<TeamsManagementModal {...baseProps} gameMode="offline" />)
     expect(
-      screen.queryByPlaceholderText('e-mail (opcional, para vincular conta)'),
+      screen.queryByPlaceholderText('e-mail opcional para vincular a conta'),
     ).not.toBeInTheDocument()
   })
 
@@ -79,7 +93,7 @@ describe('TeamsManagementModal — campo de e-mail (gate por gameMode)', () => {
       ],
     }
     render(<TeamsManagementModal {...baseProps} teamDrafts={[twoMemberTeam]} gameMode="online" />)
-    const emailInputs = screen.getAllByPlaceholderText('e-mail (opcional, para vincular conta)')
+    const emailInputs = screen.getAllByPlaceholderText('e-mail opcional para vincular a conta')
     expect(emailInputs).toHaveLength(2)
   })
 
@@ -145,7 +159,7 @@ describe('TeamsManagementModal — datalist de autocomplete', () => {
 
   it('input de e-mail conectado ao datalist via list="invite-contacts"', () => {
     render(<TeamsManagementModal {...baseProps} gameMode="online" />)
-    const input = screen.getByPlaceholderText('e-mail (opcional, para vincular conta)')
+    const input = screen.getByPlaceholderText('e-mail opcional para vincular a conta')
     expect(input).toHaveAttribute('list', 'invite-contacts')
   })
 })
@@ -175,7 +189,7 @@ describe('TeamsManagementModal — helper text por validade do e-mail', () => {
       <TeamsManagementModal {...baseProps} teamDrafts={[draftWithInvalid]} gameMode="online" />,
     )
     expect(
-      screen.getByText('Verifique o e-mail — sem isto o jogador ainda joga normalmente.'),
+      screen.getByText('Verifique o e-mail. O jogador ainda participa normalmente sem esse vínculo.'),
     ).toBeInTheDocument()
   })
 
@@ -185,7 +199,7 @@ describe('TeamsManagementModal — helper text por validade do e-mail', () => {
       screen.queryByText('Será vinculado automaticamente quando entrar com este e-mail.'),
     ).not.toBeInTheDocument()
     expect(
-      screen.queryByText('Verifique o e-mail — sem isto o jogador ainda joga normalmente.'),
+      screen.queryByText('Verifique o e-mail. O jogador ainda participa normalmente sem esse vínculo.'),
     ).not.toBeInTheDocument()
   })
 
@@ -245,12 +259,12 @@ describe('TeamsManagementModal — rodapé não-bloqueante', () => {
       members: [{ id: 'p1', name: 'Alice', role: 'player', email: 'alice@example.com' }],
     }
     render(<TeamsManagementModal {...baseProps} teamDrafts={[draftWithValid]} gameMode="online" />)
-    expect(screen.getByText(/O jogo funciona/i)).toBeInTheDocument()
+    expect(screen.getByText(/A partida funciona/i)).toBeInTheDocument()
   })
 
   it('NÃO exibe rodapé sem e-mails válidos', () => {
     render(<TeamsManagementModal {...baseProps} gameMode="online" />)
-    expect(screen.queryByText(/O jogo funciona/i)).not.toBeInTheDocument()
+    expect(screen.queryByText(/A partida funciona/i)).not.toBeInTheDocument()
   })
 
   it('NÃO exibe rodapé em modo demo mesmo com e-mail válido', () => {
@@ -261,7 +275,7 @@ describe('TeamsManagementModal — rodapé não-bloqueante', () => {
       members: [{ id: 'p1', name: 'Alice', role: 'player', email: 'alice@example.com' }],
     }
     render(<TeamsManagementModal {...baseProps} teamDrafts={[draftWithValid]} gameMode="demo" />)
-    expect(screen.queryByText(/O jogo funciona/i)).not.toBeInTheDocument()
+    expect(screen.queryByText(/A partida funciona/i)).not.toBeInTheDocument()
   })
 })
 
@@ -303,7 +317,7 @@ describe('TeamsManagementModal — gate do convite ao vivo', () => {
         sessionClientId="session-1"
       />,
     )
-    expect(screen.getByText(/salve as alterações de elenco/i)).toBeInTheDocument()
+    expect(screen.getByText(/salve as alterações do elenco/i)).toBeInTheDocument()
     expect(screen.getByRole('button', { name: /abrir convite ao vivo/i })).toBeDisabled()
   })
 })

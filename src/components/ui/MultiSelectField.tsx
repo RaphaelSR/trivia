@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { Check, ChevronDown, Search } from 'lucide-react'
 import { Button } from './Button'
+import { useTranslation } from '@/shared/i18n'
 
 type MultiSelectOption = {
   id: string
@@ -30,10 +31,11 @@ export function MultiSelectField({
   onSelectionChange,
   onSelectAll,
   onSelectNone,
-  searchPlaceholder = "Buscar...",
-  emptyMessage = "Nenhum item encontrado",
+  searchPlaceholder,
+  emptyMessage,
   maxHeight = "max-h-80"
 }: MultiSelectFieldProps) {
+  const { t } = useTranslation('common')
   const [searchQuery, setSearchQuery] = useState('')
   const [isExpanded, setIsExpanded] = useState(false)
 
@@ -60,10 +62,11 @@ export function MultiSelectField({
         </div>
         <div className="flex items-center gap-2">
           <span className="text-sm text-[var(--color-muted)]">
-            {selectedCount} selecionado{selectedCount !== 1 ? 's' : ''}
+            {t('selection.selected', { count: selectedCount })}
           </span>
           <button
             onClick={() => setIsExpanded(!isExpanded)}
+            aria-label={isExpanded ? t('selection.collapse') : t('selection.expand')}
             className="p-2 rounded-lg bg-[var(--color-surface)] hover:bg-[var(--color-border)] transition-colors"
           >
             <ChevronDown 
@@ -81,24 +84,24 @@ export function MultiSelectField({
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-[var(--color-muted)]" />
               <input
                 type="text"
-                placeholder={searchPlaceholder}
+                placeholder={searchPlaceholder ?? t('selection.search')}
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="w-full pl-10 pr-3 py-2 rounded-xl border border-[var(--color-border)] bg-[var(--color-background)] text-sm text-[var(--color-text)]"
               />
             </div>
             <Button variant="outline" size="sm" onClick={onSelectAll}>
-              Todos
+              {t('actions.selectAll')}
             </Button>
             <Button variant="outline" size="sm" onClick={onSelectNone}>
-              Nenhum
+              {t('actions.selectNone')}
             </Button>
           </div>
 
           <div className={`${maxHeight} overflow-y-auto space-y-2 border border-[var(--color-border)] rounded-xl p-3 bg-[var(--color-background)]`}>
             {filteredOptions.length === 0 ? (
               <div className="text-center py-8">
-                <p className="text-sm text-[var(--color-muted)]">{emptyMessage}</p>
+                <p className="text-sm text-[var(--color-muted)]">{emptyMessage ?? t('selection.empty')}</p>
               </div>
             ) : (
               filteredOptions.map((option) => (

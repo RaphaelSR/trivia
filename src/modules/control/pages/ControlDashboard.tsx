@@ -39,7 +39,7 @@ import { storageService } from '@/shared/services/storage.service'
 import { countAnsweredTiles, countTotalTiles, releaseActiveTiles } from '@/modules/game/domain/board.utils'
 import { planImport } from '@/modules/control/utils/filmExportUtils'
 import { getDefaultTimerForPoints } from '@/modules/game/domain/timer'
-import { buildTurnSequence, getTurnLabel } from '@/modules/game/domain/turn-order'
+import { buildTurnSequence, getTurnPosition } from '@/modules/game/domain/turn-order'
 import { canDrawTeamsBeforePlay } from '@/modules/game/domain/team-draw'
 import { FaqPanel } from '../ui/FaqPanel'
 import { GameStatusStrip } from '../ui/GameStatusStrip'
@@ -73,9 +73,11 @@ import { playSound } from '@/shared/services/audio.service'
 import { AuthPanel } from '@/modules/auth/components/AuthPanel'
 import { useLiveParticipantIdentities } from '@/modules/auth/hooks/useLiveParticipantIdentities'
 import { ParticipantAvatar } from '@/shared/components/ParticipantAvatar'
+import { useTranslation } from 'react-i18next'
 // PIN será gerenciado pelo hook usePinManagement
 
 export function ControlDashboard() {
+  const { t, i18n } = useTranslation(['control', 'game', 'common'])
   const {
     session,
     orderedTeams,
@@ -233,11 +235,14 @@ export function ControlDashboard() {
   const answeredCards = useMemo(() => countAnsweredTiles(session.board), [session.board])
   const totalCards = useMemo(() => countTotalTiles(session.board), [session.board])
   const sessionStatus = getSessionStatus()
-  const currentTurnLabel = getTurnLabel(
+  const currentTurnPosition = getTurnPosition(
     session.activeParticipantId,
     session.turnSequence,
     session.activeTurnIndex,
   )
+  const currentTurnLabel = currentTurnPosition
+    ? t('turn.counterCompact', currentTurnPosition)
+    : t('turn.waitingCompact')
   const canOpenTurnPreview = useMemo(
     () =>
       totalCards > 0 &&
@@ -301,10 +306,25 @@ export function ControlDashboard() {
         if (prev && prev.id === session.id) {
           const prevLogLength = prev.eventLog?.length ?? 0
           const newLogLength = session.eventLog?.length ?? 0
-          const label =
-            newLogLength < prevLogLength
-              ? 'Antes de restaurar uma versão'
-              : describeMove(session.eventLog?.[prevLogLength])
+          let label: string = t('dashboard.checkpoints.beforeRestore')
+          if (newLogLength >= prevLogLength) {
+            const move = describeMove(session.eventLog?.[prevLogLength])
+            const questionFallback = t('dashboard.checkpoints.questionFallback')
+            if (move.type === 'score-adjustment') {
+              label = t('dashboard.checkpoints.scoreAdjustment')
+            } else if (move.type === 'mimica') {
+              label = t('dashboard.checkpoints.mimica', {
+                points: t('common:entities.pointsShort', { count: move.points }),
+              })
+            } else if (move.type === 'trivia-void') {
+              label = t('dashboard.checkpoints.voidQuestion', { film: move.film ?? questionFallback })
+            } else {
+              label = t('dashboard.checkpoints.answerQuestion', {
+                film: move.film ?? questionFallback,
+                points: t('common:entities.pointsShort', { count: move.points }),
+              })
+            }
+          }
           // Checkpoint nasce sem cartas 'active' (estado de modal aberto).
           saveCheckpoint(releaseActiveTiles(prev), label)
         }
@@ -320,7 +340,7 @@ export function ControlDashboard() {
 
       return () => clearTimeout(timer);
     }
-  }, [session, gameMode, orderedTeams.length, saveSession])
+  }, [session, gameMode, orderedTeams.length, saveSession, t])
 
   // Backup na nuvem em background para o jogo local-first.
   // Quando o usuário está logado e o Supabase está configurado:
@@ -328,9 +348,13 @@ export function ControlDashboard() {
   //  - ao ativar (login/mount), reconcilia com a nuvem e restaura se mais novo.
   // Demo nunca sincroniza (enabled=false quando gameMode==='demo').
   const syncEnabled = gameMode !== 'demo' && Boolean(user) && isSupabaseConfigured()
+  // Convites, identidades e avatares são capacidades da conta sincronizada,
+  // não um terceiro estilo de jogo. Os valores internos de GameMode continuam
+  // existindo apenas para manter rotas e sessões antigas compatíveis.
+  const connectedGameFeaturesEnabled = syncEnabled
   const { identities: participantIdentities } = useLiveParticipantIdentities(
     session.id,
-    gameMode === 'online' && syncEnabled,
+    connectedGameFeaturesEnabled,
   )
   // Conflito detectado pelo reconcile (local x nuvem divergem de forma ambígua).
   const [sessionConflict, setSessionConflict] = useState<CloudSyncConflict | null>(null)
@@ -356,14 +380,13 @@ export function ControlDashboard() {
   // de restauração.
   useEffect(() => {
     if (snapshotFailing) {
-      toast.warning('Não consegui gravar pontos de restauração na nuvem.', {
+      toast.warning(t('dashboard.notifications.snapshotFailure'), {
         id: 'snapshot-failing',
-        description:
-          'O jogo continua salvo normalmente, mas o histórico de versões pode não ter versões novas.',
+        description: t('dashboard.notifications.snapshotFailureDescription'),
         duration: 8000,
       })
     }
-  }, [snapshotFailing])
+  }, [snapshotFailing, t])
 
   // T9 — configurações de som.
   const [soundSettingsOpen, setSoundSettingsOpen] = useState(false)
@@ -389,14 +412,14 @@ export function ControlDashboard() {
     restoreSession(snap.session)
     saveSession(snap.session, snap.session.title)
     setVersionsOpen(false)
-    toast.success('Versão restaurada.')
+    toast.success(t('dashboard.notifications.versionRestored'))
   }
 
   const handleRestoreCheckpoint = (checkpoint: SessionCheckpoint) => {
     restoreSession(checkpoint.session)
     saveSession(checkpoint.session, checkpoint.session.title)
     setVersionsOpen(false)
-    toast.success(`Jogo restaurado: ${checkpoint.label.toLowerCase()}.`)
+    toast.success(t('dashboard.notifications.checkpointRestored', { label: checkpoint.label.toLocaleLowerCase(i18n.resolvedLanguage) }))
   }
 
   // O usuário escolheu qual versão manter no modal de conflito.
@@ -407,11 +430,11 @@ export function ControlDashboard() {
     if (which === 'cloud') {
       restoreSession(conflict.cloudSession)
       saveSession(conflict.cloudSession, conflict.cloudSession.title)
-      toast.success('Usando a versão da sua conta.')
+      toast.success(t('dashboard.notifications.usingCloud'))
     } else {
       // Mantém o local e sobe ele por cima da nuvem.
       void forceSync()
-      toast.success('Mantida a versão deste aparelho.')
+      toast.success(t('dashboard.notifications.usingDevice'))
     }
   }
 
@@ -420,16 +443,16 @@ export function ControlDashboard() {
     const result = await forceSync()
     switch (result) {
       case 'already-synced':
-        toast.success('Sua partida já está sincronizada com a sua conta.')
+        toast.success(t('dashboard.notifications.alreadySynced'))
         break
       case 'synced':
-        toast.success('Partida sincronizada com a sua conta.')
+        toast.success(t('dashboard.notifications.synced'))
         break
       case 'pending':
-        toast.error('Não foi possível sincronizar agora. Vamos tentar de novo automaticamente.')
+        toast.error(t('dashboard.notifications.syncPending'))
         break
       case 'disabled':
-        toast('Entre na sua conta para sincronizar esta partida.')
+        toast(t('dashboard.notifications.signInToSync'))
         setAccountOpen(true)
         break
     }
@@ -480,17 +503,17 @@ export function ControlDashboard() {
 
   const handleRandomQuestion = () => {
     if (availableTiles.length === 0) {
-      toast.warning('Todas as cartas já foram utilizadas nesta sessão')
+      toast.warning(t('dashboard.notifications.noAvailableCards'))
       return
     }
     
     setConfirmActionConfig({
-      title: 'Sortear Pergunta Aleatória',
-      description: 'Esta ação irá selecionar automaticamente uma pergunta aleatória disponível no tabuleiro. A pergunta será destacada e pronta para ser respondida.',
+      title: t('dashboard.dialogs.randomQuestionTitle'),
+      description: t('dashboard.dialogs.randomQuestionDescription'),
       onConfirm: () => {
         const random = availableTiles[Math.floor(Math.random() * availableTiles.length)]
         handleSelectTile(random.tile, random.column)
-        toast.success('Pergunta sorteada!')
+        toast.success(t('dashboard.notifications.questionDrawn'))
       },
       variant: 'info',
     })
@@ -522,10 +545,10 @@ export function ControlDashboard() {
       setPinError('')
       setActivePanel('library')
       setLibraryOpen(true)
-      toast.success('Acesso liberado')
+      toast.success(t('dashboard.notifications.libraryUnlocked'))
       return
     }
-    setPinError('PIN inválido')
+    setPinError(t('dashboard.pin.invalid'))
   }
 
   const handleStartOnboarding = () => {
@@ -573,16 +596,20 @@ export function ControlDashboard() {
       const teamsCount = orderedTeams.length
       const totalScore = orderedTeams.reduce((acc, team) => acc + (team.score || 0), 0)
 
-      const itemsToLose = []
-      if (filmsCount > 0) itemsToLose.push(`${filmsCount} filme${filmsCount !== 1 ? 's' : ''}`)
-      if (questionsCount > 0) itemsToLose.push(`${questionsCount} pergunta${questionsCount !== 1 ? 's' : ''}`)
-      if (answeredCount > 0) itemsToLose.push(`${answeredCount} pergunta${answeredCount !== 1 ? 's' : ''} respondida${answeredCount !== 1 ? 's' : ''}`)
-      if (teamsCount > 0) itemsToLose.push(`${teamsCount} time${teamsCount !== 1 ? 's' : ''}`)
-      if (totalScore > 0) itemsToLose.push(`${totalScore} pontos`)
+      const itemsToLose: string[] = []
+      if (filmsCount > 0) itemsToLose.push(t('common:entities.film', { count: filmsCount }))
+      if (questionsCount > 0) itemsToLose.push(t('common:entities.question', { count: questionsCount }))
+      if (answeredCount > 0) itemsToLose.push(t('dashboard.dialogs.answeredQuestion', { count: answeredCount }))
+      if (teamsCount > 0) itemsToLose.push(t('common:entities.team', { count: teamsCount }))
+      if (totalScore > 0) itemsToLose.push(t('common:entities.point', { count: totalScore }))
+      const formattedItems = new Intl.ListFormat(i18n.resolvedLanguage, {
+        style: 'long',
+        type: 'conjunction',
+      }).format(itemsToLose)
 
       setConfirmActionConfig({
-        title: 'Carregar Sessão Anterior',
-        description: `Você tem uma sessão ativa com dados: ${itemsToLose.join(', ')}. Ao carregar uma sessão anterior, todos esses dados serão substituídos pelos dados da sessão selecionada. Esta ação não pode ser desfeita.`,
+        title: t('dashboard.dialogs.loadTitle'),
+        description: t('dashboard.dialogs.loadDescription', { items: formattedItems }),
         onConfirm: () => {
           sessionManagement.loadSessionById(sessionId)
         },
@@ -597,7 +624,7 @@ export function ControlDashboard() {
   const handleResetGame: typeof sessionManagement.resetGame = (...args) => {
     // Reset é a ação mais destrutiva do jogo — merece um ponto de retorno.
     if (gameMode !== 'demo') {
-      saveCheckpoint(releaseActiveTiles(session), 'Antes de resetar o jogo')
+      saveCheckpoint(releaseActiveTiles(session), t('dashboard.checkpoints.beforeReset'))
     }
     return sessionManagement.resetGame(...args)
   }
@@ -660,10 +687,12 @@ export function ControlDashboard() {
       // Título e data vão para o ESTADO — o antigo setTimeout salvava um
       // closure desatualizado e o autosave gravava por cima com o título
       // velho: o nome dado no onboarding nunca pegava.
-      const sessionTitle = config.sessionTitle || `Partida de ${new Date().toLocaleDateString('pt-BR')}`
+      const sessionTitle = config.sessionTitle || t('dashboard.setup.defaultTitle', {
+        date: new Date().toLocaleDateString(i18n.resolvedLanguage),
+      })
       const sessionDate = config.sessionDate || new Date().toISOString()
       updateSessionInfo({ title: sessionTitle, scheduledAt: sessionDate })
-      toast.success(`Sessão "${sessionTitle}" criada!`)
+      toast.success(t('dashboard.notifications.setupCreated', { title: sessionTitle }))
       
       // Marca onboarding como visto
       storageService.set(STORAGE_KEYS.onboardingSeen, 'true')
@@ -677,18 +706,18 @@ export function ControlDashboard() {
       setActivePanel('library')
       setLibraryOpen(true)
 
-      toast.success('Configuração concluída! Agora adicione os filmes e perguntas na biblioteca.')
+      toast.success(t('dashboard.notifications.setupComplete'))
       
     } catch (error) {
       console.error('Erro ao configurar sessão offline:', error)
-      toast.error('Erro ao configurar sessão. Tente novamente.')
+      toast.error(t('dashboard.notifications.setupError'))
     }
   }
 
   const handleRegenerateTurnSequence = () => {
     setConfirmActionConfig({
-      title: 'Reorganizar próximos turnos',
-      description: 'O turno atual e o histórico já jogado serão preservados. Somente os próximos turnos serão reorganizados com o elenco atual e a alternância equilibrada entre os times.',
+      title: t('dashboard.dialogs.reorganizeTitle'),
+      description: t('dashboard.dialogs.reorganizeDescription'),
       onConfirm: () => {
         sessionManagement.regenerateTurnSequence()
       },
@@ -699,11 +728,11 @@ export function ControlDashboard() {
 
   const handleAddFilm = () => {
     setConfirmActionConfig({
-      title: 'Adicionar Novo Filme',
-      description: 'Esta ação irá adicionar uma nova coluna de filme ao tabuleiro. Você poderá adicionar perguntas a este filme posteriormente.',
+      title: t('dashboard.dialogs.addFilmTitle'),
+      description: t('dashboard.dialogs.addFilmDescription'),
       onConfirm: () => {
-        addFilmColumn('Novo Filme')
-        toast.success('Filme adicionado!')
+        addFilmColumn(t('dashboard.question.newFilm'))
+        toast.success(t('dashboard.notifications.filmAdded'))
       },
       variant: 'info',
     })
@@ -712,15 +741,15 @@ export function ControlDashboard() {
 
   const handleRemoveFilm = (columnId: string, filmName: string) => {
     setConfirmActionConfig({
-      title: 'Remover filme',
-      description: `Remover "${filmName}" e todas as suas perguntas do board? Um ponto de retorno fica no histórico de versões.`,
+      title: t('dashboard.dialogs.removeFilmTitle'),
+      description: t('dashboard.dialogs.removeFilmDescription', { film: filmName }),
       variant: 'danger',
       onConfirm: () => {
         if (gameMode !== 'demo') {
-          saveCheckpoint(releaseActiveTiles(session), `Antes de remover ${filmName}`)
+          saveCheckpoint(releaseActiveTiles(session), t('dashboard.checkpoints.beforeRemoveFilm', { film: filmName }))
         }
         removeFilmColumn(columnId)
-        toast.success('Filme removido da biblioteca')
+        toast.success(t('dashboard.notifications.filmRemoved'))
       },
     })
     setConfirmActionOpen(true)
@@ -729,24 +758,24 @@ export function ControlDashboard() {
   const handleAddQuestion = (columnId: string) => {
     addQuestionTile(columnId, {
       points: 10,
-      question: 'Nova pergunta',
+      question: t('dashboard.question.newQuestion'),
       answer: '',
     })
-    toast.success('Pergunta adicionada')
+    toast.success(t('dashboard.notifications.questionAdded'))
   }
 
   const handleRemoveQuestion = (columnId: string, tileId: string) => {
-    const film = session.board.find((column) => column.id === columnId)?.film ?? 'um filme'
+    const film = session.board.find((column) => column.id === columnId)?.film ?? t('common:entities.film', { count: 1 })
     setConfirmActionConfig({
-      title: 'Remover pergunta',
-      description: `Remover esta pergunta de "${film}"? Um ponto de retorno fica no histórico de versões.`,
+      title: t('dashboard.dialogs.removeQuestionTitle'),
+      description: t('dashboard.dialogs.removeQuestionDescription', { film }),
       variant: 'danger',
       onConfirm: () => {
         if (gameMode !== 'demo') {
-          saveCheckpoint(releaseActiveTiles(session), `Antes de remover uma pergunta de ${film}`)
+          saveCheckpoint(releaseActiveTiles(session), t('dashboard.checkpoints.beforeRemoveQuestion', { film }))
         }
         removeQuestionTile(columnId, tileId)
-        toast.success('Pergunta removida')
+        toast.success(t('dashboard.notifications.questionRemoved'))
       },
     })
     setConfirmActionOpen(true)
@@ -762,7 +791,7 @@ export function ControlDashboard() {
       return
     }
 
-    toast.info('Nenhum participante ativo no momento. Abrindo o placar completo.')
+    toast.info(t('dashboard.notifications.noActiveParticipant'))
     handleOpenScoreboard()
   }
 
@@ -773,11 +802,11 @@ export function ControlDashboard() {
 
   const sidebarContent = (
     <>
-      <SidebarNavGroup title="Jogo">
+      <SidebarNavGroup title={t('dashboard.sidebar.game')}>
         <SidebarNavItem
           icon={<ClipboardList size={18} />}
-          title="Tabuleiro"
-          description="Volta para a visão principal da rodada e mantém o host focado no board."
+          title={t('dashboard.sidebar.board')}
+          description={t('dashboard.sidebar.boardDescription')}
           badge={`${answeredCards}/${totalCards || 0}`}
           active={activePanel === 'board'}
           onClick={() => {
@@ -787,8 +816,8 @@ export function ControlDashboard() {
         />
         <SidebarNavItem
           icon={<RefreshCw size={18} />}
-          title="Próximo turno"
-          description="Avança a vez para o próximo participante da sequência."
+          title={t('dashboard.sidebar.nextTurn')}
+          description={t('dashboard.sidebar.nextTurnDescription')}
           badge={currentTurnLabel}
           variant="highlight"
           disabled={orderedTeams.length === 0}
@@ -796,13 +825,13 @@ export function ControlDashboard() {
             advanceTurn()
             setActivePanel('board')
             handleCloseMobileSidebar()
-            toast.success('Turno avançado')
+            toast.success(t('dashboard.notifications.turnAdvanced'))
           }}
         />
         <SidebarNavItem
           icon={<Theater size={18} />}
-          title="Mímica"
-          description="Abre o modo especial de pontuação para rodada de mímica."
+          title={t('dashboard.sidebar.mimica')}
+          description={t('dashboard.sidebar.mimicaDescription')}
           onClick={() => {
             setActivePanel('board')
             setMimicaModalOpen(true)
@@ -811,9 +840,9 @@ export function ControlDashboard() {
         />
         <SidebarNavItem
           icon={<ClipboardList size={18} />}
-          title="Placar"
-          description="Mostra o ranking consolidado e os detalhes por participante."
-          badge={`${scoreboard[0]?.points ?? 0} pts`}
+          title={t('dashboard.sidebar.scoreboard')}
+          description={t('dashboard.sidebar.scoreboardDescription')}
+          badge={t('common:entities.pointsShort', { count: scoreboard[0]?.points ?? 0 })}
           active={activePanel === 'scoreboard'}
           onClick={() => {
             handleOpenScoreboard()
@@ -822,8 +851,8 @@ export function ControlDashboard() {
         />
         <SidebarNavItem
           icon={<RefreshCw size={14} />}
-          title="Regenerar turnos"
-          description="Recria a sequência de turnos alternando os times."
+          title={t('dashboard.sidebar.regenerate')}
+          description={t('dashboard.sidebar.regenerateDescription')}
           disabled={orderedTeams.length === 0}
           onClick={() => {
             handleRegenerateTurnSequence()
@@ -832,12 +861,12 @@ export function ControlDashboard() {
         />
       </SidebarNavGroup>
 
-      <SidebarNavGroup title="Sessão">
+      <SidebarNavGroup title={t('dashboard.sidebar.gameSetup')}>
         <SidebarNavItem
           icon={<RefreshCw size={18} />}
-          title="Sessões"
-          description="Carrega, salva e cria novas sessões do jogo."
-          badge={sessionStatus.hasActiveSession ? 'ativa' : 'nova'}
+          title={t('dashboard.sidebar.games')}
+          description={t('dashboard.sidebar.gamesDescription')}
+          badge={sessionStatus.hasActiveSession ? t('dashboard.sidebar.activeBadge') : t('dashboard.sidebar.newBadge')}
           active={activePanel === 'sessions'}
           onClick={() => {
             handleOpenSessions()
@@ -846,8 +875,8 @@ export function ControlDashboard() {
         />
         <SidebarNavItem
           icon={<Palette size={18} />}
-          title="Tema"
-          description="Ajusta a paleta visual usada durante a apresentação."
+          title={t('dashboard.sidebar.theme')}
+          description={t('dashboard.sidebar.themeDescription')}
           active={activePanel === 'theme'}
           onClick={() => {
             handleOpenTheme()
@@ -856,8 +885,8 @@ export function ControlDashboard() {
         />
         <SidebarNavItem
           icon={<RotateCcw size={18} />}
-          title="Reset"
-          description="Abre as opções destrutivas para reiniciar a sessão com segurança."
+          title={t('dashboard.sidebar.reset')}
+          description={t('dashboard.sidebar.resetDescription')}
           variant="danger"
           onClick={() => {
             setActivePanel('sessions')
@@ -867,8 +896,8 @@ export function ControlDashboard() {
         />
         <SidebarNavItem
           icon={<Info size={18} />}
-          title="Onboarding"
-          description="Executa o assistente guiado para preparar a sessão local neste navegador."
+          title={t('dashboard.sidebar.onboarding')}
+          description={t('dashboard.sidebar.onboardingDescription')}
           onClick={() => {
             handleStartOnboarding()
             handleCloseMobileSidebar()
@@ -876,19 +905,19 @@ export function ControlDashboard() {
         />
         <SidebarNavItem
           icon={<BookOpen size={18} />}
-          title="FAQ / Ajuda"
-          description="Explica fluxo da rodada, pontuação, biblioteca, sessões locais e regras atuais."
+          title={t('dashboard.sidebar.help')}
+          description={t('dashboard.sidebar.helpDescription')}
           active={activePanel === 'faq'}
           onClick={handleOpenInfo}
         />
       </SidebarNavGroup>
 
-      <SidebarNavGroup title="Conteúdo">
+      <SidebarNavGroup title={t('dashboard.sidebar.content')}>
         <SidebarNavItem
           icon={<BookOpen size={18} />}
-          title="Biblioteca"
-          description="Edita filmes, perguntas e respostas em modo mestre-detalhe."
-          badge={`${session.board.length} filmes`}
+          title={t('dashboard.sidebar.library')}
+          description={t('dashboard.sidebar.libraryDescription')}
+          badge={t('common:entities.film', { count: session.board.length })}
           active={activePanel === 'library'}
           onClick={() => {
             handleShowLibrary()
@@ -897,8 +926,8 @@ export function ControlDashboard() {
         />
         <SidebarNavItem
           icon={<BookOpen size={18} />}
-          title="Importar / Exportar"
-          description="Usa a biblioteca para trocar JSONs de filmes e perguntas."
+          title={t('dashboard.sidebar.importExport')}
+          description={t('dashboard.sidebar.importExportDescription')}
           onClick={() => {
             handleShowLibrary()
             handleCloseMobileSidebar()
@@ -906,8 +935,8 @@ export function ControlDashboard() {
         />
         <SidebarNavItem
           icon={<RotateCcw size={18} />}
-          title="Roleta"
-          description="Sorteia uma lista temporária de filmes para uma próxima edição."
+          title={t('dashboard.sidebar.roulette')}
+          description={t('dashboard.sidebar.rouletteDescription')}
           onClick={() => {
             setActivePanel('board')
             setFilmRouletteOpen(true)
@@ -916,12 +945,12 @@ export function ControlDashboard() {
         />
       </SidebarNavGroup>
 
-      <SidebarNavGroup title="Times">
+      <SidebarNavGroup title={t('dashboard.sidebar.teams')}>
         <SidebarNavItem
           icon={<UsersRound size={18} />}
-          title="Gerenciar times"
-          description="Edita times, participantes, ordem e composição da rodada."
-          badge={`${orderedTeams.length} times`}
+          title={t('dashboard.sidebar.manageTeams')}
+          description={t('dashboard.sidebar.manageTeamsDescription')}
+          badge={t('common:entities.team', { count: orderedTeams.length })}
           active={activePanel === 'teams'}
           onClick={() => {
             handleOpenTeams()
@@ -930,8 +959,8 @@ export function ControlDashboard() {
         />
         <SidebarNavItem
           icon={<ClipboardList size={18} />}
-          title="Preview da ordem"
-          description="Mostra a ordem completa da partida quando a sessão já tem times válidos e perguntas no board."
+          title={t('dashboard.sidebar.orderPreview')}
+          description={t('dashboard.sidebar.orderPreviewDescription')}
           disabled={!canOpenTurnPreview}
           onClick={() => {
             setTurnPreviewOpen(true)
@@ -940,8 +969,8 @@ export function ControlDashboard() {
         />
         <SidebarNavItem
           icon={<UserPlus size={18} />}
-          title="Detalhes por participante"
-          description="Abre o detalhe do jogador atual ou leva ao ranking se ninguém estiver ativo."
+          title={t('dashboard.sidebar.participantDetails')}
+          description={t('dashboard.sidebar.participantDetailsDescription')}
           onClick={() => {
             handleOpenParticipantDetails()
             handleCloseMobileSidebar()
@@ -961,14 +990,14 @@ export function ControlDashboard() {
         <ControlTopbar
           title={sessionStatus.sessionName ?? session.title}
           mode={gameMode}
-          modeLabel={gameMode === 'offline' && syncEnabled ? 'Sessão sincronizada' : getModeDisplayName(gameMode)}
+          modeLabel={getModeDisplayName(gameMode)}
           syncStatus={gameMode !== 'demo' ? syncStatus : undefined}
           lastSyncedAt={gameMode !== 'demo' ? lastSyncedAt : undefined}
           onForceSync={gameMode !== 'demo' ? handleForceSync : undefined}
           onOpenSessions={handleOpenSessions}
           onExit={() => {
             setActivePanel('board')
-            toast.info('Contexto principal reativado')
+            toast.info(t('dashboard.notifications.mainViewRestored'))
           }}
           onToggleSidebar={() => setMobileSidebarOpen(true)}
           onOpenAccount={isSupabaseConfigured() ? () => setAccountOpen(true) : undefined}
@@ -982,7 +1011,7 @@ export function ControlDashboard() {
               className="flex items-center gap-2 border-b border-amber-400/20 bg-amber-500/10 px-4 py-2 text-xs font-medium text-amber-300"
             >
               <TriangleAlert size={14} className="shrink-0" />
-              Esta partida está aberta em outra aba ou janela. Jogue em uma só — mudanças feitas em duas abas se sobrescrevem.
+              {t('dashboard.tabWarning')}
             </div>
           )}
           <GameStatusStrip
@@ -1006,16 +1035,17 @@ export function ControlDashboard() {
         >
           {sidebarContent}
           <div className="rounded-[24px] border border-white/8 bg-black/10 p-4">
-            <p className="text-[10px] font-semibold uppercase tracking-[0.35em] text-[var(--color-muted)]">Sessão ativa</p>
+            <p className="text-[10px] font-semibold uppercase tracking-[0.35em] text-[var(--color-muted)]">{t('session.active')}</p>
             <p className="mt-3 text-sm font-semibold text-[var(--color-text)]">
-              {sessionStatus.hasActiveSession ? sessionStatus.sessionName : 'Sem sessão salva no momento'}
+              {sessionStatus.hasActiveSession ? sessionStatus.sessionName : t('session.none')}
             </p>
             <p className="mt-2 text-xs leading-5 text-[var(--color-muted)]">
               {sessionStatus.hasActiveSession
-                ? `Criada em ${new Date(currentSession?.metadata.createdAt ?? session.scheduledAt).toLocaleDateString('pt-BR')} · ${
-                    syncEnabled ? 'sincronizada com a sua conta' : 'salva neste navegador'
-                  }`
-                : 'As alterações ficam nesta sessão local até você salvar ou carregar outra sessão do navegador.'}
+                ? t('session.createdAt', {
+                    date: new Date(currentSession?.metadata.createdAt ?? session.scheduledAt).toLocaleDateString(i18n.resolvedLanguage),
+                    status: syncEnabled ? t('sync.cloud') : t('sync.local'),
+                  })
+                : t('session.draftLocal')}
             </p>
           </div>
         </ControlSidebar>
@@ -1029,23 +1059,23 @@ export function ControlDashboard() {
         {activePanel !== 'faq' && gameMode === 'offline' && orderedTeams.length === 0 ? (
           <EmptyStatePanel
             icon={<UsersRound size={24} />}
-            title="Configure a sessão local para começar"
-            description="Defina times, participantes, filmes e perguntas antes da primeira rodada. Você pode usar o assistente guiado ou montar tudo manualmente."
+            title={t('session.configureTitle')}
+            description={t('session.configureDescription')}
             action={
               <div className="flex flex-wrap justify-center gap-3">
                 {showOnboardingSuggestion ? (
                   <Button onClick={handleStartOnboarding} className="gap-2">
                     <Info size={16} />
-                    Usar assistente
+                    {t('dashboard.setup.useAssistant')}
                   </Button>
                 ) : null}
                 <Button variant="outline" onClick={handleOpenTeams} className="gap-2">
                   <UserPlus size={16} />
-                  Gerenciar times
+                  {t('dashboard.setup.manageTeams')}
                 </Button>
                 {showOnboardingSuggestion ? (
                   <Button variant="ghost" onClick={handleDismissOnboardingSuggestion}>
-                    Fechar sugestão
+                    {t('dashboard.setup.dismissSuggestion')}
                   </Button>
                 ) : null}
               </div>
@@ -1060,13 +1090,13 @@ export function ControlDashboard() {
         ) : null}
 
         <FloatingActionBar>
-          <Button variant="secondary" size="icon" aria-label="Sortear pergunta" onClick={handleRandomQuestion}>
+          <Button variant="secondary" size="icon" aria-label={t('dashboard.quickActions.randomQuestion')} onClick={handleRandomQuestion}>
             <Dice5 size={16} />
           </Button>
           <Button
             variant="outline"
             size="icon"
-            aria-label="Abrir biblioteca"
+            aria-label={t('dashboard.quickActions.library')}
             onClick={() => {
               handleShowLibrary()
               setMobileSidebarOpen(false)
@@ -1077,7 +1107,7 @@ export function ControlDashboard() {
           <Button
             variant="outline"
             size="icon"
-            aria-label="Abrir mímica"
+            aria-label={t('dashboard.quickActions.mimica')}
             onClick={() => {
               setActivePanel('board')
               setMimicaModalOpen(true)
@@ -1085,13 +1115,13 @@ export function ControlDashboard() {
           >
             <Theater size={16} />
           </Button>
-          <Button variant="outline" size="icon" aria-label="Abrir placar" onClick={handleOpenScoreboard}>
+          <Button variant="outline" size="icon" aria-label={t('dashboard.quickActions.scoreboard')} onClick={handleOpenScoreboard}>
             <ClipboardList size={16} />
           </Button>
-          <Button variant="outline" size="icon" aria-label="Sons" title="Sons" onClick={() => setSoundSettingsOpen(true)}>
+          <Button variant="outline" size="icon" aria-label={t('dashboard.quickActions.sound')} title={t('dashboard.quickActions.sound')} onClick={() => setSoundSettingsOpen(true)}>
             <Volume2 size={16} />
           </Button>
-          <Button variant="ghost" size="icon" aria-label="Ajuda" onClick={handleOpenInfo}>
+          <Button variant="ghost" size="icon" aria-label={t('dashboard.quickActions.help')} onClick={handleOpenInfo}>
             <Info size={16} />
           </Button>
         </FloatingActionBar>
@@ -1099,7 +1129,7 @@ export function ControlDashboard() {
 
       <Modal
         isOpen={Boolean(selectedTile)}
-        title={selectedTile ? `${selectedTile.column.film} · ${selectedTile.tile.points} pts` : ''}
+        title={selectedTile ? `${selectedTile.column.film} · ${t('common:entities.pointsShort', { count: selectedTile.tile.points })}` : ''}
         onClose={handleCloseQuestionModal}
         size="lg"
       >
@@ -1115,7 +1145,7 @@ export function ControlDashboard() {
                   <span className="text-xs text-[var(--color-muted)]">· {activeTeam.name}</span>
                 </div>
               ) : (
-                <span className="text-xs text-[var(--color-muted)]">Sem turno ativo</span>
+                <span className="text-xs text-[var(--color-muted)]">{t('dashboard.question.noTurn')}</span>
               )}
               <Timer
                 initialSeconds={getTimerForPoints(selectedTile?.tile.points ?? 0)}
@@ -1136,24 +1166,24 @@ export function ControlDashboard() {
             {/* Pergunta */}
             {questionRevealed ? (
               <div className="rounded-xl bg-[var(--color-surface)] p-4 shadow-sm">
-                <p className="mb-2 text-[10px] font-semibold uppercase tracking-[0.3em] text-[var(--color-muted)]">Pergunta</p>
+                <p className="mb-2 text-[10px] font-semibold uppercase tracking-[0.3em] text-[var(--color-muted)]">{t('dashboard.question.question')}</p>
                 <p className="text-base font-medium leading-relaxed tracking-wide text-[var(--color-text)]">{selectedTile?.tile.question}</p>
               </div>
             ) : (
               <Button variant="outline" size="sm" onClick={() => setQuestionRevealed(true)}>
-                Revelar pergunta
+                {t('dashboard.question.revealQuestion')}
               </Button>
             )}
 
             {/* Resposta */}
             {showAnswer ? (
               <div className="rounded-xl border border-[var(--color-primary)]/20 bg-[var(--color-primary)]/5 p-4 shadow-sm">
-                <p className="mb-2 text-[10px] font-semibold uppercase tracking-[0.3em] text-[var(--color-primary)]">Resposta</p>
-                <p className="text-base font-bold leading-relaxed tracking-wide text-[var(--color-text)]">{selectedTile?.tile.answer || 'Resposta não cadastrada.'}</p>
+                <p className="mb-2 text-[10px] font-semibold uppercase tracking-[0.3em] text-[var(--color-primary)]">{t('dashboard.question.answer')}</p>
+                <p className="text-base font-bold leading-relaxed tracking-wide text-[var(--color-text)]">{selectedTile?.tile.answer || t('dashboard.question.noAnswer')}</p>
               </div>
             ) : (
               <Button variant="outline" size="sm" onClick={() => setShowAnswer(true)}>
-                Revelar resposta
+                {t('dashboard.question.revealAnswer')}
               </Button>
             )}
           </div>
@@ -1168,14 +1198,17 @@ export function ControlDashboard() {
               basePoints={selectedTile?.tile.points ?? 0}
               onConfirm={(distributions) => {
                 if (!selectedTile || !activeParticipant) {
-                  toast.info('Selecione uma carta e certifique-se de que há um participante ativo')
+                  toast.info(t('dashboard.notifications.noScoringContext'))
                   return
                 }
 
                 if (distributions.length === 0) {
                   setConfirmActionConfig({
-                    title: 'Anular Pergunta',
-                    description: `Esta ação irá anular a pergunta "${selectedTile.tile.question}" do filme "${selectedTile.column.film}" sem atribuir pontos. A pergunta será marcada como respondida e o turno avançará automaticamente para o próximo participante.`,
+                    title: t('dashboard.dialogs.voidQuestionTitle'),
+                    description: t('dashboard.dialogs.voidQuestionDescription', {
+                      question: selectedTile.tile.question,
+                      film: selectedTile.column.film,
+                    }),
                     onConfirm: () => {
                       // Anula a carta E registra um evento 'trivia-void' no log,
                       // para a ação ficar auditável (a vez é consumida).
@@ -1185,7 +1218,7 @@ export function ControlDashboard() {
                         activeParticipant.teamId ?? activeTeam?.id ?? '',
                       )
                       playSound('wrong')
-                      const message = `${selectedTile.column.film}: pergunta anulada (sem pontuação)`
+                      const message = t('dashboard.notifications.questionVoided', { film: selectedTile.column.film })
                       toast.success(message)
                       advanceTurn()
                       setSelectedIds(null)
@@ -1201,8 +1234,11 @@ export function ControlDashboard() {
                 const teamsAffected = [...new Set(distributions.map(d => d.teamId))].length
 
                 setConfirmActionConfig({
-                  title: 'Confirmar Pontuação',
-                  description: `Esta ação irá atribuir ${totalPoints} pontos distribuídos entre ${teamsAffected} time(s) e avançará automaticamente para o próximo turno. A pergunta será marcada como respondida.`,
+                  title: t('dashboard.dialogs.confirmScoreTitle'),
+                  description: t('dashboard.dialogs.confirmScoreDescription', {
+                    points: t('common:entities.point', { count: totalPoints }),
+                    teams: t('common:entities.team', { count: teamsAffected }),
+                  }),
                   onConfirm: () => {
                     let message = ''
 
@@ -1219,8 +1255,11 @@ export function ControlDashboard() {
                         distribution.points
                       )
 
-                      const recipient = participant ? `${participant.name} (${team?.name})` : team?.name ?? 'time'
-                      message += `${distribution.points} pontos para ${recipient}\n`
+                      const recipient = participant ? `${participant.name} (${team?.name})` : team?.name ?? t('dashboard.question.teamFallback')
+                      message += `${t('dashboard.notifications.pointsAwarded', {
+                        points: t('common:entities.point', { count: distribution.points }),
+                        recipient,
+                      })}\n`
                     })
 
                     playSound('correct')
@@ -1241,8 +1280,8 @@ export function ControlDashboard() {
 
       <Modal
         isOpen={scoreboardOpen}
-        title="Ranking da noite"
-        description="Resumo parcial das equipes nesta sessão. Clique nos times para ver pontuação individual."
+        title={t('dashboard.scoreboard.title')}
+        description={t('dashboard.scoreboard.description')}
         onClose={() => {
           setScoreboardOpen(false)
           setActivePanel('board')
@@ -1272,12 +1311,12 @@ export function ControlDashboard() {
                 >
                   <div className="flex items-center gap-3">
                     <span className="h-8 w-8 rounded-full bg-[var(--color-primary)]/10 text-center text-sm font-semibold text-[var(--color-primary)] leading-8">
-                      {position}º
+                      {t('dashboard.scoreboard.position', { position })}
                     </span>
                     <span className="text-sm font-semibold text-[var(--color-text)]">{team.name}</span>
                   </div>
                   <div className="flex items-center gap-2">
-                    <span className="text-sm font-semibold text-[var(--color-text)]">{points} pts</span>
+                    <span className="text-sm font-semibold text-[var(--color-text)]">{t('common:entities.pointsShort', { count: points })}</span>
                     <svg
                       className={`h-4 w-4 text-[var(--color-muted)] transition-transform ${isExpanded ? 'rotate-180' : ''}`}
                       fill="none"
@@ -1305,18 +1344,18 @@ export function ControlDashboard() {
                             </span>
                             <div className="flex items-center gap-2 mt-1">
                               <span className="text-xs text-[var(--color-muted)]">
-                                {triviaPoints} pts trivia
+                                {t('dashboard.scoreboard.triviaPoints', { points: t('common:entities.pointsShort', { count: triviaPoints }) })}
                               </span>
                               {mimicaPoints > 0 && (
                                 <span className="text-xs text-[var(--color-muted)]">
-                                  · {mimicaPoints} pts mimica
+                                  · {t('dashboard.scoreboard.mimicaPoints', { points: t('common:entities.pointsShort', { count: mimicaPoints }) })}
                                 </span>
                               )}
                             </div>
                           </div>
                           <div className="flex items-center gap-2">
                             <span className="text-xs font-semibold text-[var(--color-text)]">
-                              {individualPoints} pts
+                              {t('common:entities.pointsShort', { count: individualPoints })}
                             </span>
                             <Button
                               variant="ghost"
@@ -1327,7 +1366,7 @@ export function ControlDashboard() {
                               }}
                               className="text-xs"
                             >
-                              Ver detalhes
+                              {t('dashboard.scoreboard.details')}
                             </Button>
                           </div>
                         </div>
@@ -1374,7 +1413,7 @@ export function ControlDashboard() {
           ) {
             saveCheckpoint(
               releaseActiveTiles(session),
-              'Antes de alterar times e participantes',
+              t('dashboard.checkpoints.beforeRosterChange'),
             )
           }
           teamManagement.saveTeams()
@@ -1383,7 +1422,8 @@ export function ControlDashboard() {
         }}
         onReplaceDrafts={teamManagement.replaceTeamDrafts}
         canRandomizeRoster={canDrawTeamsBeforePlay(session)}
-        canInviteLivePlayers={gameMode === 'online' && syncEnabled}
+        connectedFeaturesEnabled={connectedGameFeaturesEnabled}
+        canInviteLivePlayers={connectedGameFeaturesEnabled}
         hasUnsavedLiveRosterChanges={hasRosterChanges(
           orderedTeams,
           participants,
@@ -1393,13 +1433,12 @@ export function ControlDashboard() {
         sessionClientId={session.id}
         onPrepareLiveInvite={prepareLiveInvite}
         participantIdentities={participantIdentities}
-        gameMode={gameMode}
       />
 
       <Modal
         isOpen={pinModalOpen}
-        title="Desbloquear biblioteca"
-        description="Digite o PIN apenas se o host tiver configurado protecao para a biblioteca."
+        title={t('dashboard.pin.title')}
+        description={t('dashboard.pin.description')}
         onClose={() => {
           setPinModalOpen(false)
           setPinInput('')
@@ -1415,13 +1454,13 @@ export function ControlDashboard() {
               setPinInput(event.target.value)
               setPinError('')
             }}
-            placeholder="Digite o PIN"
+            placeholder={t('dashboard.pin.placeholder')}
             className="w-full rounded-xl border border-[var(--color-border)] bg-[var(--color-background)] px-4 py-3 text-sm"
           />
           {pinError ? <p className="text-sm text-[var(--color-danger)]">{pinError}</p> : null}
           <div className="flex gap-3">
             <Button variant="secondary" onClick={confirmPin}>
-              Confirmar
+              {t('common:actions.confirm')}
             </Button>
             <Button
               variant="outline"
@@ -1432,7 +1471,7 @@ export function ControlDashboard() {
                 setActivePanel('board')
               }}
             >
-              Cancelar
+              {t('common:actions.cancel')}
             </Button>
           </div>
         </div>
@@ -1463,7 +1502,7 @@ export function ControlDashboard() {
           // Filme com o mesmo nome é ATUALIZADO (perguntas/pontos substituídos);
           // só nomes novos viram colunas novas — re-importar não duplica.
           if (gameMode !== 'demo' && session.board.length > 0) {
-            saveCheckpoint(releaseActiveTiles(session), 'Antes de importar filmes')
+            saveCheckpoint(releaseActiveTiles(session), t('dashboard.checkpoints.beforeImport'))
           }
           const plan = planImport(session.board, importData)
           plan.updates.forEach(({ columnId, tiles }) => {
@@ -1479,17 +1518,24 @@ export function ControlDashboard() {
               })
             })
           })
-          const parts = []
-          if (plan.additions.length) parts.push(`${plan.additions.length} filme${plan.additions.length !== 1 ? 's' : ''} adicionado${plan.additions.length !== 1 ? 's' : ''}`)
-          if (plan.updates.length) parts.push(`${plan.updates.length} atualizado${plan.updates.length !== 1 ? 's' : ''}`)
-          toast.success(`Importação concluída: ${parts.join(' e ')}.`)
+          const parts: string[] = []
+          if (plan.additions.length) parts.push(t('dashboard.import.added', { count: plan.additions.length }))
+          if (plan.updates.length) parts.push(t('dashboard.import.updated', { count: plan.updates.length }))
+          if (parts.length === 0) {
+            toast.info(t('dashboard.notifications.importNoChanges'))
+          } else {
+            const summary = parts.length === 2
+              ? t('dashboard.import.join', { first: parts[0], second: parts[1] })
+              : parts[0]
+            toast.success(t('dashboard.notifications.importComplete', { summary }))
+          }
         }}
       />
 
       <Modal
         isOpen={themeModalOpen}
-        title="Ajustar tema"
-        description="Escolha o estilo de cores aplicado a todas as telas."
+        title={t('dashboard.theme.title')}
+        description={t('dashboard.theme.description')}
         onClose={() => {
           setThemeModalOpen(false)
           setActivePanel('board')
@@ -1498,13 +1544,13 @@ export function ControlDashboard() {
         <div className="grid gap-3 md:grid-cols-3">
           {(
             [
-              { id: 'light', label: 'Claro' },
-              { id: 'dark', label: 'Escuro' },
-              { id: 'cinema', label: 'Cinema' },
-              { id: 'retro', label: 'Retro 80s' },
-              { id: 'matrix', label: 'Matrix' },
-              { id: 'brazil', label: 'Brasil 🇧🇷' },
-              { id: 'easter', label: 'Páscoa 🐣' },
+              { id: 'light', label: t('game:onboarding.themes.light.name'), description: t('game:onboarding.themes.light.description') },
+              { id: 'dark', label: t('game:onboarding.themes.dark.name'), description: t('game:onboarding.themes.dark.description') },
+              { id: 'cinema', label: t('game:onboarding.themes.cinema.name'), description: t('game:onboarding.themes.cinema.description') },
+              { id: 'retro', label: t('game:onboarding.themes.retro.name'), description: t('game:onboarding.themes.retro.description') },
+              { id: 'matrix', label: t('game:onboarding.themes.matrix.name'), description: t('game:onboarding.themes.matrix.description') },
+              { id: 'brazil', label: t('game:onboarding.themes.brazil.name'), description: t('game:onboarding.themes.brazil.description') },
+              { id: 'easter', label: t('game:onboarding.themes.easter.name'), description: t('game:onboarding.themes.easter.description') },
             ] as const
           ).map((option) => (
             <button
@@ -1518,14 +1564,7 @@ export function ControlDashboard() {
               }`}
             >
               <span className="text-sm font-semibold text-[var(--color-text)]">{option.label}</span>
-              <span className="text-xs text-[var(--color-muted)]">
-                {option.id === 'cinema' ? 'Tons quentes e contraste elevado' : 
-                 option.id === 'retro' ? 'Neon e cores vibrantes dos anos 80' :
-                 option.id === 'matrix' ? 'Verde digital e efeito terminal' :
-                 option.id === 'brazil' ? 'Verde e amarelo da bandeira brasileira' :
-                 option.id === 'easter' ? 'Tons pastel com ovos e coelhos' :
-                 `Paleta ${option.label.toLowerCase()}`}
-              </span>
+              <span className="text-xs text-[var(--color-muted)]">{option.description}</span>
             </button>
           ))}
         </div>
@@ -1549,7 +1588,7 @@ export function ControlDashboard() {
             const mimicaParticipant = participants.find(participant => participant.id === participantId)
             const mimicaTeam = orderedTeams.find(team => team.id === mimicaParticipant?.teamId)
             if (!mimicaParticipant || !mimicaTeam) {
-              toast.error('Nenhum participante ativo')
+              toast.error(t('dashboard.notifications.noMimicaParticipant'))
               return
             }
 
@@ -1560,14 +1599,20 @@ export function ControlDashboard() {
                 if (mimicaTeam) {
                   teamId = mimicaTeam.id
                   awardMimicaPoints(participantId, teamId, points, turnNumber, roundNumber, mode)
-                  message = `Mímica: ${points} pontos para ${mimicaTeam.name}`
+                  message = t('dashboard.notifications.mimicaPoints', {
+                    points: t('common:entities.point', { count: points }),
+                    team: mimicaTeam.name,
+                  })
                 }
                 break
               case 'half-current':
                 if (mimicaTeam) {
                   teamId = mimicaTeam.id
                   awardMimicaPoints(participantId, teamId, points, turnNumber, roundNumber, mode)
-                  message = `Mímica: ${points} pontos para ${mimicaTeam.name}`
+                  message = t('dashboard.notifications.mimicaPoints', {
+                    points: t('common:entities.point', { count: points }),
+                    team: mimicaTeam.name,
+                  })
                 }
                 break
               case 'steal':
@@ -1576,7 +1621,10 @@ export function ControlDashboard() {
                   if (targetTeam) {
                     teamId = targetTeamId
                     awardMimicaPoints(participantId, teamId, points, turnNumber, roundNumber, mode, targetTeamId)
-                    message = `Mímica: ${points} pontos transferidos para ${targetTeam.name}`
+                    message = t('dashboard.notifications.mimicaTransferred', {
+                      points: t('common:entities.point', { count: points }),
+                      team: targetTeam.name,
+                    })
                   }
                 }
                 break
@@ -1585,7 +1633,9 @@ export function ControlDashboard() {
                 orderedTeams.forEach((team) => {
                   awardMimicaPoints(participantId, team.id, pointsPerTeam, turnNumber, roundNumber, mode)
                 })
-                message = `Mímica: ${pointsPerTeam} pontos distribuídos para todos os times`
+                message = t('dashboard.notifications.mimicaEveryone', {
+                  points: t('common:entities.point', { count: pointsPerTeam }),
+                })
                 break
               }
               case 'void':
@@ -1593,14 +1643,14 @@ export function ControlDashboard() {
                   teamId = mimicaTeam.id
                   awardMimicaPoints(participantId, teamId, 0, turnNumber, roundNumber, mode)
                 }
-                message = `Mímica: sem pontuação`
+                message = t('dashboard.notifications.mimicaVoid')
                 break
             }
             
             toast.success(message)
           } catch (error) {
             console.error('Erro ao adicionar pontos da mímica:', error)
-            toast.error('Erro ao adicionar pontos da mímica')
+            toast.error(t('dashboard.notifications.mimicaError'))
           }
         }}
       />
@@ -1634,8 +1684,8 @@ export function ControlDashboard() {
 
       <Modal
         isOpen={turnPreviewOpen}
-        title="Preview completo da partida"
-        description="Use esta checagem para revisar a ordem inteira depois que a sessão já tiver times e perguntas reais."
+        title={t('dashboard.turnPreview.title')}
+        description={t('dashboard.turnPreview.description')}
         onClose={() => setTurnPreviewOpen(false)}
         size="xl"
       >
@@ -1645,8 +1695,8 @@ export function ControlDashboard() {
           turnSequence={session.turnSequence}
           activeTurnIndex={session.activeTurnIndex}
           maxGroups={Number.MAX_SAFE_INTEGER}
-          title="Ordem prevista da sessão atual"
-          description="Revise a sequência salva, identifique o turno atual e corrija somente o futuro se o elenco mudou."
+          title={t('dashboard.turnPreview.sequenceTitle')}
+          description={t('dashboard.turnPreview.sequenceDescription')}
           onReorganize={() => {
             setTurnPreviewOpen(false)
             handleRegenerateTurnSequence()
@@ -1690,8 +1740,8 @@ export function ControlDashboard() {
         onNewSession={() => {
           // Mostra modal de confirmação antes de limpar tudo
           setConfirmActionConfig({
-            title: 'Criar Nova Sessão',
-            description: 'Esta ação irá limpar completamente a sessão atual e iniciar uma nova. Serão removidos: todos os filmes, todas as perguntas, todos os times e participantes, e todas as pontuações. O tema visual será mantido. Após a confirmação, o assistente de configuração inicial será aberto.',
+            title: t('dashboard.dialogs.newGameTitle'),
+            description: t('dashboard.dialogs.newGameDescription'),
             onConfirm: () => {
               // Limpa completamente a sessão atual antes de abrir onboarding
               sessionManagement.resetGame({

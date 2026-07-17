@@ -3,6 +3,7 @@ import { createPortal } from 'react-dom'
 import { Button } from './Button'
 import { useEffect } from 'react'
 import type { ReactNode } from 'react'
+import { useTranslation } from '@/shared/i18n'
 
 if (typeof document !== 'undefined' && !document.getElementById('trivia-portal')) {
   const portalRoot = document.createElement('div')
@@ -27,6 +28,7 @@ type ModalProps = {
 }
 
 export function Modal({ isOpen, title, description, children, onClose, size = 'md' }: ModalProps) {
+  const { t } = useTranslation('common')
   // Esc fecha — padrão de teclado esperado em qualquer modal.
   useEffect(() => {
     if (!isOpen) return
@@ -47,7 +49,7 @@ export function Modal({ isOpen, title, description, children, onClose, size = 'm
             <h2 className="text-lg font-semibold text-[var(--color-text)]">{title}</h2>
             {description ? <p className="mt-0.5 text-xs text-[var(--color-muted)]">{description}</p> : null}
           </div>
-          <Button variant="ghost" size="icon" aria-label="Fechar" onClick={onClose}>
+          <Button variant="ghost" size="icon" aria-label={t('actions.close')} onClick={onClose}>
             <X size={16} />
           </Button>
         </div>

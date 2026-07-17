@@ -10,16 +10,19 @@
     "preview": "vite preview",
     "test": "jest",
     "test:watch": "jest --watch",
-    "test:coverage": "jest --coverage"
+    "test:coverage": "jest --coverage",
+    "i18n:check": "node scripts/check-static-ui-copy.mjs"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.108.1",
     "@tanstack/react-query": "^5.89.0",
     "clsx": "^2.1.1",
+    "i18next": "^26.3.6",
     "lucide-react": "^0.544.0",
     "qrcode": "^1.5.4",
     "react": "^19.1.1",
     "react-dom": "^19.1.1",
+    "react-i18next": "^17.0.10",
     "react-router-dom": "^7.9.1",
     "sonner": "^2.0.7",
     "tailwind-merge": "^3.3.1"

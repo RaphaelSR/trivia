@@ -134,7 +134,7 @@ describe('QuestionLibraryModal', () => {
         />
       )
 
-      const searchInput = screen.getByPlaceholderText('Buscar por filme, pergunta ou resposta...')
+      const searchInput = screen.getByPlaceholderText('Buscar por filme, pergunta ou resposta…')
       fireEvent.change(searchInput, { target: { value: 'Matrix' } })
 
       expect(screen.getByText('Matrix')).toBeInTheDocument()

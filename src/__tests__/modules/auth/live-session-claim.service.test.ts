@@ -128,7 +128,7 @@ it('revoga por RPC e não lança em falha de rede', async () => {
   await expect(revokeLiveSessionClaim(CLAIM_ID)).resolves.toEqual({ revoked: true, error: null })
   await expect(revokeLiveSessionClaim(CLAIM_ID)).resolves.toEqual({
     revoked: false,
-    error: 'Não consegui desvincular agora.',
+    error: 'Não foi possível desvincular agora.',
   })
 })
 

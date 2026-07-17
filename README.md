@@ -1,6 +1,6 @@
 # Trivia
 
-Jogo web de trivia cinematografica com modos `demo`, `offline` e `online`.
+Jogo web de trivia cinematográfica para noites de cinema. A interface oferece dois estilos: `Demo` e `Partida completa`. Conta e sincronização são recursos opcionais da partida completa, não um modo de jogo separado.
 
 ## Setup
 ```bash
@@ -12,6 +12,7 @@ npm run dev
 - `npm run dev`
 - `npm run build`
 - `npm run lint`
+- `npm run i18n:check`
 - `npm run test`
 - `npm run test:coverage`
 
@@ -25,12 +26,12 @@ npm run dev
 
 ## Status real
 - Fluxo principal ativo em `/` e `/control?mode=...`.
-- O modo `demo` pode simular sessao pequena, media ou grande sem precisar montar tudo manualmente.
-- Modo `offline` persiste sessoes localmente.
-- Modo `online` mantém o jogo local-first e já sincroniza sessão, snapshots e histórico com Supabase quando o host entra na conta.
-- Em sessões online autenticadas, um QR permanente permite que jogadores reivindiquem seus nomes sem interferir no fluxo do jogo.
+- `Demo` simula partidas pequenas, médias ou grandes com dados prontos e não salva progresso.
+- `Partida completa` inicia a configuração real e salva automaticamente neste navegador.
+- Entrar em uma conta acrescenta sincronização, restauração entre dispositivos, histórico, QR de reivindicação e avatares sem mudar as regras da partida.
+- Os valores internos `demo | offline | online` continuam aceitos para compatibilidade de rotas e sessões antigas; eles não definem sozinhos se a conta está conectada.
 - Contas podem usar avatar opcional, exibido somente entre participantes de uma sessão ou partida compartilhada; o nome continua específico de cada jogo.
-- A interface esta em migracao para uma experiencia `dark glassmorphism` mais proxima de dashboard jogavel.
+- A interface usa catálogos i18n em `src/shared/i18n`; português do Brasil é o idioma ativo e espanhol/inglês podem ser adicionados sem espalhar texto pelos componentes.
 
 ## Workspace local
 - A raiz do repositorio pode ser aberta diretamente como vault no Obsidian.

@@ -6,6 +6,7 @@ import { MAX_SESSION_HISTORY } from '../shared/constants/game'
 import { useGameMode } from './useGameMode'
 import { useAuth } from '../modules/auth/hooks/useAuth'
 import type { TriviaSession } from '../modules/trivia/types'
+import { useTranslation } from '@/shared/i18n'
 
 export type OfflineSessionMetadata = SessionHistoryMetadata
 export type OfflineSessionData = SessionRecord
@@ -15,6 +16,7 @@ export type OfflineSessionData = SessionRecord
  * @returns Objeto com funções de gerenciamento de sessões
  */
 export function useOfflineSession() {
+  const { t } = useTranslation('auth')
   const { gameMode } = useGameMode()
   const { user } = useAuth()
   const sessionRepository = useMemo(
@@ -55,14 +57,14 @@ export function useOfflineSession() {
       // Quota do navegador cheia (ou storage indisponível): o pior erro é o
       // silencioso — o host acharia que salvou. id fixo evita empilhar toasts
       // a cada autosave.
-      toast.error('Não consegui salvar neste navegador — espaço cheio.', {
+      toast.error(t('services.localSave.failed'), {
         id: 'local-save-failed',
-        description: 'Exclua sessões antigas em Gerenciar sessões para liberar espaço.',
+        description: t('services.localSave.description'),
         duration: 10000,
       })
     }
     return sessionData
-  }, [currentSession, gameMode, sessionRepository, updateSessionHistory])
+  }, [currentSession, gameMode, sessionRepository, t, updateSessionHistory])
 
   const loadSession = useCallback((sessionId: string): TriviaSession | null => {
     return sessionRepository.loadSession(sessionId)

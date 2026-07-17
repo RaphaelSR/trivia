@@ -23,14 +23,15 @@ import { OnlineCacheSessionRepository } from '../../game/infrastructure/online-c
 import type { SessionRecord } from '../../game/infrastructure/session.repository'
 import { importLocalSession, listNormalizedGames } from '../services/normalized-history.service'
 import type { NormalizedGameSummary } from '../services/normalized-history.service'
+import { useTranslation } from '@/shared/i18n'
 
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
 
-function formatDatePtBR(iso: string): string {
+function formatDate(iso: string, locale: string): string {
   try {
-    return new Date(iso).toLocaleDateString('pt-BR', {
+    return new Date(iso).toLocaleDateString(locale, {
       day: '2-digit',
       month: '2-digit',
       year: 'numeric',
@@ -88,6 +89,7 @@ interface EmailFormProps {
 }
 
 function EmailForm({ record, onConfirm, onCancel, importing }: EmailFormProps) {
+  const { t } = useTranslation(['auth', 'common'])
   const [emails, setEmails] = useState<Record<string, string>>({})
 
   const participants = record.session.participants
@@ -109,7 +111,7 @@ function EmailForm({ record, onConfirm, onCancel, importing }: EmailFormProps) {
   return (
     <form onSubmit={handleSubmit} className="mt-2 flex flex-col gap-2">
       <p className="text-[10px] leading-relaxed text-[var(--color-muted)]">
-        Informe o e-mail de cada participante para vinculá-los à conta deles (opcional).
+        {t('localImport.participantEmails', { ns: 'auth' })}
       </p>
       <ul className="flex flex-col divide-y divide-white/5">
         {participants.map((p) => (
@@ -119,7 +121,7 @@ function EmailForm({ record, onConfirm, onCancel, importing }: EmailFormProps) {
             </span>
             <input
               type="email"
-              placeholder="email@opcional.com"
+              placeholder={t('localImport.emailPlaceholder', { ns: 'auth' })}
               value={emails[p.id] ?? ''}
               onChange={(e) => handleChange(p.id, e.target.value)}
               className="min-w-0 flex-1 rounded border border-white/10 bg-white/5 px-2 py-1.5 text-[10px] text-[var(--color-text)] placeholder-[var(--color-muted)] outline-none focus:border-[var(--color-primary)]/40"
@@ -134,7 +136,7 @@ function EmailForm({ record, onConfirm, onCancel, importing }: EmailFormProps) {
           className="flex flex-1 items-center justify-center gap-1.5 rounded-lg bg-[var(--color-primary)] py-2 text-[11px] font-semibold text-black transition-opacity hover:opacity-90 disabled:opacity-50"
         >
           {importing && <Loader2 className="h-3 w-3 animate-spin" />}
-          {importing ? 'Importando…' : 'Confirmar importação'}
+          {importing ? t('localImport.importing', { ns: 'auth' }) : t('localImport.confirm', { ns: 'auth' })}
         </button>
         <button
           type="button"
@@ -142,7 +144,7 @@ function EmailForm({ record, onConfirm, onCancel, importing }: EmailFormProps) {
           disabled={importing}
           className="rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-[11px] text-[var(--color-muted)] transition-colors hover:text-[var(--color-text)] disabled:opacity-50"
         >
-          Cancelar
+          {t('actions.cancel', { ns: 'common' })}
         </button>
       </div>
     </form>
@@ -169,6 +171,7 @@ export function ImportLocalSessions({ user, onHistoryRefresh }: ImportLocalSessi
 }
 
 function ImportLocalSessionsInner({ user, onHistoryRefresh }: ImportLocalSessionsProps) {
+  const { t, i18n } = useTranslation(['auth', 'common'])
   const [records, setRecords] = useState<SessionRecord[]>([])
   const [expanded, setExpanded] = useState(false)
   // IDs já importados nesta sessão do browser (evita reimportar)
@@ -232,13 +235,13 @@ function ImportLocalSessionsInner({ user, onHistoryRefresh }: ImportLocalSession
   if (unimported.length === 0 && importedIds.size === 0) return null
 
   return (
-    <section aria-label="Importar sessões locais" className="mt-3">
+    <section aria-label={t('localImport.sectionLabel', { ns: 'auth' })} className="mt-3">
       <button
         onClick={() => setExpanded((v) => !v)}
         className="flex w-full items-center justify-between text-xs font-semibold uppercase tracking-wider text-[var(--color-muted)] transition-colors hover:text-[var(--color-text)]"
         aria-expanded={expanded}
       >
-        <span>Sessões locais{unimported.length > 0 ? ` (${unimported.length})` : ''}</span>
+        <span>{t('localImport.sectionTitle', { ns: 'auth' })}{unimported.length > 0 ? ` (${unimported.length})` : ''}</span>
         {expanded ? <ChevronUp className="h-3.5 w-3.5" /> : <ChevronDown className="h-3.5 w-3.5" />}
       </button>
 
@@ -246,7 +249,7 @@ function ImportLocalSessionsInner({ user, onHistoryRefresh }: ImportLocalSession
         <div className="mt-2">
           {unimported.length === 0 ? (
             <p className="text-xs text-[var(--color-muted)]">
-              Todas as sessões locais já foram importadas.
+              {t('localImport.allImported', { ns: 'auth' })}
             </p>
           ) : (
             <ul className="flex flex-col gap-2" role="list">
@@ -272,9 +275,12 @@ function ImportLocalSessionsInner({ user, onHistoryRefresh }: ImportLocalSession
                           {record.metadata.name}
                         </p>
                         <p className="mt-0.5 text-[10px] text-[var(--color-muted)]">
-                          {formatDatePtBR(record.metadata.lastModified)} · {teamCount} time
-                          {teamCount !== 1 ? 's' : ''} · {questionCount} questão
-                          {questionCount !== 1 ? 'ões' : ''}
+                          {t('localImport.summary', {
+                            ns: 'auth',
+                            date: formatDate(record.metadata.lastModified, i18n.resolvedLanguage ?? i18n.language),
+                            teams: t('entities.team', { ns: 'common', count: teamCount }),
+                            questions: t('entities.question', { ns: 'common', count: questionCount }),
+                          })}
                         </p>
                       </div>
 
@@ -283,10 +289,10 @@ function ImportLocalSessionsInner({ user, onHistoryRefresh }: ImportLocalSession
                           onClick={() => setFormOpenId(record.metadata.id)}
                           disabled={isImporting}
                           className="shrink-0 inline-flex items-center gap-1 rounded-lg border border-white/10 bg-white/5 px-2.5 py-1.5 text-[10px] text-[var(--color-muted)] transition-colors hover:border-[var(--color-primary)]/40 hover:text-[var(--color-primary)] disabled:opacity-50"
-                          aria-label={`Importar sessão ${record.metadata.name}`}
+                          aria-label={t('localImport.importSession', { ns: 'auth', name: record.metadata.name })}
                         >
                           <Upload className="h-3 w-3" />
-                          Importar
+                          {t('localImport.import', { ns: 'auth' })}
                         </button>
                       )}
                     </div>
@@ -294,7 +300,7 @@ function ImportLocalSessionsInner({ user, onHistoryRefresh }: ImportLocalSession
                     {isSuccess && (
                       <div className="mt-2 flex items-center gap-1.5 text-[10px] text-green-400">
                         <CheckCircle2 className="h-3 w-3" />
-                        Partida vinculada à sua conta!
+                        {t('localImport.success', { ns: 'auth' })}
                       </div>
                     )}
 

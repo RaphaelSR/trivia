@@ -3,6 +3,7 @@ import { Calendar, Film, UsersRound } from 'lucide-react'
 import { Button } from './Button'
 import { Modal } from './Modal'
 import type { TriviaParticipant, TriviaTeam, TriviaColumn, MimicaScore } from '@/modules/trivia/types'
+import { useTranslation } from '@/shared/i18n'
 
 type ScoreDetailViewProps = {
   isOpen: boolean
@@ -29,6 +30,7 @@ export function ScoreDetailView({
   mimicaScores,
   allTeams,
 }: ScoreDetailViewProps) {
+  const { t, i18n } = useTranslation(['game', 'common'])
   const [activeTab, setActiveTab] = useState<TabType>('summary')
   const [sortBy, setSortBy] = useState<'date' | 'points' | 'turn'>('date')
 
@@ -68,7 +70,7 @@ export function ScoreDetailView({
 
   const formatDate = (timestamp: string) => {
     const date = new Date(timestamp)
-    return date.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })
+    return date.toLocaleTimeString(i18n.resolvedLanguage ?? i18n.language, { hour: '2-digit', minute: '2-digit' })
   }
 
   if (!isOpen) return null
@@ -76,8 +78,8 @@ export function ScoreDetailView({
   return (
     <Modal
       isOpen={isOpen}
-      title={`Detalhes de ${participant.name}`}
-      description={`${team.name} · ${totalPoints} pontos totais`}
+      title={t('scoreDetail.title', { ns: 'game', name: participant.name })}
+      description={t('scoreDetail.description', { ns: 'game', team: team.name, points: totalPoints })}
       onClose={onClose}
     >
       <div className="space-y-4 text-[var(--color-text)]">
@@ -91,7 +93,7 @@ export function ScoreDetailView({
                 : 'text-[var(--color-muted)] hover:text-[var(--color-text)]'
             }`}
           >
-            Resumo
+            {t('scoreDetail.summary', { ns: 'game' })}
           </button>
           <button
             type="button"
@@ -102,7 +104,7 @@ export function ScoreDetailView({
                 : 'text-[var(--color-muted)] hover:text-[var(--color-text)]'
             }`}
           >
-            Trivia ({triviaScores.length})
+            {t('scoreDetail.trivia', { ns: 'game' })} ({triviaScores.length})
           </button>
           <button
             type="button"
@@ -113,7 +115,7 @@ export function ScoreDetailView({
                 : 'text-[var(--color-muted)] hover:text-[var(--color-text)]'
             }`}
           >
-            Mímica ({participantMimicaScores.length})
+            {t('scoreDetail.mimica', { ns: 'game' })} ({participantMimicaScores.length})
           </button>
         </div>
 
@@ -121,50 +123,50 @@ export function ScoreDetailView({
           <div className="space-y-4">
             <div className="rounded-2xl border border-[var(--color-border)] bg-[var(--color-background)] p-6">
               <div className="flex items-center justify-between mb-4">
-                <h3 className="text-lg font-semibold text-[var(--color-text)]">Total de Pontos</h3>
+                <h3 className="text-lg font-semibold text-[var(--color-text)]">{t('scoreDetail.totalPoints', { ns: 'game' })}</h3>
                 <div className="text-3xl font-bold text-[var(--color-primary)]">{totalPoints}</div>
               </div>
               <div className="space-y-3">
                 <div className="flex items-center justify-between p-3 rounded-xl bg-[var(--color-primary)]/5 border border-[var(--color-primary)]/20">
                   <div className="flex items-center gap-2">
                     <Film size={16} className="text-[var(--color-primary)]" />
-                    <span className="text-sm font-medium text-[var(--color-text)]">Perguntas do Trivia</span>
+                    <span className="text-sm font-medium text-[var(--color-text)]">{t('scoreDetail.triviaQuestions', { ns: 'game' })}</span>
                   </div>
-                  <span className="text-lg font-bold text-[var(--color-primary)]">{totalTriviaPoints} pts</span>
+                  <span className="text-lg font-bold text-[var(--color-primary)]">{t('entities.point', { ns: 'common', count: totalTriviaPoints })}</span>
                 </div>
                 <div className="flex items-center justify-between p-3 rounded-xl bg-[var(--color-secondary)]/5 border border-[var(--color-secondary)]/20">
                   <div className="flex items-center gap-2">
                     <UsersRound size={16} className="text-[var(--color-secondary)]" />
-                    <span className="text-sm font-medium text-[var(--color-text)]">Mímicas</span>
+                    <span className="text-sm font-medium text-[var(--color-text)]">{t('scoreDetail.mimicas', { ns: 'game' })}</span>
                   </div>
-                  <span className="text-lg font-bold text-[var(--color-secondary)]">{totalMimicaPoints} pts</span>
+                  <span className="text-lg font-bold text-[var(--color-secondary)]">{t('entities.point', { ns: 'common', count: totalMimicaPoints })}</span>
                 </div>
               </div>
             </div>
 
             <div className="rounded-2xl border border-[var(--color-border)] bg-[var(--color-background)] p-4">
               <h3 className="text-sm font-semibold uppercase tracking-[0.3em] text-[var(--color-muted)] mb-3">
-                Estatísticas
+                {t('scoreDetail.statistics', { ns: 'game' })}
               </h3>
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <p className="text-xs text-[var(--color-muted)]">Perguntas respondidas</p>
+                  <p className="text-xs text-[var(--color-muted)]">{t('scoreDetail.answeredQuestions', { ns: 'game' })}</p>
                   <p className="text-lg font-bold text-[var(--color-text)]">{triviaScores.length}</p>
                 </div>
                 <div>
-                  <p className="text-xs text-[var(--color-muted)]">Mímicas acertadas</p>
+                  <p className="text-xs text-[var(--color-muted)]">{t('scoreDetail.correctMimicas', { ns: 'game' })}</p>
                   <p className="text-lg font-bold text-[var(--color-text)]">{participantMimicaScores.length}</p>
                 </div>
                 <div>
-                  <p className="text-xs text-[var(--color-muted)]">Média por pergunta</p>
+                  <p className="text-xs text-[var(--color-muted)]">{t('scoreDetail.averageQuestion', { ns: 'game' })}</p>
                   <p className="text-lg font-bold text-[var(--color-text)]">
-                    {triviaScores.length > 0 ? Math.round(totalTriviaPoints / triviaScores.length) : 0} pts
+                    {t('entities.point', { ns: 'common', count: triviaScores.length > 0 ? Math.round(totalTriviaPoints / triviaScores.length) : 0 })}
                   </p>
                 </div>
                 <div>
-                  <p className="text-xs text-[var(--color-muted)]">Média por mímica</p>
+                  <p className="text-xs text-[var(--color-muted)]">{t('scoreDetail.averageMimica', { ns: 'game' })}</p>
                   <p className="text-lg font-bold text-[var(--color-text)]">
-                    {participantMimicaScores.length > 0 ? Math.round(totalMimicaPoints / participantMimicaScores.length) : 0} pts
+                    {t('entities.point', { ns: 'common', count: participantMimicaScores.length > 0 ? Math.round(totalMimicaPoints / participantMimicaScores.length) : 0 })}
                   </p>
                 </div>
               </div>
@@ -176,7 +178,7 @@ export function ScoreDetailView({
           <div className="space-y-4">
             <div className="flex items-center justify-between">
               <h3 className="text-sm font-semibold uppercase tracking-[0.3em] text-[var(--color-muted)]">
-                Perguntas do Trivia
+                {t('scoreDetail.triviaQuestions', { ns: 'game' })}
               </h3>
               <div className="flex items-center gap-2">
                 <select
@@ -184,15 +186,15 @@ export function ScoreDetailView({
                   onChange={(e) => setSortBy(e.target.value as 'date' | 'points' | 'turn')}
                   className="rounded-lg border border-[var(--color-border)] bg-[var(--color-background)] px-2 py-1 text-xs text-[var(--color-text)]"
                 >
-                  <option value="date">Por data</option>
-                  <option value="points">Por pontos</option>
-                  <option value="turn">Por turno</option>
+                  <option value="date">{t('scoreDetail.sortDate', { ns: 'game' })}</option>
+                  <option value="points">{t('scoreDetail.sortPoints', { ns: 'game' })}</option>
+                  <option value="turn">{t('scoreDetail.sortTurn', { ns: 'game' })}</option>
                 </select>
               </div>
             </div>
             {triviaScores.length === 0 ? (
               <div className="rounded-xl border border-dashed border-[var(--color-border)] bg-[var(--color-background)] px-6 py-8 text-center">
-                <p className="text-sm text-[var(--color-muted)]">Nenhuma pergunta respondida ainda</p>
+                <p className="text-sm text-[var(--color-muted)]">{t('scoreDetail.noQuestion', { ns: 'game' })}</p>
               </div>
             ) : (
               <div className="space-y-3 max-h-96 overflow-y-auto">
@@ -223,25 +225,26 @@ export function ScoreDetailView({
                         <div className="flex-1">
                           <div className="flex items-center gap-2 mb-1">
                             <span className="text-xs font-semibold uppercase tracking-[0.3em] text-[var(--color-primary)] bg-[var(--color-primary)]/10 px-2 py-1 rounded-full">
-                              Trivia
+                              {t('scoreDetail.trivia', { ns: 'game' })}
                             </span>
                             <span className="text-xs font-medium text-[var(--color-muted)]">{score.film}</span>
                           </div>
                           <p className="text-sm font-medium text-[var(--color-text)] mb-1">{score.question}</p>
                           {score.answer && (
-                            <p className="text-xs text-[var(--color-muted)] italic">R: {score.answer}</p>
+                            <p className="text-xs text-[var(--color-muted)] italic">{t('scoreDetail.answer', { ns: 'game', answer: score.answer })}</p>
                           )}
                         </div>
                         <div className="text-right ml-4">
-                          <div className="text-lg font-bold text-[var(--color-primary)]">{score.points} pts</div>
+                          <div className="text-lg font-bold text-[var(--color-primary)]">{t('entities.point', { ns: 'common', count: score.points })}</div>
                           <div className="text-xs text-[var(--color-muted)] flex items-center gap-1">
                             <Calendar size={12} />
                             {formatDate(score.timestamp)}
                           </div>
                           {score.turnNumber !== undefined && (
                             <div className="text-xs text-[var(--color-muted)]">
-                              Turno {score.turnNumber}
-                              {score.roundNumber !== undefined && ` (Rodada ${score.roundNumber})`}
+                              {score.roundNumber !== undefined
+                                ? t('scoreDetail.turnRound', { ns: 'game', turn: score.turnNumber, round: score.roundNumber })
+                                : t('scoreDetail.turn', { ns: 'game', turn: score.turnNumber })}
                             </div>
                           )}
                         </div>
@@ -257,7 +260,7 @@ export function ScoreDetailView({
           <div className="space-y-4">
             <div className="flex items-center justify-between">
               <h3 className="text-sm font-semibold uppercase tracking-[0.3em] text-[var(--color-muted)]">
-                Mímicas
+                {t('scoreDetail.mimicas', { ns: 'game' })}
               </h3>
               <div className="flex items-center gap-2">
                 <select
@@ -265,15 +268,15 @@ export function ScoreDetailView({
                   onChange={(e) => setSortBy(e.target.value as 'date' | 'points' | 'turn')}
                   className="rounded-lg border border-[var(--color-border)] bg-[var(--color-background)] px-2 py-1 text-xs text-[var(--color-text)]"
                 >
-                  <option value="date">Por data</option>
-                  <option value="points">Por pontos</option>
-                  <option value="turn">Por turno</option>
+                  <option value="date">{t('scoreDetail.sortDate', { ns: 'game' })}</option>
+                  <option value="points">{t('scoreDetail.sortPoints', { ns: 'game' })}</option>
+                  <option value="turn">{t('scoreDetail.sortTurn', { ns: 'game' })}</option>
                 </select>
               </div>
             </div>
             {participantMimicaScores.length === 0 ? (
               <div className="rounded-xl border border-dashed border-[var(--color-border)] bg-[var(--color-background)] px-6 py-8 text-center">
-                <p className="text-sm text-[var(--color-muted)]">Nenhuma mímica acertada ainda</p>
+                <p className="text-sm text-[var(--color-muted)]">{t('scoreDetail.noMimica', { ns: 'game' })}</p>
               </div>
             ) : (
               <div className="space-y-3 max-h-96 overflow-y-auto">
@@ -298,14 +301,14 @@ export function ScoreDetailView({
                       : null
                     const modeLabel =
                       score.mode === 'full-current'
-                        ? 'Valor cheio'
+                        ? t('scoreDetail.modes.full', { ns: 'game' })
                         : score.mode === 'half-current'
-                        ? 'Meio valor'
+                        ? t('scoreDetail.modes.half', { ns: 'game' })
                         : score.mode === 'steal'
-                        ? 'Roubo'
+                        ? t('scoreDetail.modes.steal', { ns: 'game' })
                         : score.mode === 'everyone'
-                        ? 'Todos'
-                        : 'Anulada'
+                        ? t('scoreDetail.modes.everyone', { ns: 'game' })
+                        : t('scoreDetail.modes.void', { ns: 'game' })
 
                     return (
                       <div
@@ -316,7 +319,7 @@ export function ScoreDetailView({
                           <div className="flex-1">
                             <div className="flex items-center gap-2 mb-1">
                               <span className="text-xs font-semibold uppercase tracking-[0.3em] text-[var(--color-secondary)] bg-[var(--color-secondary)]/10 px-2 py-1 rounded-full">
-                                Mímica
+                                {t('scoreDetail.mimica', { ns: 'game' })}
                               </span>
                               <span className="text-xs font-medium text-[var(--color-muted)]">{modeLabel}</span>
                               {targetTeam && (
@@ -326,11 +329,11 @@ export function ScoreDetailView({
                               )}
                             </div>
                             <p className="text-sm font-medium text-[var(--color-text)]">
-                              Rodada {score.roundNumber} · Turno {score.turnNumber}
+                              {t('scoreDetail.roundTurn', { ns: 'game', round: score.roundNumber, turn: score.turnNumber })}
                             </p>
                           </div>
                           <div className="text-right ml-4">
-                            <div className="text-lg font-bold text-[var(--color-secondary)]">{score.pointsAwarded} pts</div>
+                            <div className="text-lg font-bold text-[var(--color-secondary)]">{t('entities.point', { ns: 'common', count: score.pointsAwarded })}</div>
                             <div className="text-xs text-[var(--color-muted)] flex items-center gap-1">
                               <Calendar size={12} />
                               {formatDate(score.timestamp)}
@@ -347,7 +350,7 @@ export function ScoreDetailView({
 
         <div className="flex justify-end">
           <Button variant="outline" onClick={onClose}>
-            Fechar
+            {t('actions.close', { ns: 'common' })}
           </Button>
         </div>
       </div>

@@ -8,7 +8,7 @@
 - funções transacionais implementadas como Database Functions PostgreSQL;
 - `qrcode` no bundle para gerar SVG localmente.
 
-Não há API própria, Edge Function ou serviço externo de QR. O autocomplete da roleta usa Apple/iTunes sem chave e falha silenciosamente; ele não participa do modo online.
+Não há API própria, Edge Function ou serviço externo de QR. O autocomplete da roleta usa Apple/iTunes sem chave e falha silenciosamente; ele é independente da conta e da sincronização da partida.
 
 ## Dependencia `qrcode`
 

@@ -19,7 +19,7 @@ import { ControlTopbar } from '@/modules/control/ui/ControlTopbar'
 
 const baseProps = {
   title: 'Sessão de Teste',
-  modeLabel: 'Offline',
+  modeLabel: 'Partida completa',
   mode: 'offline' as const,
   onOpenSessions: jest.fn(),
   onExit: jest.fn(),
@@ -48,7 +48,7 @@ describe('ControlTopbar — botão de conta (item A)', () => {
 
 describe('ControlTopbar — ícone de modo (item C)', () => {
   it('modo offline usa HardDrive (data-testid="mode-icon-offline"), não WifiOff', () => {
-    render(<ControlTopbar {...baseProps} mode="offline" modeLabel="Offline" />)
+    render(<ControlTopbar {...baseProps} mode="offline" modeLabel="Partida completa" />)
     const icon = document.querySelector('[data-testid="mode-icon-offline"]')
     expect(icon).toBeInTheDocument()
   })
@@ -58,7 +58,7 @@ describe('ControlTopbar — ícone de modo (item C)', () => {
       <ControlTopbar
         {...baseProps}
         mode="online"
-        modeLabel="Online"
+        modeLabel="Partida completa"
         syncStatus="synced"
       />,
     )

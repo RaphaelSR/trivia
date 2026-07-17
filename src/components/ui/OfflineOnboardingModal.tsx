@@ -5,6 +5,7 @@ import { Palette, Lock, Users, Check, CheckCircle, Plus, Trash2, X, Info } from 
 import { useThemeMode } from "../../app/providers/useThemeMode";
 import type { OnboardingConfig } from "@/modules/control/types/control.types";
 import type { ThemeMode } from "@/shared/types/game";
+import { useTranslation } from "@/shared/i18n";
 
 interface OfflineOnboardingModalProps {
   isOpen: boolean;
@@ -13,24 +14,14 @@ interface OfflineOnboardingModalProps {
   onSkip?: () => void;
 }
 
-const themeOptions: Array<{ id: ThemeMode; name: string; description: string }> = [
-  { id: "dark", name: "Tema Escuro", description: "Cores escuras e elegantes" },
-  { id: "light", name: "Tema Claro", description: "Cores claras e vibrantes" },
-  { id: "cinema", name: "Tema Cinema", description: "Atmosfera cinematográfica" },
-  { id: "retro", name: "Tema Retro 80s", description: "Cores neon e nostalgia dos anos 80" },
-  { id: "matrix", name: "Tema Matrix", description: "Verde digital e efeito terminal" },
-  { id: "brazil", name: "Tema Brasil 🇧🇷", description: "Cores verde e amarelo da bandeira brasileira" },
-  { id: "easter", name: "Páscoa 🐣", description: "Tons pastel com ovos e coelhos flutuantes" },
-];
-
 const teamColors = [
   "#4f46e5", "#22d3ee", "#f97316", "#ef4444", "#10b981", "#8b5cf6", "#f59e0b", "#ec4899"
 ];
 
-const createInitialConfig = (theme: ThemeMode): OnboardingConfig => ({
+const createInitialConfig = (theme: ThemeMode, defaultTitle: string): OnboardingConfig => ({
   theme,
   pin: "",
-  sessionTitle: `Partida de ${new Date().toLocaleDateString("pt-BR")}`,
+  sessionTitle: defaultTitle,
   sessionDate: new Date().toISOString().split('T')[0],
   customFilms: [],
   teams: [],
@@ -42,9 +33,24 @@ export function OfflineOnboardingModal({
   onComplete,
   onSkip,
 }: OfflineOnboardingModalProps) {
+  const { t, i18n } = useTranslation(['game', 'common']);
   const { theme, setTheme } = useThemeMode();
+  const locale = i18n.resolvedLanguage ?? i18n.language;
+  const defaultSessionTitle = t('onboarding.defaultSessionTitle', {
+    ns: 'game',
+    date: new Date().toLocaleDateString(locale),
+  });
+  const themeOptions: Array<{ id: ThemeMode; name: string; description: string }> = [
+    { id: "dark", name: t('onboarding.themes.dark.name', { ns: 'game' }), description: t('onboarding.themes.dark.description', { ns: 'game' }) },
+    { id: "light", name: t('onboarding.themes.light.name', { ns: 'game' }), description: t('onboarding.themes.light.description', { ns: 'game' }) },
+    { id: "cinema", name: t('onboarding.themes.cinema.name', { ns: 'game' }), description: t('onboarding.themes.cinema.description', { ns: 'game' }) },
+    { id: "retro", name: t('onboarding.themes.retro.name', { ns: 'game' }), description: t('onboarding.themes.retro.description', { ns: 'game' }) },
+    { id: "matrix", name: t('onboarding.themes.matrix.name', { ns: 'game' }), description: t('onboarding.themes.matrix.description', { ns: 'game' }) },
+    { id: "brazil", name: t('onboarding.themes.brazil.name', { ns: 'game' }), description: t('onboarding.themes.brazil.description', { ns: 'game' }) },
+    { id: "easter", name: t('onboarding.themes.easter.name', { ns: 'game' }), description: t('onboarding.themes.easter.description', { ns: 'game' }) },
+  ];
   const [currentStep, setCurrentStep] = useState(1);
-  const [config, setConfig] = useState<OnboardingConfig>(() => createInitialConfig(theme));
+  const [config, setConfig] = useState<OnboardingConfig>(() => createInitialConfig(theme, defaultSessionTitle));
   const handleThemeSelect = (themeId: ThemeMode) => {
     setConfig((prev) => ({ ...prev, theme: themeId }));
     setTheme(themeId);
@@ -64,7 +70,7 @@ export function OfflineOnboardingModal({
 
   const handleTeamAdd = () => {
     const newTeam = {
-      name: `Time ${config.teams.length + 1}`,
+      name: t('onboarding.defaultTeamName', { ns: 'game', number: config.teams.length + 1 }),
       color: teamColors[config.teams.length % teamColors.length],
       members: []
     };
@@ -126,7 +132,7 @@ export function OfflineOnboardingModal({
 
   const resetState = () => {
     setCurrentStep(1);
-    setConfig(createInitialConfig(theme));
+    setConfig(createInitialConfig(theme, defaultSessionTitle));
   };
 
   const handleClose = () => {
@@ -158,10 +164,10 @@ export function OfflineOnboardingModal({
           <Palette className="h-8 w-8 text-[var(--color-primary)]" />
         </div>
         <h3 className="text-xl font-semibold text-[var(--color-text)]">
-          Escolha o Tema Visual
+          {t('onboarding.themes.title', { ns: 'game' })}
         </h3>
         <p className="text-[var(--color-muted)]">
-          Selecione o tema que melhor se adapta ao seu ambiente
+          {t('onboarding.themes.description', { ns: 'game' })}
         </p>
       </div>
 
@@ -206,28 +212,28 @@ export function OfflineOnboardingModal({
           <Lock className="h-8 w-8 text-[var(--color-primary)]" />
         </div>
         <h3 className="text-xl font-semibold text-[var(--color-text)]">
-          PIN opcional de proteção
+          {t('onboarding.pin.title', { ns: 'game' })}
         </h3>
         <p className="text-[var(--color-muted)]">
-          Se quiser, defina um PIN para proteger biblioteca e ações sensíveis. Você também pode deixar sem PIN.
+          {t('onboarding.pin.description', { ns: 'game' })}
         </p>
       </div>
 
       <div className="space-y-4">
         <div>
           <label className="block text-sm font-medium text-[var(--color-text)] mb-2">
-            PIN opcional
+            {t('onboarding.pin.label', { ns: 'game' })}
           </label>
           <input
             type="password"
             value={config.pin}
             onChange={(e) => handlePinChange(e.target.value)}
-            placeholder="Deixe em branco para não usar PIN"
+            placeholder={t('onboarding.pin.placeholder', { ns: 'game' })}
             className="w-full px-4 py-3 rounded-2xl border border-[var(--color-border)] bg-[var(--color-background)] text-[var(--color-text)] placeholder-[var(--color-muted)] focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)] focus:border-transparent"
             maxLength={20}
           />
           <p className="text-xs text-[var(--color-muted)] mt-1">
-            Se preencher, use 4 ou mais caracteres. Se deixar vazio, o jogo abre sem pedir PIN.
+            {t('onboarding.pin.hint', { ns: 'game' })}
           </p>
         </div>
 
@@ -236,10 +242,10 @@ export function OfflineOnboardingModal({
             <Check className="h-5 w-5 text-[var(--color-primary)] mt-0.5" />
             <div>
               <h4 className="font-semibold text-[var(--color-text)] text-sm">
-                Quando vale usar
+                {t('onboarding.pin.whenTitle', { ns: 'game' })}
               </h4>
               <p className="text-xs text-[var(--color-muted)] mt-1">
-                Use PIN apenas se quiser restringir edição de perguntas, biblioteca ou ações administrativas durante a partida.
+                {t('onboarding.pin.whenDescription', { ns: 'game' })}
               </p>
             </div>
           </div>
@@ -255,23 +261,23 @@ export function OfflineOnboardingModal({
           <Users className="h-8 w-8 text-[var(--color-primary)]" />
         </div>
         <h3 className="text-xl font-semibold text-[var(--color-text)]">
-          Informações da Sessão
+          {t('onboarding.session.title', { ns: 'game' })}
         </h3>
         <p className="text-[var(--color-muted)]">
-          Configure o nome e data da sua sessão de trivia (opcional - pode configurar depois)
+          {t('onboarding.session.description', { ns: 'game' })}
         </p>
       </div>
 
       <div className="space-y-4">
         <div>
           <label className="block text-sm font-medium text-[var(--color-text)] mb-2">
-            Nome da Sessão
+            {t('onboarding.session.name', { ns: 'game' })}
           </label>
           <input
             type="text"
             value={config.sessionTitle}
             onChange={(e) => handleTitleChange(e.target.value)}
-            placeholder="Ex: Noite de Trivia - Janeiro 2025"
+            placeholder={t('onboarding.session.namePlaceholder', { ns: 'game' })}
             className="w-full px-4 py-3 rounded-2xl border border-[var(--color-border)] bg-[var(--color-background)] text-[var(--color-text)] placeholder-[var(--color-muted)] focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)] focus:border-transparent"
             maxLength={50}
           />
@@ -279,7 +285,7 @@ export function OfflineOnboardingModal({
 
         <div>
           <label className="block text-sm font-medium text-[var(--color-text)] mb-2">
-            Data da Sessão
+            {t('onboarding.session.date', { ns: 'game' })}
           </label>
           <input
             type="date"
@@ -299,10 +305,10 @@ export function OfflineOnboardingModal({
           <Users className="h-8 w-8 text-[var(--color-primary)]" />
         </div>
         <h3 className="text-xl font-semibold text-[var(--color-text)]">
-          Configurar Times
+          {t('onboarding.teams.title', { ns: 'game' })}
         </h3>
         <p className="text-[var(--color-muted)]">
-          Crie pelo menos 2 times com membros para começar o jogo (opcional - pode configurar depois pelo botão "Times")
+          {t('onboarding.teams.description', { ns: 'game' })}
         </p>
       </div>
 
@@ -319,12 +325,13 @@ export function OfflineOnboardingModal({
                 value={team.name}
                 onChange={(e) => handleTeamUpdate(index, { name: e.target.value })}
                 className="flex-1 px-3 py-2 rounded-xl border border-[var(--color-border)] bg-[var(--color-background)] text-[var(--color-text)] focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)]"
-                placeholder="Nome do time"
+                placeholder={t('onboarding.teams.teamName', { ns: 'game' })}
               />
               <Button
                 variant="outline"
                 size="sm"
                 onClick={() => handleTeamRemove(index)}
+                aria-label={t('onboarding.teams.removeTeam', { ns: 'game', number: index + 1 })}
                 className="text-red-500 hover:text-red-700"
               >
                 <Trash2 className="w-4 h-4" />
@@ -335,7 +342,7 @@ export function OfflineOnboardingModal({
               <div className="flex gap-2">
                 <input
                   type="text"
-                  placeholder="Nome do membro"
+                  placeholder={t('onboarding.teams.memberName', { ns: 'game' })}
                   className="flex-1 px-3 py-2 rounded-xl border border-[var(--color-border)] bg-[var(--color-background)] text-[var(--color-text)] focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)]"
                   onKeyPress={(e) => {
                     if (e.key === 'Enter') {
@@ -366,6 +373,7 @@ export function OfflineOnboardingModal({
                     {member}
                     <button
                       onClick={() => handleMemberRemove(index, memberIndex)}
+                      aria-label={t('onboarding.teams.removeMember', { ns: 'game', name: member })}
                       className="text-red-500 hover:text-red-700"
                     >
                       <X className="w-3 h-3" />
@@ -383,7 +391,7 @@ export function OfflineOnboardingModal({
           className="w-full"
         >
           <Plus className="w-4 h-4 mr-2" />
-          Adicionar Time
+          {t('onboarding.teams.addTeam', { ns: 'game' })}
         </Button>
 
       </div>
@@ -397,10 +405,10 @@ export function OfflineOnboardingModal({
           <CheckCircle className="h-8 w-8 text-[var(--color-primary)]" />
         </div>
         <h3 className="text-xl font-semibold text-[var(--color-text)]">
-          Resumo da Configuração
+          {t('onboarding.summary.title', { ns: 'game' })}
         </h3>
         <p className="text-[var(--color-muted)]">
-          Revise as configurações antes de finalizar
+          {t('onboarding.summary.description', { ns: 'game' })}
         </p>
       </div>
 
@@ -409,10 +417,10 @@ export function OfflineOnboardingModal({
           <Info className="h-5 w-5 text-[var(--color-primary)] mt-0.5 flex-shrink-0" />
           <div>
             <h4 className="font-semibold text-[var(--color-text)] text-sm mb-1">
-              Lembre-se
+              {t('onboarding.summary.reminderTitle', { ns: 'game' })}
             </h4>
             <p className="text-xs text-[var(--color-muted)]">
-              Você pode acessar todas essas configurações a qualquer momento pelo dashboard principal. Use o botão "Times" para gerenciar times, "Biblioteca" para filmes e perguntas, e "Tema" para alterar o visual.
+              {t('onboarding.summary.reminderDescription', { ns: 'game' })}
             </p>
           </div>
         </div>
@@ -420,43 +428,43 @@ export function OfflineOnboardingModal({
 
       <div className="space-y-4">
         <div className="p-4 rounded-2xl bg-[var(--color-secondary)]/5 border border-[var(--color-secondary)]/20">
-          <h4 className="font-semibold text-[var(--color-text)] text-sm mb-3">Configurações Gerais</h4>
+          <h4 className="font-semibold text-[var(--color-text)] text-sm mb-3">{t('onboarding.summary.general', { ns: 'game' })}</h4>
           <div className="space-y-2 text-sm">
             <div className="flex justify-between">
-              <span className="text-[var(--color-muted)]">Tema:</span>
+              <span className="text-[var(--color-muted)]">{t('onboarding.summary.theme', { ns: 'game' })}</span>
               <span className="text-[var(--color-text)]">
                 {themeOptions.find((t) => t.id === config.theme)?.name}
               </span>
             </div>
             <div className="flex justify-between">
-              <span className="text-[var(--color-muted)]">PIN:</span>
+              <span className="text-[var(--color-muted)]">{t('onboarding.summary.pin', { ns: 'game' })}</span>
               <span className="text-[var(--color-text)]">
-                {config.pin ? "•".repeat(config.pin.length) : "Não configurado"}
+                {config.pin ? "•".repeat(config.pin.length) : t('onboarding.summary.pinNotConfigured', { ns: 'game' })}
               </span>
             </div>
             <div className="flex justify-between">
-              <span className="text-[var(--color-muted)]">Sessão:</span>
+              <span className="text-[var(--color-muted)]">{t('onboarding.summary.game', { ns: 'game' })}</span>
               <span className="text-[var(--color-text)]">{config.sessionTitle}</span>
             </div>
             <div className="flex justify-between">
-              <span className="text-[var(--color-muted)]">Data:</span>
+              <span className="text-[var(--color-muted)]">{t('onboarding.summary.date', { ns: 'game' })}</span>
               <span className="text-[var(--color-text)]">
-                {new Date(config.sessionDate).toLocaleDateString('pt-BR')}
+                {new Date(config.sessionDate).toLocaleDateString(locale)}
               </span>
             </div>
           </div>
         </div>
 
         <div className="p-4 rounded-2xl bg-[var(--color-primary)]/5 border border-[var(--color-primary)]/20">
-          <h4 className="font-semibold text-[var(--color-text)] text-sm mb-1">Filmes e perguntas</h4>
+          <h4 className="font-semibold text-[var(--color-text)] text-sm mb-1">{t('onboarding.summary.contentTitle', { ns: 'game' })}</h4>
           <p className="text-xs text-[var(--color-muted)]">
-            Ao finalizar, abrimos a <strong>Biblioteca</strong> para você adicionar os filmes e suas perguntas — é lá que o board é montado.
+            {t('onboarding.summary.contentDescription', { ns: 'game' })}
           </p>
         </div>
 
         <div className="p-4 rounded-2xl bg-[var(--color-secondary)]/5 border border-[var(--color-secondary)]/20">
           <h4 className="font-semibold text-[var(--color-text)] text-sm mb-3">
-            Times Configurados ({config.teams.length})
+            {t('onboarding.teams.configured', { ns: 'game', count: config.teams.length })}
           </h4>
           <div className="space-y-2">
             {config.teams.map((team, index) => (
@@ -466,7 +474,7 @@ export function OfflineOnboardingModal({
                   style={{ backgroundColor: team.color }}
                 />
                 <span className="text-sm text-[var(--color-text)]">
-                  {team.name} ({team.members.length} membros)
+                  {team.name} ({t('onboarding.teams.memberCount', { ns: 'game', count: team.members.length })})
                 </span>
               </div>
             ))}
@@ -494,15 +502,15 @@ export function OfflineOnboardingModal({
   };
 
   return (
-    <Modal isOpen={isOpen} onClose={handleClose} title="Configuração Inicial">
+    <Modal isOpen={isOpen} onClose={handleClose} title={t('onboarding.title', { ns: 'game' })}>
       <div className="p-6">
         <div className="mb-6">
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-2xl font-semibold text-[var(--color-text)]">
-              Configuração Inicial
+              {t('onboarding.title', { ns: 'game' })}
             </h2>
             <span className="text-sm text-[var(--color-muted)]">
-              Etapa {currentStep} de 5
+              {t('onboarding.step', { ns: 'game', current: currentStep, total: 5 })}
             </span>
           </div>
           <div className="w-full bg-[var(--color-border)] rounded-full h-2">
@@ -519,10 +527,10 @@ export function OfflineOnboardingModal({
               <Info className="h-5 w-5 text-[var(--color-secondary)] mt-0.5 flex-shrink-0" />
               <div>
                 <h4 className="font-semibold text-[var(--color-text)] text-sm mb-1">
-                  Todos os passos são opcionais
+                  {t('onboarding.introTitle', { ns: 'game' })}
                 </h4>
                 <p className="text-xs text-[var(--color-muted)]">
-                  Você pode configurar tudo depois pelo dashboard principal. Este assistente apenas ajuda a configurar rapidamente na primeira vez.
+                  {t('onboarding.introDescription', { ns: 'game' })}
                 </p>
               </div>
             </div>
@@ -537,7 +545,7 @@ export function OfflineOnboardingModal({
               variant="outline"
               onClick={currentStep === 1 ? handleClose : handleBack}
             >
-              {currentStep === 1 ? "Cancelar" : "Voltar"}
+              {currentStep === 1 ? t('actions.cancel', { ns: 'common' }) : t('actions.back', { ns: 'common' })}
             </Button>
             {onSkip && currentStep === 1 && (
               <Button
@@ -545,7 +553,7 @@ export function OfflineOnboardingModal({
                 onClick={onSkip}
                 className="text-[var(--color-muted)] hover:text-[var(--color-text)]"
               >
-                Pular Onboarding
+                {t('onboarding.skip', { ns: 'game' })}
               </Button>
             )}
           </div>
@@ -553,7 +561,7 @@ export function OfflineOnboardingModal({
             onClick={handleNext}
             disabled={!isStepValid()}
           >
-            {currentStep === 5 ? "Finalizar" : "Continuar"}
+            {currentStep === 5 ? t('onboarding.finish', { ns: 'game' }) : t('actions.continue', { ns: 'common' })}
           </Button>
         </div>
       </div>

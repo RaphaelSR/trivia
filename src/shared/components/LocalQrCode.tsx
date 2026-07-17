@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { useTranslation } from '@/shared/i18n'
 
 type LocalQrCodeProps = {
   value: string
@@ -11,6 +12,7 @@ type LocalQrCodeProps = {
  * externo; a imagem final e um data URL SVG produzido pela biblioteca local.
  */
 export function LocalQrCode({ value, label, size = 180 }: LocalQrCodeProps) {
+  const { t } = useTranslation('common')
   const [src, setSrc] = useState<string | null>(null)
   const [failed, setFailed] = useState(false)
 
@@ -46,7 +48,7 @@ export function LocalQrCode({ value, label, size = 180 }: LocalQrCodeProps) {
   if (failed) {
     return (
       <p role="status" className="text-center text-xs text-[var(--color-muted)]">
-        Não consegui gerar o QR. O link continua disponível para copiar.
+        {t('qrCode.failed')}
       </p>
     )
   }
@@ -55,7 +57,7 @@ export function LocalQrCode({ value, label, size = 180 }: LocalQrCodeProps) {
     return (
       <div
         role="status"
-        aria-label="Gerando QR Code"
+        aria-label={t('qrCode.generating')}
         className="animate-pulse rounded-lg bg-white/10"
         style={{ width: size, height: size }}
       />

@@ -3,6 +3,7 @@ import { Button } from './Button'
 import { Modal } from './Modal'
 import { Lock, AlertCircle } from 'lucide-react'
 import { usePinManagement } from '../../hooks/usePinManagement'
+import { useTranslation } from '@/shared/i18n'
 
 interface OnlinePasswordModalProps {
   isOpen: boolean
@@ -11,6 +12,7 @@ interface OnlinePasswordModalProps {
 }
 
 export function OnlinePasswordModal({ isOpen, onClose, onSuccess }: OnlinePasswordModalProps) {
+  const { t } = useTranslation(['auth', 'common'])
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
   const { verifyPin } = usePinManagement('online')
@@ -22,7 +24,7 @@ export function OnlinePasswordModal({ isOpen, onClose, onSuccess }: OnlinePasswo
       onSuccess()
       onClose()
     } else {
-      setError('PIN incorreto. Tente novamente.')
+      setError(t('legacyAccess.error', { ns: 'auth' }))
     }
   }
 
@@ -36,8 +38,8 @@ export function OnlinePasswordModal({ isOpen, onClose, onSuccess }: OnlinePasswo
     <Modal
       isOpen={isOpen}
       onClose={handleClose}
-      title="Acesso ao Modo Online"
-      description="Acesse o modo online com o PIN configurado para o repositório online."
+      title={t('legacyAccess.title', { ns: 'auth' })}
+      description={t('legacyAccess.description', { ns: 'auth' })}
     >
       <div className="space-y-4">
         <div className="rounded-2xl border border-[var(--color-primary)]/20 bg-[var(--color-primary)]/5 p-4">
@@ -45,10 +47,10 @@ export function OnlinePasswordModal({ isOpen, onClose, onSuccess }: OnlinePasswo
             <AlertCircle className="mt-0.5 h-5 w-5 flex-shrink-0 text-[var(--color-primary)]" />
             <div>
               <h4 className="mb-1 text-sm font-semibold text-[var(--color-text)]">
-                Camada Online Isolada
+                {t('legacyAccess.noticeTitle', { ns: 'auth' })}
               </h4>
               <p className="text-xs text-[var(--color-muted)]">
-                O modo online agora usa repositório dedicado para sessão e PIN, preparado para crescer para sincronização remota sem acoplar a interface.
+                {t('legacyAccess.noticeDescription', { ns: 'auth' })}
               </p>
             </div>
           </div>
@@ -56,13 +58,13 @@ export function OnlinePasswordModal({ isOpen, onClose, onSuccess }: OnlinePasswo
 
         <div>
           <label className="mb-2 block text-sm font-semibold text-[var(--color-text)]">
-            PIN de Acesso
+            {t('legacyAccess.pinLabel', { ns: 'auth' })}
           </label>
           <div className="relative">
             <Lock className="absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-[var(--color-muted)]" />
             <input
               type="password"
-              placeholder="Digite o PIN"
+              placeholder={t('legacyAccess.pinPlaceholder', { ns: 'auth' })}
               value={password}
               onChange={(e) => {
                 setPassword(e.target.value)
@@ -82,7 +84,7 @@ export function OnlinePasswordModal({ isOpen, onClose, onSuccess }: OnlinePasswo
 
         <div className="flex gap-3 pt-4">
           <Button variant="outline" onClick={handleClose} className="flex-1">
-            Cancelar
+            {t('actions.cancel', { ns: 'common' })}
           </Button>
           <Button
             variant="primary"
@@ -90,7 +92,7 @@ export function OnlinePasswordModal({ isOpen, onClose, onSuccess }: OnlinePasswo
             disabled={!password.trim()}
             className="flex-1"
           >
-            Acessar
+            {t('legacyAccess.submit', { ns: 'auth' })}
           </Button>
         </div>
       </div>
