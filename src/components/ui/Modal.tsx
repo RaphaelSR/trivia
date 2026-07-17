@@ -49,7 +49,13 @@ export function Modal({ isOpen, title, description, children, onClose, size = 'm
             <h2 className="text-lg font-semibold text-[var(--color-text)]">{title}</h2>
             {description ? <p className="mt-0.5 text-xs text-[var(--color-muted)]">{description}</p> : null}
           </div>
-          <Button variant="ghost" size="icon" aria-label={t('actions.close')} onClick={onClose}>
+          <Button
+            variant="ghost"
+            size="icon"
+            aria-label={t('actions.close')}
+            onClick={onClose}
+            className="-mr-1 -mt-1 h-11 w-11 shrink-0"
+          >
             <X size={16} />
           </Button>
         </div>
