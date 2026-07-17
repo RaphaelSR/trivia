@@ -56,11 +56,6 @@ jest.mock('@/modules/auth/components/ProfileAvatarEditor', () => ({
   ),
 }))
 
-// Mock do vite-env para BASE_URL
-jest.mock('@/shared/services/vite-env', () => ({
-  readViteEnv: jest.fn().mockReturnValue('/'),
-}))
-
 import '@testing-library/jest-dom'
 import { render, screen, act, waitFor, fireEvent } from '@testing-library/react'
 import { MemoryRouter, Route, Routes } from 'react-router-dom'
@@ -111,6 +106,24 @@ beforeEach(() => {
   mockIsConfigured.mockReturnValue(true)
   mockUseAuth.mockReturnValue(defaultAuthState)
   mockListLive.mockResolvedValue({ participants: [], error: null })
+})
+
+it('mantém o link inicial dentro do basename do GitHub Pages sem duplicá-lo', () => {
+  render(
+    <MemoryRouter
+      basename="/trivia"
+      initialEntries={[`/trivia/claim?session=${VALID_TOKEN}`]}
+    >
+      <Routes>
+        <Route path="/claim" element={<ClaimPage />} />
+      </Routes>
+    </MemoryRouter>,
+  )
+
+  expect(screen.getByRole('link', { name: /trivia cinematográfico/i })).toHaveAttribute(
+    'href',
+    '/trivia',
+  )
 })
 
 describe('ClaimPage — modo ?session= permanente', () => {
