@@ -1,6 +1,7 @@
 import { LocalSessionRepository } from '@/modules/game/infrastructure/local-session.repository'
 import { storageService } from '@/shared/services/storage.service'
 import type { TriviaSession } from '@/modules/trivia/types'
+import { restorePersistedSession } from '@/modules/game/domain/session'
 
 function makeSession(id: string): TriviaSession {
   return {
@@ -78,6 +79,21 @@ describe('LocalSessionRepository', () => {
       'session-copy',
       'session-original',
     ])
+  })
+
+  it('substitui o registro ativo legado sem duplicar a partida no histórico', () => {
+    const legacy = makeSession('empty-session')
+    legacy.scheduledAt = '2026-07-16T10:00:00.000Z'
+    const original = repository.saveSession(legacy, 'offline', legacy.title)
+    const upgraded = restorePersistedSession(legacy, 'offline')
+
+    const saved = repository.saveSession(upgraded, 'offline', upgraded.title, original)
+
+    expect(saved?.session.id).toMatch(/^legacy-/)
+    expect(saved?.metadata.createdAt).toBe(original?.metadata.createdAt)
+    expect(repository.loadActiveSession()?.session.id).toBe(upgraded.id)
+    expect(repository.loadSessionHistory().map((entry) => entry.id)).toEqual([upgraded.id])
+    expect(repository.loadSession('empty-session')).toBeNull()
   })
 })
 

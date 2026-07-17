@@ -1,11 +1,60 @@
-import { compareEventLogs, createSessionForMode, rebuildSessionTurnState, syncTurnSequenceWithBoard } from '@/modules/game/domain/session'
+import {
+  compareEventLogs,
+  createSessionForMode,
+  rebuildSessionTurnState,
+  restorePersistedSession,
+  syncTurnSequenceWithBoard,
+} from '@/modules/game/domain/session'
 import type { GameEvent, TriviaSession, TriviaTeam, TriviaParticipant } from '@/modules/trivia/types'
 
 describe('session domain', () => {
   it('creates empty session for offline and online modes', () => {
-    expect(createSessionForMode('offline').teams).toEqual([])
-    expect(createSessionForMode('online').teams).toEqual([])
+    const offline = createSessionForMode('offline')
+    const online = createSessionForMode('online')
+
+    expect(offline.teams).toEqual([])
+    expect(online.teams).toEqual([])
+    expect(offline.id).not.toBe('empty-session')
+    expect(online.id).not.toBe('empty-session')
+    expect(offline.id).not.toBe(online.id)
     expect(createSessionForMode('demo').teams.length).toBeGreaterThan(0)
+  })
+
+  it('upgrades the legacy fixed id deterministically without changing game data', () => {
+    const legacy = {
+      ...createSessionForMode('offline'),
+      id: 'empty-session',
+      scheduledAt: '2026-07-16T10:00:00.000Z',
+    }
+    const progressedCopy = {
+      ...legacy,
+      title: 'Título editado em outro dispositivo',
+      eventLog: [{
+        id: 'event-added-later',
+        type: 'trivia-award' as const,
+        timestamp: '2026-07-16T11:00:00.000Z',
+        source: 'trivia' as const,
+        pointsAwarded: 10,
+        teamId: 'team-1',
+      }],
+    }
+
+    const restored = restorePersistedSession(legacy, 'offline')
+    const restoredCopy = restorePersistedSession(progressedCopy, 'online')
+
+    expect(restored.id).toMatch(/^legacy-/)
+    expect(restoredCopy.id).toBe(restored.id)
+    expect(restored.scheduledAt).toBe(legacy.scheduledAt)
+    expect(restored.title).toBe(legacy.title)
+  })
+
+  it('does not reinterpret current, imported or demo session ids', () => {
+    const current = createSessionForMode('offline')
+    const demo = { ...createSessionForMode('demo'), id: 'empty-session' }
+
+    expect(restorePersistedSession(current, 'offline').id).toBe(current.id)
+    expect(restorePersistedSession({ ...current, id: 'imported-23-05' }, 'offline').id).toBe('imported-23-05')
+    expect(restorePersistedSession(demo, 'demo').id).toBe('empty-session')
   })
 
   it('creates a configurable demo session with the requested scale', () => {

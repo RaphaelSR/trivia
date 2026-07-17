@@ -195,8 +195,8 @@ describe('AuthPanel — estado pós-cadastro (confirmação pendente)', () => {
   })
 
   /** Leva o painel ao estado pós-cadastro preenchendo e submetendo o formulário de signup */
-  async function goToConfirmationPending(email = 'novo@email.com') {
-    render(<AuthPanel onClose={onClose} />)
+  async function goToConfirmationPending(email = 'novo@email.com', context: 'default' | 'claim' = 'default') {
+    render(<AuthPanel onClose={onClose} context={context} />)
 
     // Vai para aba Criar conta
     const tabs = screen.getAllByRole('button', { name: /criar conta/i })
@@ -229,6 +229,11 @@ describe('AuthPanel — estado pós-cadastro (confirmação pendente)', () => {
   it('exibe botão "Reenviar e-mail" no estado pós-cadastro', async () => {
     await goToConfirmationPending()
     expect(screen.getByRole('button', { name: /reenviar e-mail/i })).toBeInTheDocument()
+  })
+
+  it('explica que o e-mail retorna ao mesmo convite no contexto de claim', async () => {
+    await goToConfirmationPending('convite@exemplo.com', 'claim')
+    expect(screen.getByText(/voltará automaticamente para este mesmo convite/i)).toBeInTheDocument()
   })
 
   it('chama resend com o email ao clicar em Reenviar', async () => {

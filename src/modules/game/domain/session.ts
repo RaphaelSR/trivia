@@ -4,6 +4,7 @@ import { createEmptySession } from '../../trivia/utils/createEmptySession'
 import { createLocalSession } from '../../trivia/utils/createLocalSession'
 import { buildTurnSequence, resolveTurnIndex } from './turn-order'
 import { countAnsweredTiles, countTotalTiles, dedupeTileIds, releaseActiveTiles } from './board.utils'
+import { upgradeLegacyCompleteSessionId } from './session-id'
 
 export type SessionCreationCopy = {
   title?: string
@@ -177,7 +178,10 @@ export function restorePersistedSession(session: TriviaSession | null, gameMode:
   // Curas antes de entrar no estado — assim um F5 conserta a partida sem
   // perder nada: ids duplicados (bug do import em massa) e cartas presas em
   // 'active' (F5 com o modal da pergunta aberto).
-  const healed = releaseActiveTiles(dedupeTileIds(session))
+  const healed = upgradeLegacyCompleteSessionId(
+    releaseActiveTiles(dedupeTileIds(session)),
+    gameMode,
+  )
 
   return {
     ...healed,

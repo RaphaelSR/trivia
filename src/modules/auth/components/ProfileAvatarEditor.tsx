@@ -117,7 +117,7 @@ export function ProfileAvatarEditor({
   const claim = variant === 'claim'
 
   return (
-    <div className={claim ? 'rounded-xl border border-white/10 bg-white/5 p-4' : 'flex flex-col items-center gap-2'}>
+    <div className={claim ? 'rounded-2xl border border-[var(--color-border)] bg-[var(--color-background)] p-4' : 'flex flex-col items-center gap-2'}>
       <div className={claim ? 'flex items-center gap-3' : 'flex flex-col items-center gap-2'}>
         <div className="relative">
           <ParticipantAvatar name={name} src={identity?.avatarUrl} size={claim ? 52 : 72} />

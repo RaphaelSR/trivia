@@ -37,6 +37,10 @@ jest.mock('@/modules/auth/hooks/useAuth', () => ({
   useAuth: jest.fn(),
 }))
 
+jest.mock('@/app/providers/useThemeMode', () => ({
+  useThemeMode: () => ({ theme: 'light', setTheme: jest.fn() }),
+}))
+
 // Mock do AuthPanel para evitar renderização completa
 jest.mock('@/modules/auth/components/AuthPanel', () => ({
   AuthPanel: ({ onClose }: { onClose: () => void }) => (
@@ -176,6 +180,28 @@ describe('ClaimPage — modo ?session= permanente', () => {
 
     fireEvent.click(screen.getByRole('button', { name: /agora não/i }))
     expect(screen.queryByTestId('profile-avatar-editor')).not.toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /gerenciar minha foto/i })).toBeInTheDocument()
+  })
+
+  it('reconhece o próprio claim ao reabrir o QR e não pede nova seleção', async () => {
+    mockUseAuth.mockReturnValue({ ...defaultAuthState, user: { id: 'user-1' } })
+    mockListLive.mockResolvedValue({
+      participants: liveParticipants.map((participant) =>
+        participant.participantClientId === 'a1'
+          ? { ...participant, claimed: true, claimedByMe: true, claimable: false }
+          : participant,
+      ),
+      error: null,
+    })
+
+    renderClaimPage(`?session=${VALID_TOKEN}`)
+
+    expect(await screen.findByText(/você já está nesta partida/i)).toBeInTheDocument()
+    expect(screen.getByText('A1')).toBeInTheDocument()
+    expect(screen.getByText('Time A')).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Sou A1' })).not.toBeInTheDocument()
+    expect(mockClaimLive).not.toHaveBeenCalled()
+    expect(screen.getByTestId('profile-avatar-editor')).toBeInTheDocument()
   })
 })
 

@@ -35,11 +35,15 @@ Garantias:
 4. Repetir ou concorrer devolve o mesmo `game_id`.
 5. Qualquer falha reverte criação, cópia de claims e associação do token na mesma transação.
 
+Partidas completas novas recebem um `TriviaSession.id` opaco e exclusivo já na criação. O ID fixo `empty-session`, emitido por versões antigas, é reconhecido somente na restauração de partidas completas e substituído por uma identidade determinística baseada na data original da sessão. Assim, local e nuvem convergem para a mesma chave no primeiro carregamento, sem reescrever jogos já normalizados nem confundir duas partidas futuras na restrição idempotente.
+
 Não há backfill amplo e `online_sessions` não é arquivada pela migration `0009`; isso preserva o fluxo de restauração já usado por partidas reais. Uma evolução de arquivamento exige auditoria de dados separada.
 
 ## Token permanente e rotação
 
 `online_sessions.join_token` pertence a `invite_session_id`, que é o `TriviaSession.id`. A linha de backup pode ser reaproveitada pela próxima partida, mas o token é rotacionado antes de representar a nova sessão. O token anterior já copiado para `games.join_token` continua funcionando no histórico.
+
+A rotação depende de a nova partida possuir outro `TriviaSession.id`; por isso a identidade da sessão é uma regra de persistência, não um detalhe de interface. O upgrade do antigo ID fixo faz a próxima abertura/sincronização girar o token automaticamente, sem migration destrutiva no banco.
 
 Durante o jogo, `/claim?session=` resolve o snapshot ativo. Depois do fim, o mesmo token resolve o jogo normalizado. Links antigos `/claim?token=` e `/claim?game=` não mudaram.
 

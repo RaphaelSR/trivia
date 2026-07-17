@@ -95,12 +95,14 @@ describe('useAuth — linkMyParticipations chamado quando user aparece', () => {
     // Aguarda o setup inicial
     await waitFor(() => expect(mockGetSession).toHaveBeenCalled())
 
-    // Simula evento de login via onAuthStateChange
-    await act(async () => {
+    // Simula evento de login via onAuthStateChange. A RPC NÃO começa dentro
+    // do callback; ela é adiada para evitar o deadlock documentado do Supabase.
+    act(() => {
       authCallback?.('SIGNED_IN', { user: fakeUser })
     })
+    expect(mockLinkMyParticipations).not.toHaveBeenCalled()
 
-    expect(mockLinkMyParticipations).toHaveBeenCalled()
+    await waitFor(() => expect(mockLinkMyParticipations).toHaveBeenCalled())
   })
 
   it('não lança se linkMyParticipations rejeitar', async () => {

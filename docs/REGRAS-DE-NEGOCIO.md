@@ -83,10 +83,14 @@
 
 ## Conta e reivindicação
 - Conta, claim e avatar não fazem parte de `TriviaSession` e nunca alteram pontuação, turnos ou alternância.
+- Cada nova partida completa recebe um `TriviaSession.id` opaco e exclusivo. O ID é a chave de idempotência da finalização e também separa o QR da partida anterior; versões antigas com o ID fixo `empty-session` são atualizadas localmente de forma determinística ao serem abertas.
 - `Demo` não faz chamadas de conta, claim ou avatar. Uma partida completa deslogada também não faz essas chamadas.
 - Em uma partida completa autenticada e sincronizável, o host pode gerar um único link `/claim?session=` depois de enviar o elenco atual.
 - Uma conta pode ocupar no máximo um participante por sessão; um participante pode ter no máximo um claim ativo.
 - Repetir o próprio claim do mesmo participante é idempotente.
+- Cadastro iniciado pelo QR deve voltar ao mesmo `/claim` depois da confirmação de e-mail; somente parâmetros UUID de claim conhecidos podem ser preservados no redirect.
+- Ao reabrir o QR, um claim ativo da própria conta deve ser reconhecido sem nova seleção e oferecer acesso ao gerenciamento do avatar.
+- Falha ou timeout da autenticação, listagem ou claim libera nova tentativa e nunca bloqueia a partida; a idempotência da RPC protege repetições.
 - E-mail opcional válido reserva o slot para o mesmo e-mail autenticado; vazio ou inválido não reserva e não bloqueia o jogo.
 - Renomear ou mover preserva o claim pelo ID do participante. Remover revoga o vínculo na próxima reconciliação.
 - A correção do host apenas desvincula, com confirmação e registro de ator/data; outra pessoa reivindica depois.
