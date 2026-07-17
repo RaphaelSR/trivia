@@ -23,6 +23,8 @@ interface AuthPanelProps {
   onClose: () => void
   /** Aba inicial ao abrir o painel (default: 'signin'). */
   initialTab?: Tab
+  /** Mantém a orientação de retorno quando o painel foi aberto por um convite. */
+  context?: 'default' | 'claim'
   /** Abre uma cópia independente de uma partida finalizada. */
   onOpenHistoricalCopy?: (session: TriviaSession) => boolean | Promise<boolean>
 }
@@ -249,11 +251,12 @@ function LoggedInPanel({ user, loading, onLogout, onClose, onOpenHistoricalCopy 
 
 interface ConfirmationPendingPanelProps {
   email: string
+  context: NonNullable<AuthPanelProps['context']>
   onClose: () => void
   onResend: (email: string) => Promise<string | null>
 }
 
-function ConfirmationPendingPanel({ email, onClose, onResend }: ConfirmationPendingPanelProps) {
+function ConfirmationPendingPanel({ email, context, onClose, onResend }: ConfirmationPendingPanelProps) {
   const { t } = useTranslation('auth')
   const [cooldown, setCooldown] = useState(0)
   const [resendError, setResendError] = useState<string | null>(null)
@@ -290,20 +293,25 @@ function ConfirmationPendingPanel({ email, onClose, onResend }: ConfirmationPend
   }
 
   return (
-    <div className="relative w-full max-w-sm rounded-2xl border border-white/10 bg-zinc-900/95 p-6 shadow-2xl backdrop-blur-xl">
+    <div className="relative w-full max-w-md rounded-3xl border border-[var(--color-border)] bg-[var(--color-surface)] p-6 shadow-[0_24px_80px_color-mix(in_srgb,var(--color-shadow)_14%,transparent)] sm:p-8">
       <button
         aria-label={t('form.close')}
         onClick={onClose}
-        className="absolute right-2 top-2 flex h-11 w-11 items-center justify-center rounded-xl text-zinc-400 transition-colors hover:bg-white/5 hover:text-zinc-100"
+        className="absolute right-2 top-2 flex h-11 w-11 items-center justify-center rounded-xl text-[var(--color-muted)] transition-colors hover:bg-[var(--color-background)] hover:text-[var(--color-text)]"
       >
         <X className="h-4 w-4" />
       </button>
 
       <div className="flex flex-col gap-4 pt-2">
-        <p className="text-sm font-semibold text-zinc-100">{t('confirmation.title')}</p>
-        <p className="text-sm leading-relaxed text-zinc-400">
+        <p className="text-lg font-semibold text-[var(--color-text)]">{t('confirmation.title')}</p>
+        <p className="text-sm leading-relaxed text-[var(--color-muted)]">
           {t('confirmation.description', { email })}
         </p>
+        {context === 'claim' ? (
+          <p className="rounded-2xl border border-[var(--color-border)] bg-[var(--color-background)] px-4 py-3 text-sm leading-6 text-[var(--color-text)]">
+            {t('confirmation.claimReturn')}
+          </p>
+        ) : null}
 
         {resendError && (
           <p className="rounded-lg border border-red-500/20 bg-red-500/10 px-3 py-2 text-xs text-red-400">
@@ -314,7 +322,7 @@ function ConfirmationPendingPanel({ email, onClose, onResend }: ConfirmationPend
         <button
           onClick={() => void handleResend()}
           disabled={cooldown > 0}
-          className="w-full rounded-lg border border-white/10 bg-white/5 py-2 text-sm text-zinc-400 transition-colors hover:border-white/20 hover:text-zinc-100 disabled:cursor-not-allowed disabled:opacity-50"
+          className="min-h-11 w-full rounded-xl border border-[var(--color-border)] bg-[var(--color-background)] py-2 text-sm font-medium text-[var(--color-text)] transition-colors hover:border-[var(--color-primary)] disabled:cursor-not-allowed disabled:opacity-50"
         >
           {cooldown > 0
             ? t('confirmation.resentCooldown', { seconds: cooldown })
@@ -397,31 +405,31 @@ function ForgotPasswordPanel({ initialEmail, onBack, onClose, onRequestReset }: 
       : t('passwordReset.send')
 
   return (
-    <div className="relative w-full max-w-sm rounded-2xl border border-white/10 bg-zinc-900/95 p-6 shadow-2xl backdrop-blur-xl">
+    <div className="relative w-full max-w-md rounded-3xl border border-[var(--color-border)] bg-[var(--color-surface)] p-6 shadow-[0_24px_80px_color-mix(in_srgb,var(--color-shadow)_14%,transparent)] sm:p-8">
       <button
         aria-label={t('form.close')}
         onClick={onClose}
-        className="absolute right-2 top-2 flex h-11 w-11 items-center justify-center rounded-xl text-zinc-400 transition-colors hover:bg-white/5 hover:text-zinc-100"
+        className="absolute right-2 top-2 flex h-11 w-11 items-center justify-center rounded-xl text-[var(--color-muted)] transition-colors hover:bg-[var(--color-background)] hover:text-[var(--color-text)]"
       >
         <X className="h-4 w-4" />
       </button>
 
       <button
         onClick={onBack}
-        className="mb-4 flex items-center gap-1.5 text-xs text-zinc-400 transition-colors hover:text-zinc-100"
+        className="mb-4 flex min-h-11 items-center gap-1.5 rounded-xl pr-3 text-xs text-[var(--color-muted)] transition-colors hover:text-[var(--color-text)]"
       >
         <ArrowLeft className="h-3.5 w-3.5" />
         {t('passwordReset.back')}
       </button>
 
-      <h2 className="text-lg font-semibold text-zinc-100">{t('passwordReset.title')}</h2>
-      <p className="mt-1.5 mb-4 text-sm leading-relaxed text-zinc-400">
+      <h2 className="text-lg font-semibold text-[var(--color-text)]">{t('passwordReset.title')}</h2>
+      <p className="mt-1.5 mb-4 text-sm leading-relaxed text-[var(--color-muted)]">
         {t('passwordReset.description')}
       </p>
 
       <form onSubmit={handleSubmit} noValidate className="flex flex-col gap-3">
         <div>
-          <label htmlFor="forgot-email" className="mb-1 block text-xs text-zinc-400">
+          <label htmlFor="forgot-email" className="mb-1 block text-xs text-[var(--color-muted)]">
             {t('form.email')}
           </label>
           <input
@@ -432,7 +440,7 @@ function ForgotPasswordPanel({ initialEmail, onBack, onClose, onRequestReset }: 
             onChange={(e) => setEmail(e.target.value)}
             placeholder={t('form.emailPlaceholder')}
             autoComplete="email"
-            className="w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm text-zinc-100 placeholder-zinc-500 outline-none transition-colors focus:border-[var(--color-primary)]/50 focus:bg-white/8"
+            className="min-h-11 w-full rounded-xl border border-[var(--color-border)] bg-[var(--color-background)] px-3 py-2 text-sm text-[var(--color-text)] outline-none transition-colors placeholder:text-[var(--color-muted)] focus:border-[var(--color-primary)]"
           />
         </div>
 
@@ -451,7 +459,7 @@ function ForgotPasswordPanel({ initialEmail, onBack, onClose, onRequestReset }: 
         <button
           type="submit"
           disabled={sending || cooldown > 0}
-          className="mt-1 w-full rounded-lg bg-[var(--color-primary)] py-2 text-sm font-semibold text-black transition-opacity hover:opacity-90 disabled:opacity-50"
+          className="mt-1 min-h-11 w-full rounded-xl bg-[var(--color-primary)] py-2 text-sm font-semibold text-[var(--color-surface)] transition-opacity hover:opacity-90 disabled:opacity-50"
         >
           {buttonLabel}
         </button>
@@ -464,7 +472,12 @@ function ForgotPasswordPanel({ initialEmail, onBack, onClose, onRequestReset }: 
 // AuthPanel — ponto de entrada público
 // ---------------------------------------------------------------------------
 
-export function AuthPanel({ onClose, initialTab = 'signin', onOpenHistoricalCopy }: AuthPanelProps) {
+export function AuthPanel({
+  onClose,
+  initialTab = 'signin',
+  context = 'default',
+  onOpenHistoricalCopy,
+}: AuthPanelProps) {
   const { t } = useTranslation('auth')
   const { user, loading, login, register, logout, resend, requestReset } = useAuth()
 
@@ -544,6 +557,7 @@ export function AuthPanel({ onClose, initialTab = 'signin', onOpenHistoricalCopy
     return (
       <ConfirmationPendingPanel
         email={pendingEmail}
+        context={context}
         onClose={onClose}
         onResend={resend}
       />
@@ -564,26 +578,26 @@ export function AuthPanel({ onClose, initialTab = 'signin', onOpenHistoricalCopy
 
   // Painel de login / cadastro
   return (
-    <div className="relative w-full max-w-sm rounded-2xl border border-white/10 bg-zinc-900/95 p-6 shadow-2xl backdrop-blur-xl">
+    <div className="relative w-full max-w-md rounded-3xl border border-[var(--color-border)] bg-[var(--color-surface)] p-6 shadow-[0_24px_80px_color-mix(in_srgb,var(--color-shadow)_14%,transparent)] sm:p-8">
       <button
         aria-label={t('form.close')}
         onClick={onClose}
-        className="absolute right-2 top-2 flex h-11 w-11 items-center justify-center rounded-xl text-zinc-400 transition-colors hover:bg-white/5 hover:text-zinc-100"
+        className="absolute right-2 top-2 flex h-11 w-11 items-center justify-center rounded-xl text-[var(--color-muted)] transition-colors hover:bg-[var(--color-background)] hover:text-[var(--color-text)]"
       >
         <X className="h-4 w-4" />
       </button>
 
       {/* Tabs */}
-      <div className="mb-5 flex gap-1 rounded-xl border border-white/5 bg-white/5 p-1">
+      <div className="mb-6 flex gap-1 rounded-xl border border-[var(--color-border)] bg-[var(--color-background)] p-1">
         {(['signin', 'signup'] as const).map((tabKey) => (
           <button
             key={tabKey}
             onClick={() => switchTab(tabKey)}
             className={[
-              'flex-1 rounded-lg py-1.5 text-sm font-medium transition-all',
+              'min-h-11 flex-1 rounded-lg py-1.5 text-sm font-medium transition-all',
               tab === tabKey
-                ? 'bg-white/10 text-zinc-100 shadow-sm'
-                : 'text-zinc-400 hover:text-zinc-100',
+                ? 'bg-[var(--color-surface)] text-[var(--color-text)] shadow-sm'
+                : 'text-[var(--color-muted)] hover:text-[var(--color-text)]',
             ].join(' ')}
           >
             {tabKey === 'signin' ? t('panel.signIn') : t('panel.signUp')}
@@ -594,7 +608,7 @@ export function AuthPanel({ onClose, initialTab = 'signin', onOpenHistoricalCopy
       <form onSubmit={handleSubmit} noValidate className="flex flex-col gap-3">
         {tab === 'signup' && (
           <div>
-            <label htmlFor="auth-display-name" className="mb-1 block text-xs text-zinc-400">{t('form.displayName')}</label>
+            <label htmlFor="auth-display-name" className="mb-1 block text-xs text-[var(--color-muted)]">{t('form.displayName')}</label>
             <input
               id="auth-display-name"
               name="name"
@@ -604,13 +618,13 @@ export function AuthPanel({ onClose, initialTab = 'signin', onOpenHistoricalCopy
               placeholder={t('form.displayNamePlaceholder')}
               maxLength={40}
               autoComplete="name"
-              className="w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm text-zinc-100 placeholder-zinc-500 outline-none transition-colors focus:border-[var(--color-primary)]/50 focus:bg-white/8"
+              className="min-h-11 w-full rounded-xl border border-[var(--color-border)] bg-[var(--color-background)] px-3 py-2 text-sm text-[var(--color-text)] outline-none transition-colors placeholder:text-[var(--color-muted)] focus:border-[var(--color-primary)]"
             />
           </div>
         )}
 
         <div>
-          <label htmlFor="auth-email" className="mb-1 block text-xs text-zinc-400">{t('form.email')}</label>
+          <label htmlFor="auth-email" className="mb-1 block text-xs text-[var(--color-muted)]">{t('form.email')}</label>
           <input
             id="auth-email"
             name="email"
@@ -619,13 +633,13 @@ export function AuthPanel({ onClose, initialTab = 'signin', onOpenHistoricalCopy
             onChange={(e) => setEmail(e.target.value)}
             placeholder={t('form.emailPlaceholder')}
             autoComplete={tab === 'signin' ? 'username' : 'email'}
-            className="w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm text-zinc-100 placeholder-zinc-500 outline-none transition-colors focus:border-[var(--color-primary)]/50 focus:bg-white/8"
+            className="min-h-11 w-full rounded-xl border border-[var(--color-border)] bg-[var(--color-background)] px-3 py-2 text-sm text-[var(--color-text)] outline-none transition-colors placeholder:text-[var(--color-muted)] focus:border-[var(--color-primary)]"
           />
         </div>
 
         <div>
           <div className="mb-1 flex items-center justify-between">
-            <label htmlFor="auth-password" className="block text-xs text-zinc-400">{t('form.password')}</label>
+            <label htmlFor="auth-password" className="block text-xs text-[var(--color-muted)]">{t('form.password')}</label>
             {tab === 'signin' && (
               <button
                 type="button"
@@ -633,7 +647,7 @@ export function AuthPanel({ onClose, initialTab = 'signin', onOpenHistoricalCopy
                   setError(null)
                   setForgotOpen(true)
                 }}
-                className="text-xs text-zinc-400 underline-offset-2 transition-colors hover:text-zinc-100 hover:underline"
+                className="min-h-11 rounded-xl px-2 text-xs text-[var(--color-muted)] underline-offset-2 transition-colors hover:text-[var(--color-text)] hover:underline"
               >
                 {t('panel.forgotPassword')}
               </button>
@@ -648,13 +662,13 @@ export function AuthPanel({ onClose, initialTab = 'signin', onOpenHistoricalCopy
               onChange={(e) => setPassword(e.target.value)}
               placeholder={tab === 'signin' ? '••••••••' : t('form.minimumPassword')}
               autoComplete={tab === 'signin' ? 'current-password' : 'new-password'}
-              className="w-full rounded-lg border border-white/10 bg-white/5 py-2 pl-3 pr-10 text-sm text-zinc-100 placeholder-zinc-500 outline-none transition-colors focus:border-[var(--color-primary)]/50 focus:bg-white/8"
+              className="min-h-11 w-full rounded-xl border border-[var(--color-border)] bg-[var(--color-background)] py-2 pl-3 pr-12 text-sm text-[var(--color-text)] outline-none transition-colors placeholder:text-[var(--color-muted)] focus:border-[var(--color-primary)]"
             />
             <button
               type="button"
               aria-label={showPassword ? t('form.hidePassword') : t('form.showPassword')}
               onClick={() => setShowPassword((v) => !v)}
-              className="absolute right-2.5 top-1/2 -translate-y-1/2 text-zinc-400 transition-colors hover:text-zinc-100"
+              className="absolute right-1 top-1/2 flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-xl text-[var(--color-muted)] transition-colors hover:text-[var(--color-text)]"
             >
               {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
             </button>
@@ -670,7 +684,7 @@ export function AuthPanel({ onClose, initialTab = 'signin', onOpenHistoricalCopy
         <button
           type="submit"
           disabled={loading}
-          className="mt-1 w-full rounded-lg bg-[var(--color-primary)] py-2 text-sm font-semibold text-black transition-opacity hover:opacity-90 disabled:opacity-50"
+          className="mt-1 min-h-12 w-full rounded-xl bg-[var(--color-primary)] py-2 text-sm font-semibold text-[var(--color-surface)] transition-opacity hover:opacity-90 disabled:opacity-50"
         >
           {loading
             ? tab === 'signin'

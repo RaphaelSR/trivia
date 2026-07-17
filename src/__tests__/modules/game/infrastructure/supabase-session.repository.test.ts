@@ -19,6 +19,7 @@ jest.mock('@/modules/game/infrastructure/keepalive-flush', () => ({
 import { isSupabaseConfigured, getSupabaseClient } from '@/shared/services/supabase.client'
 import { SupabaseSessionRepository } from '@/modules/game/infrastructure/supabase-session.repository'
 import type { TriviaSession } from '@/modules/trivia/types'
+import { restorePersistedSession } from '@/modules/game/domain/session'
 
 const mockIsConfigured = isSupabaseConfigured as jest.Mock
 const mockGetClient = getSupabaseClient as jest.Mock
@@ -93,6 +94,21 @@ describe('SupabaseSessionRepository — not configured (no-op cloud, cache works
     const active = repo.loadActiveSession()
     expect(active).not.toBeNull()
     expect(active?.session.title).toBe('Test Session')
+  })
+
+  it('replaces the legacy online cache entry instead of duplicating it', () => {
+    const legacy = makeSession({
+      id: 'empty-session',
+      scheduledAt: '2026-07-16T10:00:00.000Z',
+    })
+    const original = repo.saveSession(legacy, 'online')
+    const upgraded = restorePersistedSession(legacy, 'online')
+
+    repo.saveSession(upgraded, 'online', upgraded.title, original)
+
+    expect(repo.loadSessionHistory().map((entry) => entry.id)).toEqual([upgraded.id])
+    expect(repo.loadSession('empty-session')).toBeNull()
+    expect(repo.loadActiveSession()?.session.id).toBe(upgraded.id)
   })
 
   it('getBackendLabel returns "supabase"', () => {

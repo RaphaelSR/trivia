@@ -109,6 +109,88 @@ it('claim repetido devolvido pela RPC continua sendo sucesso idempotente', async
   expect(rpc).toHaveBeenCalledTimes(2)
 })
 
+it('libera a interface com mensagem segura quando a RPC não responde', async () => {
+  jest.useFakeTimers()
+  try {
+    const rpc = jest.fn().mockReturnValue(new Promise(() => undefined))
+    mockClient.mockReturnValue(authenticatedClient(rpc))
+
+    const pending = claimLiveSessionParticipant(TOKEN, 'a1')
+    await jest.advanceTimersByTimeAsync(15_000)
+
+    await expect(pending).resolves.toEqual({
+      gameId: null,
+      sessionClientId: null,
+      error: 'A confirmação demorou mais que o esperado. Verifique a conexão e tente novamente; repetir é seguro.',
+    })
+  } finally {
+    jest.useRealTimers()
+  }
+})
+
+it('libera a interface quando a confirmação da sessão autenticada não responde', async () => {
+  jest.useFakeTimers()
+  try {
+    const rpc = jest.fn()
+    mockClient.mockReturnValue({
+      auth: { getSession: jest.fn().mockReturnValue(new Promise(() => undefined)) },
+      rpc,
+    })
+
+    const pending = claimLiveSessionParticipant(TOKEN, 'a1')
+    await jest.advanceTimersByTimeAsync(15_000)
+
+    await expect(pending).resolves.toEqual({
+      gameId: null,
+      sessionClientId: null,
+      error: 'A confirmação demorou mais que o esperado. Verifique a conexão e tente novamente; repetir é seguro.',
+    })
+    expect(rpc).not.toHaveBeenCalled()
+  } finally {
+    jest.useRealTimers()
+  }
+})
+
+it('encerra o carregamento da lista se a autenticação ficar sem resposta', async () => {
+  jest.useFakeTimers()
+  try {
+    const rpc = jest.fn()
+    mockClient.mockReturnValue({
+      auth: { getSession: jest.fn().mockReturnValue(new Promise(() => undefined)) },
+      rpc,
+    })
+
+    const pending = listLiveSessionParticipants(TOKEN)
+    await jest.advanceTimersByTimeAsync(15_000)
+
+    await expect(pending).resolves.toEqual({
+      participants: [],
+      error: 'A sessão demorou para responder. Verifique a conexão e tente atualizar novamente.',
+    })
+    expect(rpc).not.toHaveBeenCalled()
+  } finally {
+    jest.useRealTimers()
+  }
+})
+
+it('encerra o carregamento da lista se a RPC ficar sem resposta', async () => {
+  jest.useFakeTimers()
+  try {
+    const rpc = jest.fn().mockReturnValue(new Promise(() => undefined))
+    mockClient.mockReturnValue(authenticatedClient(rpc))
+
+    const pending = listLiveSessionParticipants(TOKEN)
+    await jest.advanceTimersByTimeAsync(15_000)
+
+    await expect(pending).resolves.toEqual({
+      participants: [],
+      error: 'A sessão demorou para responder. Verifique a conexão e tente atualizar novamente.',
+    })
+  } finally {
+    jest.useRealTimers()
+  }
+})
+
 it('mapeia reserva por e-mail sem revelar o endereço', async () => {
   const rpc = jest.fn().mockResolvedValue({ data: null, error: { message: 'EMAIL_RESERVED' } })
   mockClient.mockReturnValue(authenticatedClient(rpc))

@@ -3,20 +3,41 @@ import { getSupabaseClient, isSupabaseConfigured } from '../../../shared/service
 import { readViteEnv } from '../../../shared/services/vite-env'
 import { i18n } from '@/shared/i18n'
 
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+const CLAIM_QUERY_KEYS = ['session', 'game', 'token'] as const
+
 export interface AuthResult {
   user: User | null
   error: string | null
 }
 
 /**
- * Retorna a URL de redirecionamento para o email de confirmação.
- * Usa window.location.origin + BASE_URL do Vite (lido via readViteEnv para compatibilidade com Jest).
+ * Retorna a URL de redirecionamento para e-mails de autenticação.
+ * Em um convite válido, preserva somente a rota /claim e um token UUID
+ * conhecido. Qualquer outra rota volta para a raiz pública do app; assim o
+ * callback nunca vira um open redirect nem carrega parâmetros arbitrários.
  * Retorna undefined em ambientes sem window (SSR/testes sem jsdom).
  */
 function getEmailRedirectTo(): string | undefined {
   if (typeof window === 'undefined') return undefined
   const base = readViteEnv('BASE_URL') ?? '/'
-  return window.location.origin + base
+  const baseUrl = new URL(base, window.location.origin)
+  const currentUrl = new URL(window.location.href)
+  const basePath = baseUrl.pathname.endsWith('/') ? baseUrl.pathname : `${baseUrl.pathname}/`
+  const claimPath = `${basePath}claim`.replace(/\/{2,}/g, '/')
+
+  if (currentUrl.origin === baseUrl.origin && currentUrl.pathname === claimPath) {
+    for (const key of CLAIM_QUERY_KEYS) {
+      const value = currentUrl.searchParams.get(key)
+      if (value && UUID_RE.test(value)) {
+        const redirect = new URL(claimPath, baseUrl.origin)
+        redirect.searchParams.set(key, value)
+        return redirect.toString()
+      }
+    }
+  }
+
+  return baseUrl.toString()
 }
 
 /** Idioma do usuário no cadastro (preparação para i18n de e-mails). */

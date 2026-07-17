@@ -6,6 +6,10 @@ Supabase Auth fornece cadastro, login, sessão persistente e recuperação de se
 
 Jogar não exige conta. Sincronização remota, histórico pessoal e reivindicação exigem usuário autenticado.
 
+Quando o cadastro começa em `/claim`, `emailRedirectTo` preserva exclusivamente a rota de claim e um token UUID conhecido. O link de confirmação volta ao mesmo convite; rotas, parâmetros ou fragmentos arbitrários são descartados para não criar um redirecionamento aberto. A allow list do Supabase precisa conter a origem de produção e a origem local com suas subrotas.
+
+O callback síncrono de `onAuthStateChange` atualiza somente o estado de autenticação. Reconciliações e RPCs são agendadas para depois do callback, evitando prender o cliente de autenticação enquanto o participante tenta reivindicar seu slot.
+
 ## Identidade na partida
 
 O nome em `TriviaSession` é específico daquele jogo. `profile_id` liga esse participante a uma conta sem transformar o nome do jogo em cadastro global. Não existe diretório público de perfis.
@@ -20,6 +24,8 @@ O avatar é opcional e pertence a `profiles`, não ao participante do snapshot. 
 - convite permanente: `claim_session_participant(join_token, participant_client_id)`.
 
 As três RPCs antigas permanecem com as mesmas assinaturas. A migration `0009` adiciona o fluxo permanente sem reescrevê-las nem executar backfill sobre dados reais.
+
+Repetir o próprio `claim_session_participant` é sucesso idempotente. A interface aplica timeout local de 15 segundos tanto ao confirmar a sessão autenticada quanto às RPCs do fluxo ao vivo; listas e botões sempre saem do carregamento quando a rede não responde. Tentar novamente não cria outro vínculo. Ao reabrir o QR, `claimed_by_me` leva diretamente ao estado confirmado, com nome, time e gerenciamento opcional de avatar.
 
 ## Privacidade
 

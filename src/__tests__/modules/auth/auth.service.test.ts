@@ -71,6 +71,7 @@ describe('auth.service — com configuração', () => {
 
   afterEach(() => {
     delete process.env.BASE_URL
+    window.history.replaceState({}, '', '/')
   })
 
   it('signIn repassa erro genérico quando Supabase retorna erro', async () => {
@@ -129,6 +130,50 @@ describe('auth.service — com configuração', () => {
         options: expect.objectContaining({
           emailRedirectTo: expectedRedirect,
         }),
+      }),
+    )
+  })
+
+  it('signUp preserva o convite permanente no retorno da confirmação', async () => {
+    window.history.replaceState({}, '', '/claim?session=550e8400-e29b-41d4-a716-446655440000')
+    mockAuth.signUp.mockResolvedValue({ data: { user: { id: 'uid-1' } }, error: null })
+
+    await signUp('a@b.com', 'password123', 'Test')
+
+    expect(mockAuth.signUp).toHaveBeenCalledWith(
+      expect.objectContaining({
+        options: expect.objectContaining({
+          emailRedirectTo: `${window.location.origin}/claim?session=550e8400-e29b-41d4-a716-446655440000`,
+        }),
+      }),
+    )
+  })
+
+  it('preserva o convite permanente sob o BASE_URL do GitHub Pages', async () => {
+    process.env.BASE_URL = '/trivia/'
+    window.history.replaceState({}, '', '/trivia/claim?session=550e8400-e29b-41d4-a716-446655440000')
+    mockAuth.signUp.mockResolvedValue({ data: { user: { id: 'uid-1' } }, error: null })
+
+    await signUp('a@b.com', 'password123', 'Test')
+
+    expect(mockAuth.signUp).toHaveBeenCalledWith(
+      expect.objectContaining({
+        options: expect.objectContaining({
+          emailRedirectTo: `${window.location.origin}/trivia/claim?session=550e8400-e29b-41d4-a716-446655440000`,
+        }),
+      }),
+    )
+  })
+
+  it('ignora parâmetros de retorno que não sejam tokens de claim válidos', async () => {
+    window.history.replaceState({}, '', '/claim?next=https://example.com&session=invalido')
+    mockAuth.signUp.mockResolvedValue({ data: { user: { id: 'uid-1' } }, error: null })
+
+    await signUp('a@b.com', 'password123', 'Test')
+
+    expect(mockAuth.signUp).toHaveBeenCalledWith(
+      expect.objectContaining({
+        options: expect.objectContaining({ emailRedirectTo: `${window.location.origin}/` }),
       }),
     )
   })

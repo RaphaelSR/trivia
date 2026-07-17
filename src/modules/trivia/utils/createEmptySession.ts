@@ -1,4 +1,5 @@
 import type { TriviaSession } from "../types";
+import { createCompleteSessionId } from '../../game/domain/session-id'
 
 /**
  * Cria uma sessão vazia para o modo offline
@@ -6,7 +7,7 @@ import type { TriviaSession } from "../types";
  */
 export function createEmptySession(copy?: { title?: string; themeName?: string }): TriviaSession {
   return {
-    id: "empty-session",
+    id: createCompleteSessionId(),
     title: copy?.title ?? 'Trivia',
     scheduledAt: new Date().toISOString(),
     theme: {

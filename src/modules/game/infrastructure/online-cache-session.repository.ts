@@ -5,6 +5,7 @@ import type { GameMode } from '../../../shared/types/game'
 import type { TriviaSession } from '../../trivia/types'
 import type { SessionHistoryMetadata, SessionRecord, SessionRepository } from './session.repository'
 import { i18n } from '@/shared/i18n'
+import { isLegacyCompleteSessionId } from '../domain/session-id'
 
 function calculateSessionDuration(createdAt: string): number {
   const created = new Date(createdAt)
@@ -56,7 +57,11 @@ export class OnlineCacheSessionRepository implements SessionRepository {
     const savedActive = storageService.setJson(STORAGE_KEYS.onlineActiveSession, sessionData)
     const savedById = storageService.setJson(STORAGE_KEYS.onlineSessionById(sessionId), sessionData)
 
-    const nextHistory = this.loadSessionHistory().filter((item) => item.id !== sessionId)
+    const replacedLegacyId = current?.metadata.id
+    const shouldRemoveLegacy = isLegacyCompleteSessionId(replacedLegacyId) && replacedLegacyId !== sessionId
+    const nextHistory = this.loadSessionHistory().filter((item) => (
+      item.id !== sessionId && (!shouldRemoveLegacy || item.id !== replacedLegacyId)
+    ))
     nextHistory.unshift(sessionData.metadata)
     const keptHistory = nextHistory.slice(0, MAX_SESSION_HISTORY)
     const savedHistory = storageService.setJson(STORAGE_KEYS.onlineSessionHistory, keptHistory)
@@ -67,6 +72,10 @@ export class OnlineCacheSessionRepository implements SessionRepository {
 
     if (!savedActive || !savedById || !savedHistory) {
       return null
+    }
+
+    if (shouldRemoveLegacy && replacedLegacyId) {
+      storageService.remove(STORAGE_KEYS.onlineSessionById(replacedLegacyId))
     }
 
     return sessionData

@@ -1,7 +1,7 @@
-import { useCallback, useEffect, useMemo, useState, type ReactNode } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import { useGameMode } from '../../../hooks/useGameMode'
 import { useBoardOperations } from '../../game/application/useBoardOperations'
-import { dedupeTileIds, releaseActiveTiles } from '../../game/domain/board.utils'
+import { restorePersistedSession } from '../../game/domain/session'
 import { useScoreOperations } from '../../game/application/useScoreOperations'
 import { useSessionInitialization } from '../../game/application/useSessionInitialization'
 import { useTurnManagement } from '../../game/application/useTurnManagement'
@@ -19,9 +19,16 @@ export function TriviaSessionProvider({ children }: TriviaSessionProviderProps) 
   const { createInitialSession } = useSessionInitialization(gameMode, demoConfig)
   const [session, setSession] = useState<TriviaSession>(() => createInitialSession())
 
+  const initializationKey = gameMode === 'demo'
+    ? `${gameMode}:${demoConfig?.teamCount ?? ''}:${demoConfig?.membersPerTeam ?? ''}:${demoConfig?.questionCount ?? ''}`
+    : gameMode
+  const initializedKeyRef = useRef(initializationKey)
+
   useEffect(() => {
+    if (initializedKeyRef.current === initializationKey) return
+    initializedKeyRef.current = initializationKey
     setSession(createInitialSession())
-  }, [createInitialSession, gameMode])
+  }, [createInitialSession, initializationKey])
 
   const {
     teams,
@@ -58,8 +65,8 @@ export function TriviaSessionProvider({ children }: TriviaSessionProviderProps) 
     // Curas de qualquer sessão que volta do armazenamento (checkpoint,
     // snapshot na nuvem, conflito): ids duplicados e cartas presas em
     // 'active' (o estado "AO VIVO" só faz sentido com o modal aberto).
-    setSession(releaseActiveTiles(dedupeTileIds(sessionToRestore)))
-  }, [])
+    setSession(restorePersistedSession(sessionToRestore, gameMode))
+  }, [gameMode])
 
   const value = useMemo(() => ({
     session,

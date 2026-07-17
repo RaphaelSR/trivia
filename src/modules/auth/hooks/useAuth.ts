@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import type { User } from '@supabase/supabase-js'
 import { isSupabaseConfigured } from '../../../shared/services/supabase.client'
 import { getSession, onAuthStateChange, requestPasswordReset, resendConfirmation, signIn, signOut, signUp } from '../services/auth.service'
@@ -27,6 +27,7 @@ export function useAuth(): AuthState & AuthActions {
 
   const [user, setUser] = useState<User | null>(null)
   const [loading, setLoading] = useState(configured)
+  const participationLinkTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   useEffect(() => {
     if (!configured) return
@@ -50,15 +51,30 @@ export function useAuth(): AuthState & AuthActions {
       if (!cancelled) {
         setUser(session?.user ?? null)
         setLoading(false)
-        // fire-and-forget: auto-vincula quando o estado de auth muda (login, confirmação, etc.)
+        // O Supabase pode deadlockar quando outra chamada assíncrona começa
+        // dentro de onAuthStateChange. Agenda a reconciliação para fora do
+        // callback; o estado de autenticação continua sendo atualizado já.
         if (session?.user) {
-          void linkMyParticipations().catch(() => undefined)
+          if (participationLinkTimerRef.current !== null) {
+            clearTimeout(participationLinkTimerRef.current)
+          }
+          participationLinkTimerRef.current = setTimeout(() => {
+            participationLinkTimerRef.current = null
+            void linkMyParticipations().catch(() => undefined)
+          }, 0)
+        } else if (participationLinkTimerRef.current !== null) {
+          clearTimeout(participationLinkTimerRef.current)
+          participationLinkTimerRef.current = null
         }
       }
     })
 
     return () => {
       cancelled = true
+      if (participationLinkTimerRef.current !== null) {
+        clearTimeout(participationLinkTimerRef.current)
+        participationLinkTimerRef.current = null
+      }
       unsubscribe()
     }
   }, [configured])
