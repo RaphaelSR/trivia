@@ -17,6 +17,7 @@
 - Cada coluna tem tiles de perguntas.
 - Estados válidos de tile: `available`, `active`, `answered`.
 - O jogo termina quando todas as tiles estiverem em `answered`.
+- A sessão que acabou de responder a última tile continua ativa para o fluxo normal de mímica. A proteção de reabertura não interrompe essa transição.
 
 ## Times e participantes
 - Pontuação é agregada no nível do time.
@@ -94,10 +95,19 @@
 - Finalizar novamente a mesma partida sincronizada deve devolver o mesmo jogo normalizado, sem duplicar histórico.
 - Avatar é opcional, pertence à conta e não renomeia o participante dentro de uma partida.
 - Antes do upload, a pessoa pode reposicionar e aproximar a imagem. O arquivo final é WebP 512×512, busca ficar em até 350 KB e nunca ultrapassa 1 MB; a imagem fica no Storage, não em base64 dentro do banco.
-- A origem aceita JPEG, PNG ou WebP de até 5 MB; antes do upload, o navegador recorta ao centro, redimensiona para `512x512` e gera WebP de até 1 MB.
+- A origem aceita JPEG, PNG ou WebP de até 5 MB; antes do upload, o navegador aplica o recorte escolhido, redimensiona para `512x512` e gera WebP de até 1 MB.
 - Troca e remoção preservam o avatar anterior quando a operação não pode ser concluída; falhas de imagem ou rede usam iniciais e não bloqueiam o jogo.
 - O host vê avatar apenas de contas com claim ativo em sua sessão; no histórico, somente dono e participantes vinculados consultam as identidades daquele jogo.
 - `Demo` e partidas completas sem conta usam somente iniciais e não chamam Storage nem RPCs de avatar.
+
+## Partidas finalizadas e reabertura
+
+- Uma partida normalizada em `games` e seu `game_raw_snapshots` são histórico imutável; a interface nunca os transforma novamente na mesma sessão ativa.
+- Ao reabrir uma partida finalizada — no histórico da conta ou em `Partidas salvas` — o usuário escolhe explicitamente entre:
+  - continuar de onde parou, preservando placar, perguntas respondidas, turnos, eventos e mímica;
+  - recomeçar com times, participantes, filmes, perguntas e tema, zerando placar e progresso.
+- As duas escolhas criam um novo `TriviaSession.id`. A partida original, seus claims, QR e chave idempotente permanecem intactos.
+- Antes de tornar a cópia ativa, o estado corrente é salvo como partida local separada. Falha de armazenamento cancela a troca sem alterar o jogo aberto.
 
 ## Roleta de filmes
 - A roleta é independente do trivia atual e não importa filmes do board ou da Biblioteca.

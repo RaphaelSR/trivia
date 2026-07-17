@@ -9,6 +9,9 @@ import { isSupabaseConfigured } from '../../../shared/services/supabase.client'
 import { AuthPanel } from '../../auth/components/AuthPanel'
 import { useAuth } from '../../auth/hooks/useAuth'
 import { useTranslation } from '@/shared/i18n'
+import { useNavigate } from 'react-router-dom'
+import { createSessionRepository } from '@/modules/game/infrastructure/repository.factory'
+import type { TriviaSession } from '@/modules/trivia/types'
 
 type AuthTab = 'signin' | 'signup'
 
@@ -20,6 +23,7 @@ export function LandingPage() {
   const { user } = useAuth()
   const [authOpen, setAuthOpen] = useState(false)
   const [authTab, setAuthTab] = useState<AuthTab>('signin')
+  const navigate = useNavigate()
 
   const displayName =
     (user?.user_metadata as Record<string, string> | undefined)?.display_name ??
@@ -31,6 +35,22 @@ export function LandingPage() {
     setAuthOpen(true)
   }
 
+  function openHistoricalCopy(session: TriviaSession): boolean {
+    // A experiência pública tem um único estilo de partida completa. O ID
+    // interno `offline` continua por compatibilidade; com conta, o dashboard
+    // sincroniza esta nova sessão em background assim que abrir.
+    const saved = createSessionRepository('offline').saveSession(
+      session,
+      'offline',
+      session.title,
+      null,
+    )
+    if (!saved) return false
+    setAuthOpen(false)
+    navigate('/control?mode=offline')
+    return true
+  }
+
   return (
     <GameLayout className="relative flex items-center justify-center">
       {theme === 'brazil' && <BrazilBackground />}
@@ -39,10 +59,14 @@ export function LandingPage() {
       {/* Modal de autenticação */}
       {supabaseEnabled && authOpen && (
         <div
-          className="fixed inset-0 z-30 flex items-center justify-center bg-black/40 backdrop-blur-sm"
+          className="fixed inset-0 z-30 flex items-center justify-center bg-black/40 p-4 backdrop-blur-sm"
           onClick={(e) => { if (e.target === e.currentTarget) setAuthOpen(false) }}
         >
-          <AuthPanel initialTab={authTab} onClose={() => setAuthOpen(false)} />
+          <AuthPanel
+            initialTab={authTab}
+            onClose={() => setAuthOpen(false)}
+            onOpenHistoricalCopy={openHistoricalCopy}
+          />
         </div>
       )}
 

@@ -89,6 +89,7 @@ Mapa funcional do projeto com foco no que existe hoje, no que esta em migracao e
 - `ativo`: reserva opcional por e-mail, atualização de status e desvinculação auditada pelo host
 - `ativo`: QR local sem envio do token para serviços externos
 - `ativo`: finalização normalizada idempotente por conta + `TriviaSession.id`
+- `ativo`: reabertura protegida do histórico e de partidas locais finalizadas; sempre cria uma cópia e pergunta se deve continuar o estado final ou recomeçar a estrutura
 - `ativo`: avatar opcional de perfil com recorte, reposicionamento e zoom; processado localmente para WebP 512×512 leve e exibido no elenco, turnos, placar, claims e histórico compartilhado
 - `ativo`: fallback por iniciais quando não há avatar ou a imagem não carrega; demo e partidas deslogadas não consultam identidades remotas
 - `planejado`: campeonatos e histórico agregado cross-session

@@ -66,6 +66,22 @@ export function useOfflineSession() {
     return sessionData
   }, [currentSession, gameMode, sessionRepository, t, updateSessionHistory])
 
+  /** Salva uma sessão com ciclo de vida novo, sem herdar metadata da ativa. */
+  const saveNewSession = useCallback((session: TriviaSession, sessionName?: string) => {
+    const sessionData = sessionRepository.saveSession(session, gameMode, sessionName, null)
+    if (sessionData) {
+      setCurrentSession(sessionData)
+      updateSessionHistory(sessionData.metadata)
+    } else if (gameMode !== 'demo') {
+      toast.error(t('services.localSave.failed'), {
+        id: 'local-save-failed',
+        description: t('services.localSave.description'),
+        duration: 10000,
+      })
+    }
+    return sessionData
+  }, [gameMode, sessionRepository, t, updateSessionHistory])
+
   const loadSession = useCallback((sessionId: string): TriviaSession | null => {
     return sessionRepository.loadSession(sessionId)
   }, [sessionRepository])
@@ -113,6 +129,7 @@ export function useOfflineSession() {
     currentSession,
     sessionHistory,
     saveSession,
+    saveNewSession,
     loadSession,
     deleteSession,
     clearActiveSession,

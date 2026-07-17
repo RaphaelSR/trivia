@@ -14,7 +14,10 @@ jest.mock('@/shared/services/supabase.client', () => ({
 }))
 
 import { isSupabaseConfigured, getSupabaseClient } from '@/shared/services/supabase.client'
-import { getGameDetail } from '@/modules/auth/services/normalized-history.service'
+import {
+  getGameDetail,
+  getNormalizedGameSnapshot,
+} from '@/modules/auth/services/normalized-history.service'
 
 const mockIsConfigured = isSupabaseConfigured as jest.Mock
 const mockGetClient = getSupabaseClient as jest.Mock
@@ -354,5 +357,45 @@ describe('getGameDetail — com sessão ativa', () => {
     expect(result).not.toBeNull()
     expect(result!.isOwner).toBe(false)
     expect(result!.joinToken).toBeNull()
+  })
+})
+
+describe('getNormalizedGameSnapshot', () => {
+  const snapshot = {
+    id: 'session-original',
+    title: 'Partida finalizada',
+    teams: [],
+    participants: [],
+    board: [],
+    turnSequence: [],
+  }
+
+  beforeEach(() => {
+    jest.clearAllMocks()
+    mockIsConfigured.mockReturnValue(true)
+  })
+
+  it('le o snapshot lossless permitido pela RLS', async () => {
+    const qm = buildSingleQueryMock({ data: { snapshot }, error: null })
+    const from = jest.fn().mockReturnValue(qm)
+    mockGetClient.mockReturnValue({
+      auth: { getSession: jest.fn().mockResolvedValue({ data: { session: { user: { id: OWNER_USER_ID } } } }) },
+      from,
+    })
+
+    await expect(getNormalizedGameSnapshot(GAME_ID)).resolves.toEqual(snapshot)
+    expect(from).toHaveBeenCalledWith('game_raw_snapshots')
+    expect(qm.select).toHaveBeenCalledWith('snapshot')
+    expect(qm.eq).toHaveBeenCalledWith('game_id', GAME_ID)
+  })
+
+  it('falha fechado quando o snapshot nao tem o formato de TriviaSession', async () => {
+    const qm = buildSingleQueryMock({ data: { snapshot: { title: 'incompleto' } }, error: null })
+    mockGetClient.mockReturnValue({
+      auth: { getSession: jest.fn().mockResolvedValue({ data: { session: { user: { id: OWNER_USER_ID } } } }) },
+      from: jest.fn().mockReturnValue(qm),
+    })
+
+    await expect(getNormalizedGameSnapshot(GAME_ID)).resolves.toBeNull()
   })
 })

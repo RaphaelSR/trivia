@@ -62,6 +62,23 @@ describe('LocalSessionRepository', () => {
     expect(repository.loadSessionHistory()).toHaveLength(1)
     expect(repository.loadSession('session-1')?.id).toBe('session-1')
   })
+
+  it('mantem a partida original ao salvar uma copia como novo ciclo de vida', () => {
+    const original = makeSession('session-original')
+    original.title = 'Partida finalizada'
+    repository.saveSession(original, 'offline', original.title)
+
+    const copy = makeSession('session-copy')
+    copy.title = 'Partida finalizada — cópia'
+    repository.saveSession(copy, 'offline', copy.title, null)
+
+    expect(repository.loadActiveSession()?.session.id).toBe('session-copy')
+    expect(repository.loadSession('session-original')?.title).toBe('Partida finalizada')
+    expect(repository.loadSessionHistory().map((entry) => entry.id)).toEqual([
+      'session-copy',
+      'session-original',
+    ])
+  })
 })
 
 describe('LocalSessionRepository — quota e órfãos', () => {

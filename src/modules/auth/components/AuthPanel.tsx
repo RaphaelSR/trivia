@@ -10,6 +10,7 @@ import { isValidEmail } from '@/shared/utils/email'
 import { DeleteGameDialog } from './DeleteGameDialog'
 import { ProfileAvatarEditor } from './ProfileAvatarEditor'
 import { useTranslation } from '@/shared/i18n'
+import type { TriviaSession } from '@/modules/trivia/types'
 
 type Tab = 'signin' | 'signup'
 
@@ -22,6 +23,8 @@ interface AuthPanelProps {
   onClose: () => void
   /** Aba inicial ao abrir o painel (default: 'signin'). */
   initialTab?: Tab
+  /** Abre uma cópia independente de uma partida finalizada. */
+  onOpenHistoricalCopy?: (session: TriviaSession) => boolean | Promise<boolean>
 }
 
 // ---------------------------------------------------------------------------
@@ -33,6 +36,7 @@ interface LoggedInPanelProps {
   loading: boolean
   onLogout: () => Promise<void>
   onClose: () => void
+  onOpenHistoricalCopy?: (session: TriviaSession) => boolean | Promise<boolean>
 }
 
 function formatDate(iso: string, locale: string): string {
@@ -52,7 +56,7 @@ function buildScoreLine(entry: NormalizedGameSummary): string {
   return entry.teams.map((t) => `${t.name} ${t.score}`).join(' × ')
 }
 
-function LoggedInPanel({ user, loading, onLogout, onClose }: LoggedInPanelProps) {
+function LoggedInPanel({ user, loading, onLogout, onClose, onOpenHistoricalCopy }: LoggedInPanelProps) {
   const { t, i18n } = useTranslation(['auth', 'common'])
   const name =
     (user.user_metadata as Record<string, string> | undefined)?.display_name ??
@@ -104,16 +108,17 @@ function LoggedInPanel({ user, loading, onLogout, onClose }: LoggedInPanelProps)
       <GameDetailView
         gameId={selectedGameId}
         onBack={() => setSelectedGameId(null)}
+        onOpenCopy={onOpenHistoricalCopy}
       />
     )
   }
 
   return (
-    <div className="relative w-full max-w-sm rounded-2xl border border-white/10 bg-zinc-900/95 p-6 shadow-2xl backdrop-blur-xl">
+    <div className="relative max-h-[calc(100dvh-2rem)] w-full max-w-sm overflow-y-auto rounded-2xl border border-white/10 bg-zinc-900/95 p-6 shadow-2xl backdrop-blur-xl">
       <button
         aria-label={t('form.close', { ns: 'auth' })}
         onClick={onClose}
-        className="absolute right-4 top-4 text-zinc-400 transition-colors hover:text-zinc-100"
+        className="absolute right-2 top-2 flex h-11 w-11 items-center justify-center rounded-xl text-zinc-400 transition-colors hover:bg-white/5 hover:text-zinc-100"
       >
         <X className="h-4 w-4" />
       </button>
@@ -146,6 +151,9 @@ function LoggedInPanel({ user, loading, onLogout, onClose }: LoggedInPanelProps)
       <section aria-label={t('panel.myGames', { ns: 'auth' })}>
         <p className="mb-3 text-xs font-semibold uppercase tracking-wider text-zinc-400">
           {t('panel.myGames', { ns: 'auth' })}
+        </p>
+        <p className="mb-3 text-[10px] leading-4 text-zinc-500">
+          {t('panel.historyDescription', { ns: 'auth' })}
         </p>
 
         {historyLoading && (
@@ -286,7 +294,7 @@ function ConfirmationPendingPanel({ email, onClose, onResend }: ConfirmationPend
       <button
         aria-label={t('form.close')}
         onClick={onClose}
-        className="absolute right-4 top-4 text-zinc-400 transition-colors hover:text-zinc-100"
+        className="absolute right-2 top-2 flex h-11 w-11 items-center justify-center rounded-xl text-zinc-400 transition-colors hover:bg-white/5 hover:text-zinc-100"
       >
         <X className="h-4 w-4" />
       </button>
@@ -393,7 +401,7 @@ function ForgotPasswordPanel({ initialEmail, onBack, onClose, onRequestReset }: 
       <button
         aria-label={t('form.close')}
         onClick={onClose}
-        className="absolute right-4 top-4 text-zinc-400 transition-colors hover:text-zinc-100"
+        className="absolute right-2 top-2 flex h-11 w-11 items-center justify-center rounded-xl text-zinc-400 transition-colors hover:bg-white/5 hover:text-zinc-100"
       >
         <X className="h-4 w-4" />
       </button>
@@ -456,7 +464,7 @@ function ForgotPasswordPanel({ initialEmail, onBack, onClose, onRequestReset }: 
 // AuthPanel — ponto de entrada público
 // ---------------------------------------------------------------------------
 
-export function AuthPanel({ onClose, initialTab = 'signin' }: AuthPanelProps) {
+export function AuthPanel({ onClose, initialTab = 'signin', onOpenHistoricalCopy }: AuthPanelProps) {
   const { t } = useTranslation('auth')
   const { user, loading, login, register, logout, resend, requestReset } = useAuth()
 
@@ -520,7 +528,15 @@ export function AuthPanel({ onClose, initialTab = 'signin' }: AuthPanelProps) {
   // Se a sessão apareceu (usuário voltou do link de confirmação),
   // o painel de confirmação pendente é descartado automaticamente.
   if (user) {
-    return <LoggedInPanel user={user} loading={loading} onLogout={handleLogout} onClose={onClose} />
+    return (
+      <LoggedInPanel
+        user={user}
+        loading={loading}
+        onLogout={handleLogout}
+        onClose={onClose}
+        onOpenHistoricalCopy={onOpenHistoricalCopy}
+      />
+    )
   }
 
   // Confirmação de e-mail pendente
@@ -552,7 +568,7 @@ export function AuthPanel({ onClose, initialTab = 'signin' }: AuthPanelProps) {
       <button
         aria-label={t('form.close')}
         onClick={onClose}
-        className="absolute right-4 top-4 text-zinc-400 transition-colors hover:text-zinc-100"
+        className="absolute right-2 top-2 flex h-11 w-11 items-center justify-center rounded-xl text-zinc-400 transition-colors hover:bg-white/5 hover:text-zinc-100"
       >
         <X className="h-4 w-4" />
       </button>

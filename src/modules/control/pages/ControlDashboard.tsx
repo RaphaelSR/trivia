@@ -36,7 +36,12 @@ import { Timer } from '@/components/ui/Timer'
 import { STORAGE_KEYS } from '@/shared/constants/storage'
 import { FloatingActionBar } from '@/shared/components/FloatingActionBar'
 import { storageService } from '@/shared/services/storage.service'
-import { countAnsweredTiles, countTotalTiles, releaseActiveTiles } from '@/modules/game/domain/board.utils'
+import {
+  countAnsweredTiles,
+  countTotalTiles,
+  isGameFinished as isFinishedBoard,
+  releaseActiveTiles,
+} from '@/modules/game/domain/board.utils'
 import { planImport } from '@/modules/control/utils/filmExportUtils'
 import { getDefaultTimerForPoints } from '@/modules/game/domain/timer'
 import { buildTurnSequence, getTurnPosition } from '@/modules/game/domain/turn-order'
@@ -74,10 +79,18 @@ import { AuthPanel } from '@/modules/auth/components/AuthPanel'
 import { useLiveParticipantIdentities } from '@/modules/auth/hooks/useLiveParticipantIdentities'
 import { ParticipantAvatar } from '@/shared/components/ParticipantAvatar'
 import { useTranslation } from 'react-i18next'
+import { useNavigate } from 'react-router-dom'
+import { FinishedGameCopyModal } from '@/components/ui/FinishedGameCopyModal'
+import {
+  createFinishedGameCopy,
+  type FinishedGameCopyMode,
+} from '@/modules/game/domain/historical-game-copy'
+import { createSessionRepository } from '@/modules/game/infrastructure/repository.factory'
 // PIN será gerenciado pelo hook usePinManagement
 
 export function ControlDashboard() {
   const { t, i18n } = useTranslation(['control', 'game', 'common'])
+  const navigate = useNavigate()
   const {
     session,
     orderedTeams,
@@ -106,7 +119,7 @@ export function ControlDashboard() {
   const { gameMode, getModeDisplayName } = useGameMode()
   const { user } = useAuth()
   const { verifyPin, saveCustomPin, clearCustomPin, hasCustomPin } = usePinManagement()
-  const { currentSession, saveSession, loadSession, getSessionStatus } = useOfflineSession()
+  const { currentSession, saveSession, saveNewSession, loadSession, getSessionStatus } = useOfflineSession()
   const dashboardState = useControlDashboardState()
   const {
     selectedIds,
@@ -175,6 +188,9 @@ export function ControlDashboard() {
   const [questionRevealed, setQuestionRevealed] = useState(false)
   const [turnPreviewOpen, setTurnPreviewOpen] = useState(false)
   const [accountOpen, setAccountOpen] = useState(false)
+  const [finishedCopyTarget, setFinishedCopyTarget] = useState<TriviaSession | null>(null)
+  const [finishedCopyBusy, setFinishedCopyBusy] = useState(false)
+  const [finishedCopyError, setFinishedCopyError] = useState<string | null>(null)
 
   const getTimerForPoints = (points: number) => {
     if (timerOverrides[points] !== undefined) return timerOverrides[points]
@@ -581,7 +597,72 @@ export function ControlDashboard() {
     setThemeModalOpen(true)
   }
 
+  const openFinishedGameCopy = useCallback((copy: TriviaSession): boolean => {
+    if (gameMode === 'demo') {
+      const savedCopy = createSessionRepository('offline').saveSession(
+        copy,
+        'offline',
+        copy.title,
+        null,
+      )
+      if (!savedCopy) return false
+      setAccountOpen(false)
+      navigate('/control?mode=offline')
+      return true
+    }
+
+    const hasCurrentData =
+      session.board.length > 0 ||
+      session.teams.length > 0 ||
+      session.participants.length > 0 ||
+      (session.mimicaScores?.length ?? 0) > 0 ||
+      (session.eventLog?.length ?? 0) > 0
+
+    // Garante que uma sessão em andamento continua disponível em Partidas
+    // salvas antes da troca. Uma sessão realmente vazia não vira um item
+    // fantasma no histórico apenas porque o usuário abriu uma cópia.
+    if (hasCurrentData) {
+      const preservedCurrent = saveSession(session, session.title)
+      if (!preservedCurrent) return false
+    }
+
+    const savedCopy = saveNewSession(copy, copy.title)
+    if (!savedCopy) return false
+
+    restoreSession(savedCopy.session)
+    setGameEndNotified(isFinishedBoard(savedCopy.session.board))
+    setAccountOpen(false)
+    setSessionManagerOpen(false)
+    setActivePanel('board')
+    toast.success(t('dashboard.notifications.finishedCopyOpened', { title: savedCopy.session.title }))
+    return true
+  }, [gameMode, navigate, restoreSession, saveNewSession, saveSession, session, setActivePanel, setGameEndNotified, setSessionManagerOpen, t])
+
+  const handleFinishedCopyChoice = useCallback((mode: FinishedGameCopyMode) => {
+    if (!finishedCopyTarget || finishedCopyBusy) return
+    setFinishedCopyBusy(true)
+    setFinishedCopyError(null)
+    const copy = createFinishedGameCopy(finishedCopyTarget, mode, {
+      title: t('game:finishedCopy.copySuffix', { title: finishedCopyTarget.title }),
+    })
+    const opened = openFinishedGameCopy(copy)
+    setFinishedCopyBusy(false)
+    if (!opened) {
+      setFinishedCopyError(t('game:finishedCopy.saveError'))
+      return
+    }
+    setFinishedCopyTarget(null)
+  }, [finishedCopyBusy, finishedCopyTarget, openFinishedGameCopy, t])
+
   const handleLoadSession = (sessionId: string) => {
+    const targetSession = loadSession(sessionId)
+    if (targetSession && isFinishedBoard(targetSession.board)) {
+      setFinishedCopyError(null)
+      setFinishedCopyTarget(targetSession)
+      setSessionManagerOpen(false)
+      return
+    }
+
     const hasCurrentData = 
       session.board.length > 0 || 
       orderedTeams.length > 0 || 
@@ -1821,12 +1902,30 @@ export function ControlDashboard() {
       {/* Overlay da conta — mesmo padrão da LandingPage */}
       {isSupabaseConfigured() && accountOpen && (
         <div
-          className="fixed inset-0 z-30 flex items-center justify-center bg-black/40 backdrop-blur-sm"
+          className="fixed inset-0 z-30 flex items-center justify-center bg-black/40 p-4 backdrop-blur-sm"
           onClick={(e) => { if (e.target === e.currentTarget) setAccountOpen(false) }}
         >
-          <AuthPanel onClose={() => setAccountOpen(false)} />
+          <AuthPanel
+            onClose={() => setAccountOpen(false)}
+            onOpenHistoricalCopy={openFinishedGameCopy}
+          />
         </div>
       )}
+
+      {finishedCopyTarget ? (
+        <FinishedGameCopyModal
+          isOpen
+          sourceTitle={finishedCopyTarget.title}
+          busy={finishedCopyBusy}
+          error={finishedCopyError}
+          onClose={() => {
+            if (finishedCopyBusy) return
+            setFinishedCopyTarget(null)
+            setFinishedCopyError(null)
+          }}
+          onChoose={handleFinishedCopyChoice}
+        />
+      ) : null}
     </ControlShell>
     </>
   )

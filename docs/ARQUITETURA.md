@@ -59,6 +59,7 @@
 - Histórico normalizado e claims passam por serviços em `src/modules/auth/services` e Database Functions transacionais.
 - Conta, claim e avatar ficam fora de `TriviaSession` e do domínio de pontuação/turnos.
 - Partidas ao vivo finalizam por uma RPC aditiva idempotente; importações e RPCs históricas mantêm seus contratos.
+- `game_raw_snapshots` preserva o estado lossless das partidas finalizadas. A leitura para reabertura respeita a RLS existente; o domínio gera um novo ID e persiste a cópia pelo repositório normal, sem atualizar nem reativar o histórico original.
 - QR é gerado localmente por `src/shared/components/LocalQrCode.tsx`.
 - Avatares passam por `src/modules/auth/services/profile-avatar.service.ts`: a pessoa ajusta enquadramento e zoom no navegador; o canvas gera WebP 512×512 com alvo de 350 KB e limite rígido de 1 MB. O Storage guarda somente `uid/uuid.webp` — nunca base64 no banco — e RPCs retornam identidade apenas para sessões/jogos compartilhados.
 - A UI usa `ParticipantAvatar` com fallback local por iniciais; somente `demo` não aciona serviços de identidade. Partidas completas deslogadas também permanecem totalmente locais.
