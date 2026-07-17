@@ -31,9 +31,13 @@ jest.mock('@/modules/auth/services/auth.service', () => ({
 }))
 
 jest.mock('@/modules/auth/components/GameDetailView', () => ({
-  GameDetailView: ({ onBack }: { onBack: () => void }) => (
+  GameDetailView: ({ onBack, onOpenCopy }: {
+    onBack: () => void
+    onOpenCopy?: (session: unknown) => void
+  }) => (
     <div>
       <button onClick={onBack}>Voltar</button>
+      {onOpenCopy ? <button onClick={() => onOpenCopy({ id: 'copy' })}>Abrir cópia mock</button> : null}
       <span>GameDetailView</span>
     </div>
   ),
@@ -209,5 +213,19 @@ describe('AuthPanel — seção Minhas partidas (logado)', () => {
     // Lista deve reaparecer
     expect(screen.getByText('Copa Trivia 1')).toBeInTheDocument()
     expect(screen.queryByText('GameDetailView')).not.toBeInTheDocument()
+  })
+
+  it('encaminha a abertura segura da cópia para a tela hospedeira', async () => {
+    const entry = makeEntry({ id: 'e1', title: 'Copa Trivia 1' })
+    const onOpenHistoricalCopy = jest.fn()
+    mockListNormalizedGames.mockResolvedValue([entry])
+
+    await act(async () => {
+      render(<AuthPanel onClose={jest.fn()} onOpenHistoricalCopy={onOpenHistoricalCopy} />)
+    })
+
+    fireEvent.click(screen.getByRole('button', { name: /ver detalhes de copa trivia 1/i }))
+    fireEvent.click(screen.getByRole('button', { name: 'Abrir cópia mock' }))
+    expect(onOpenHistoricalCopy).toHaveBeenCalledWith({ id: 'copy' })
   })
 })

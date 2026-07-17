@@ -314,6 +314,7 @@ export const control = {
       mimicaError: 'Não foi possível adicionar os pontos da mímica.',
       loadingSession: 'Carregando a partida “{{title}}”…',
       sessionLoaded: 'Partida “{{title}}” carregada{{details}}.',
+      finishedCopyOpened: 'Cópia “{{title}}” aberta. A partida finalizada original continua protegida.',
       sessionLoadError: 'Não foi possível carregar a partida.',
       gameReset: 'Partida resetada: {{items}}.',
       gameResetError: 'Não foi possível resetar a partida.',

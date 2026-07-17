@@ -12,8 +12,12 @@
  */
 
 import { useState, useEffect } from 'react'
-import { ArrowLeft, Trophy, Clock, Upload, UserCheck, Link2 } from 'lucide-react'
-import { getGameDetail, buildSessionClaimUrl } from '../services/normalized-history.service'
+import { ArrowLeft, Trophy, Clock, Upload, UserCheck, Link2, CopyPlus, Loader2 } from 'lucide-react'
+import {
+  getGameDetail,
+  getNormalizedGameSnapshot,
+  buildSessionClaimUrl,
+} from '../services/normalized-history.service'
 import type { GameDetail, TimelineEntry } from '../services/normalized-history.service'
 import { InviteShare } from './InviteShare'
 import { ShareChannels } from './ShareChannels'
@@ -23,6 +27,13 @@ import {
   type ParticipantIdentity,
 } from '../services/profile-avatar.service'
 import { useTranslation } from '@/shared/i18n'
+import { Button } from '@/components/ui/Button'
+import { FinishedGameCopyModal } from '@/components/ui/FinishedGameCopyModal'
+import {
+  createFinishedGameCopy,
+  type FinishedGameCopyMode,
+} from '@/modules/game/domain/historical-game-copy'
+import type { TriviaSession } from '@/modules/trivia/types'
 
 // ---------------------------------------------------------------------------
 // Props
@@ -31,6 +42,7 @@ import { useTranslation } from '@/shared/i18n'
 interface GameDetailViewProps {
   gameId: string
   onBack: () => void
+  onOpenCopy?: (session: TriviaSession) => boolean | Promise<boolean>
 }
 
 // ---------------------------------------------------------------------------
@@ -77,12 +89,16 @@ function formatTimeShort(iso: string, locale: string): string {
 // GameDetailView
 // ---------------------------------------------------------------------------
 
-export function GameDetailView({ gameId, onBack }: GameDetailViewProps) {
-  const { t, i18n } = useTranslation(['auth', 'common'])
+export function GameDetailView({ gameId, onBack, onOpenCopy }: GameDetailViewProps) {
+  const { t, i18n } = useTranslation(['auth', 'common', 'game'])
   const [detail, setDetail] = useState<GameDetail | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(false)
   const [identities, setIdentities] = useState<Record<string, ParticipantIdentity>>({})
+  const [copySource, setCopySource] = useState<TriviaSession | null>(null)
+  const [copyLoading, setCopyLoading] = useState(false)
+  const [copyOpening, setCopyOpening] = useState(false)
+  const [copyError, setCopyError] = useState<string | null>(null)
 
   useEffect(() => {
     let cancelled = false
@@ -113,6 +129,40 @@ export function GameDetailView({ gameId, onBack }: GameDetailViewProps) {
     }
   }, [gameId])
 
+  async function handlePrepareCopy() {
+    if (!onOpenCopy || copyLoading) return
+    setCopyLoading(true)
+    setCopyError(null)
+    const snapshot = await getNormalizedGameSnapshot(gameId)
+    setCopyLoading(false)
+    if (!snapshot) {
+      setCopyError(t('finishedCopy.loadError', { ns: 'game' }))
+      return
+    }
+    setCopySource(snapshot)
+  }
+
+  async function handleOpenCopy(mode: FinishedGameCopyMode) {
+    if (!copySource || !onOpenCopy || copyOpening) return
+    setCopyOpening(true)
+    setCopyError(null)
+    const copy = createFinishedGameCopy(copySource, mode, {
+      title: t('finishedCopy.copySuffix', { ns: 'game', title: copySource.title }),
+    })
+    try {
+      const opened = await onOpenCopy(copy)
+      if (!opened) {
+        setCopyError(t('finishedCopy.saveError', { ns: 'game' }))
+        setCopyOpening(false)
+        return
+      }
+      setCopySource(null)
+    } catch {
+      setCopyError(t('finishedCopy.saveError', { ns: 'game' }))
+      setCopyOpening(false)
+    }
+  }
+
   return (
     <div className="flex w-full max-w-sm flex-col rounded-2xl border border-white/10 bg-black/60 shadow-2xl backdrop-blur-xl">
       {/* Header bar */}
@@ -120,7 +170,7 @@ export function GameDetailView({ gameId, onBack }: GameDetailViewProps) {
         <button
           onClick={onBack}
           aria-label={t('actions.back', { ns: 'common' })}
-          className="shrink-0 p-1 -ml-1 text-[var(--color-muted)] transition-colors hover:text-[var(--color-text)]"
+          className="-ml-2 flex h-11 w-11 shrink-0 items-center justify-center rounded-xl text-[var(--color-muted)] transition-colors hover:bg-white/5 hover:text-[var(--color-text)]"
         >
           <ArrowLeft className="h-4 w-4" />
         </button>
@@ -181,6 +231,28 @@ export function GameDetailView({ gameId, onBack }: GameDetailViewProps) {
               {!detail.winner_team_name && detail.teams.length > 0 && (
                 <p className="mt-1 text-xs text-[var(--color-muted)]">{t('gameDetail.tie', { ns: 'auth' })}</p>
               )}
+              {onOpenCopy ? (
+                <div className="mt-3 border-t border-white/10 pt-3">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    disabled={copyLoading}
+                    onClick={() => void handlePrepareCopy()}
+                    className="h-11 w-full"
+                  >
+                    {copyLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <CopyPlus className="h-4 w-4" />}
+                    {copyLoading
+                      ? t('gameDetail.preparingCopy', { ns: 'auth' })
+                      : t('gameDetail.openCopy', { ns: 'auth' })}
+                  </Button>
+                  <p className="mt-2 text-[10px] leading-4 text-[var(--color-muted)]">
+                    {t('gameDetail.openCopyDescription', { ns: 'auth' })}
+                  </p>
+                  {copyError && !copySource ? (
+                    <p role="status" className="mt-2 text-xs text-red-400">{copyError}</p>
+                  ) : null}
+                </div>
+              ) : null}
             </section>
 
             {/* ── Placar dos times ─────────────────────────────────────── */}
@@ -395,6 +467,21 @@ export function GameDetailView({ gameId, onBack }: GameDetailViewProps) {
           </>
         )}
       </div>
+
+      {copySource ? (
+        <FinishedGameCopyModal
+          isOpen
+          sourceTitle={copySource.title}
+          busy={copyOpening}
+          error={copyError}
+          onClose={() => {
+            if (copyOpening) return
+            setCopySource(null)
+            setCopyError(null)
+          }}
+          onChoose={(mode) => void handleOpenCopy(mode)}
+        />
+      ) : null}
     </div>
   )
 }

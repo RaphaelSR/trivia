@@ -13,6 +13,7 @@
 
 jest.mock('@/modules/auth/services/normalized-history.service', () => ({
   getGameDetail: jest.fn(),
+  getNormalizedGameSnapshot: jest.fn(),
   buildClaimUrl: jest.fn((token: string) => `https://example.com/claim?token=${token}`),
   buildSessionClaimUrl: jest.fn(
     (joinToken: string) => `https://example.com/claim?game=${joinToken}`,
@@ -27,10 +28,12 @@ import '@testing-library/jest-dom'
 import { render, screen, fireEvent, act, waitFor } from '@testing-library/react'
 import { GameDetailView } from '@/modules/auth/components/GameDetailView'
 import { getGameDetail } from '@/modules/auth/services/normalized-history.service'
+import { getNormalizedGameSnapshot } from '@/modules/auth/services/normalized-history.service'
 import type { GameDetail } from '@/modules/auth/services/normalized-history.service'
 import { listGameParticipantIdentities } from '@/modules/auth/services/profile-avatar.service'
 
 const mockGetGameDetail = getGameDetail as jest.Mock
+const mockGetSnapshot = getNormalizedGameSnapshot as jest.Mock
 const mockListIdentities = listGameParticipantIdentities as jest.Mock
 
 // ---------------------------------------------------------------------------
@@ -86,6 +89,31 @@ function makeDetail(overrides?: Partial<GameDetail>): GameDetail {
     ],
     ...overrides,
   }
+}
+
+const finishedSnapshot = {
+  id: 'session-original',
+  title: 'Copa Trivia',
+  scheduledAt: '2026-06-12T09:00:00.000Z',
+  theme: {
+    id: 'dark',
+    name: 'Escuro',
+    palette: { background: '#000', primary: '#fff', secondary: '#aaa', accent: '#bbb', surface: '#111' },
+  },
+  teams: [{ id: 'team-a', name: 'Time A', color: '#f00', order: 0, members: ['p1'], score: 100 }],
+  participants: [{ id: 'p1', name: 'Alice', role: 'player' as const, teamId: 'team-a' }],
+  board: [{
+    id: 'film-1',
+    filmId: 'film-1',
+    film: 'Filme 1',
+    tiles: [{ id: 'q1', film: 'Filme 1', points: 100, state: 'answered' as const, question: 'P?', answer: 'R' }],
+  }],
+  activeTeamId: 'team-a',
+  activeParticipantId: 'p1',
+  activeTurnIndex: 0,
+  turnSequence: ['p1'],
+  mimicaScores: [],
+  eventLog: [],
 }
 
 // ---------------------------------------------------------------------------
@@ -197,6 +225,38 @@ describe('GameDetailView — render ok', () => {
     })
     fireEvent.click(screen.getByLabelText(/voltar/i))
     expect(onBack).toHaveBeenCalled()
+  })
+
+  it('protege o histórico e abre uma nova sessão somente após escolher como continuar', async () => {
+    const onOpenCopy = jest.fn().mockResolvedValue(true)
+    mockGetGameDetail.mockResolvedValue(makeDetail())
+    mockGetSnapshot.mockResolvedValue(finishedSnapshot)
+    await act(async () => {
+      render(<GameDetailView gameId="game-1" onBack={jest.fn()} onOpenCopy={onOpenCopy} />)
+    })
+
+    fireEvent.click(screen.getByRole('button', { name: 'Abrir uma cópia' }))
+    expect(await screen.findByRole('heading', { name: 'Como você quer abrir esta partida?' })).toBeInTheDocument()
+    expect(screen.getByText(/original permanecem intactos/i)).toBeInTheDocument()
+
+    fireEvent.click(screen.getByRole('button', { name: /continuar de onde parou/i }))
+    await waitFor(() => expect(onOpenCopy).toHaveBeenCalledTimes(1))
+    expect(onOpenCopy.mock.calls[0][0]).toMatchObject({
+      title: 'Copa Trivia — cópia',
+      board: [{ tiles: [{ state: 'answered' }] }],
+    })
+    expect(onOpenCopy.mock.calls[0][0].id).not.toBe('session-original')
+  })
+
+  it('mostra erro sem alterar nada quando o snapshot integral não está disponível', async () => {
+    mockGetGameDetail.mockResolvedValue(makeDetail())
+    mockGetSnapshot.mockResolvedValue(null)
+    await act(async () => {
+      render(<GameDetailView gameId="game-1" onBack={jest.fn()} onOpenCopy={jest.fn()} />)
+    })
+
+    fireEvent.click(screen.getByRole('button', { name: 'Abrir uma cópia' }))
+    expect(await screen.findByText(/não foi possível preparar uma cópia/i)).toBeInTheDocument()
   })
 })
 

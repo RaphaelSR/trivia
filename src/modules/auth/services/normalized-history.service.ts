@@ -104,6 +104,19 @@ export interface NormalizedGameSummary {
   teams: NormalizedGameSummaryTeam[]
 }
 
+function isTriviaSessionSnapshot(value: unknown): value is TriviaSession {
+  if (!value || typeof value !== 'object') return false
+  const snapshot = value as Partial<TriviaSession>
+  return (
+    typeof snapshot.id === 'string' &&
+    typeof snapshot.title === 'string' &&
+    Array.isArray(snapshot.teams) &&
+    Array.isArray(snapshot.participants) &&
+    Array.isArray(snapshot.board) &&
+    Array.isArray(snapshot.turnSequence)
+  )
+}
+
 // ---------------------------------------------------------------------------
 // Opções do builder
 // ---------------------------------------------------------------------------
@@ -705,6 +718,36 @@ export async function listNormalizedGames(): Promise<NormalizedGameSummary[]> {
       teams: teamsList,
     }
   })
+}
+
+/**
+ * Lê o snapshot lossless de uma partida finalizada.
+ *
+ * A RLS de `game_raw_snapshots` limita a leitura ao dono e aos participantes
+ * vinculados. A função não altera nem reativa a linha arquivada; a UI deve
+ * sempre criar uma nova TriviaSession antes de permitir edições.
+ */
+export async function getNormalizedGameSnapshot(gameId: string): Promise<TriviaSession | null> {
+  if (!gameId.trim() || !isSupabaseConfigured()) return null
+
+  const client = getSupabaseClient()!
+  const {
+    data: { session: authSession },
+  } = await client.auth.getSession()
+  if (!authSession?.user) return null
+
+  try {
+    const { data, error } = await client
+      .from('game_raw_snapshots')
+      .select('snapshot')
+      .eq('game_id', gameId)
+      .single()
+
+    if (error || !isTriviaSessionSnapshot(data?.snapshot)) return null
+    return data.snapshot
+  } catch {
+    return null
+  }
 }
 
 // ---------------------------------------------------------------------------

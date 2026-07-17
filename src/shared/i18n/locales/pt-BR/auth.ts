@@ -17,7 +17,8 @@ export const auth = {
   panel: {
     signOut: 'Sair',
     signingOut: 'Saindo…',
-    myGames: 'Minhas partidas',
+    myGames: 'Histórico da conta',
+    historyDescription: 'Resultados finalizados. Abra uma partida para consultar ou criar uma cópia editável.',
     loadingHistory: 'Carregando…',
     historyError: 'Não foi possível carregar o histórico.',
     historyEmpty: 'Nenhuma partida registrada ainda.',
@@ -59,7 +60,7 @@ export const auth = {
   },
   localImport: {
     sectionLabel: 'Importar partidas deste dispositivo',
-    sectionTitle: 'Partidas neste dispositivo',
+    sectionTitle: 'Importar deste dispositivo',
     allImported: 'Todas as partidas deste dispositivo já foram importadas.',
     participantEmails: 'Informe o e-mail de cada participante para vinculá-lo à própria conta. Este passo é opcional.',
     emailPlaceholder: 'email@opcional.com',
@@ -120,6 +121,9 @@ export const auth = {
     winner: 'Vencedor: {{name}}',
     winnerLabel: 'Vencedor',
     tie: 'Empate',
+    openCopy: 'Abrir uma cópia',
+    preparingCopy: 'Preparando cópia…',
+    openCopyDescription: 'A partida original continua protegida no histórico. Você escolhe se quer continuar do resultado ou recomeçar.',
     scoreboardLabel: 'Placar dos times',
     scoreboard: 'Placar',
     rankingLabel: 'Ranking de participantes',

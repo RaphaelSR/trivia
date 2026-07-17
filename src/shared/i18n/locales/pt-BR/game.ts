@@ -1,4 +1,20 @@
 export const game = {
+  finishedCopy: {
+    title: 'Como você quer abrir esta partida?',
+    description: '“{{title}}” já foi finalizada. Para evitar alterações acidentais, ela será aberta como uma nova sessão.',
+    originalSafe: 'O resultado e os vínculos da partida original permanecem intactos no histórico da conta.',
+    continue: {
+      title: 'Continuar de onde parou',
+      description: 'Mantém placar, perguntas respondidas, turnos e mímica para você corrigir algo ou continuar a noite.',
+    },
+    restart: {
+      title: 'Recomeçar com a mesma estrutura',
+      description: 'Mantém times, participantes, filmes, perguntas e tema, mas zera placar e progresso.',
+    },
+    copySuffix: '{{title}} — cópia',
+    loadError: 'Não foi possível preparar uma cópia desta partida. Tente novamente.',
+    saveError: 'Não foi possível salvar a nova sessão neste dispositivo.',
+  },
   sessionCreation: {
     defaultTitle: 'Partida de {{date}}',
     demoTitle: 'Trivia Demo {{teams}}×{{members}}',
