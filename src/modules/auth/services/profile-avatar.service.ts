@@ -4,7 +4,9 @@ import { i18n } from '@/shared/i18n'
 export const PROFILE_AVATAR_BUCKET = 'profile-avatars'
 export const PROFILE_AVATAR_SOURCE_MAX_BYTES = 5 * 1024 * 1024
 export const PROFILE_AVATAR_OUTPUT_MAX_BYTES = 1024 * 1024
+export const PROFILE_AVATAR_OUTPUT_TARGET_BYTES = 350 * 1024
 export const PROFILE_AVATAR_SIZE = 512
+export const PROFILE_AVATAR_MAX_ZOOM = 3
 
 const ACCEPTED_AVATAR_TYPES = new Set(['image/jpeg', 'image/png', 'image/webp'])
 
@@ -33,6 +35,20 @@ export type AvatarMutationResult = {
   error: string | null
 }
 
+export type AvatarCrop = {
+  /** 1 = maior quadrado central possivel; 3 = aproximacao maxima da UI. */
+  zoom: number
+  /** Ponto focal normalizado na imagem original. */
+  focusX: number
+  focusY: number
+}
+
+export const DEFAULT_AVATAR_CROP: AvatarCrop = {
+  zoom: 1,
+  focusX: 0.5,
+  focusY: 0.5,
+}
+
 export function validateAvatarFile(file: Pick<File, 'type' | 'size'>): string | null {
   if (!ACCEPTED_AVATAR_TYPES.has(file.type)) {
     return i18n.t('auth:services.avatar.invalidType')
@@ -43,13 +59,45 @@ export function validateAvatarFile(file: Pick<File, 'type' | 'size'>): string | 
   return null
 }
 
-export function calculateSquareCrop(width: number, height: number) {
-  const side = Math.min(width, height)
+function clamp(value: number, min: number, max: number) {
+  return Math.min(max, Math.max(min, value))
+}
+
+export function normalizeAvatarCrop(
+  width: number,
+  height: number,
+  crop: AvatarCrop,
+): AvatarCrop {
+  const safeWidth = Math.max(1, width)
+  const safeHeight = Math.max(1, height)
+  const zoom = clamp(Number.isFinite(crop.zoom) ? crop.zoom : 1, 1, PROFILE_AVATAR_MAX_ZOOM)
+  const sourceSize = Math.min(safeWidth, safeHeight) / zoom
+  const halfX = sourceSize / (2 * safeWidth)
+  const halfY = sourceSize / (2 * safeHeight)
+
   return {
-    sourceX: Math.max(0, (width - side) / 2),
-    sourceY: Math.max(0, (height - side) / 2),
+    zoom,
+    focusX: clamp(Number.isFinite(crop.focusX) ? crop.focusX : 0.5, halfX, 1 - halfX),
+    focusY: clamp(Number.isFinite(crop.focusY) ? crop.focusY : 0.5, halfY, 1 - halfY),
+  }
+}
+
+export function calculateAvatarCrop(
+  width: number,
+  height: number,
+  crop: AvatarCrop = DEFAULT_AVATAR_CROP,
+) {
+  const normalized = normalizeAvatarCrop(width, height, crop)
+  const side = Math.min(width, height) / normalized.zoom
+  return {
+    sourceX: normalized.focusX * width - side / 2,
+    sourceY: normalized.focusY * height - side / 2,
     sourceSize: side,
   }
+}
+
+export function calculateSquareCrop(width: number, height: number) {
+  return calculateAvatarCrop(width, height)
 }
 
 async function loadImage(file: File): Promise<{ source: CanvasImageSource; width: number; height: number; cleanup: () => void }> {
@@ -88,8 +136,11 @@ function canvasToWebp(canvas: HTMLCanvasElement, quality: number): Promise<Blob>
   })
 }
 
-/** Recorta ao centro, normaliza para 512x512 e reduz ate caber em 1 MB. */
-export async function prepareAvatarImage(file: File): Promise<Blob> {
+/** Aplica o recorte escolhido, normaliza para 512x512 e gera WebP leve. */
+export async function prepareAvatarImage(
+  file: File,
+  crop: AvatarCrop = DEFAULT_AVATAR_CROP,
+): Promise<Blob> {
   const validationError = validateAvatarFile(file)
   if (validationError) throw new Error(validationError)
 
@@ -102,23 +153,26 @@ export async function prepareAvatarImage(file: File): Promise<Blob> {
     const context = canvas.getContext('2d')
     if (!context) throw new Error(i18n.t('auth:services.avatar.processingFailed'))
 
-    const crop = calculateSquareCrop(image.width, image.height)
+    const cropRect = calculateAvatarCrop(image.width, image.height, crop)
     context.drawImage(
       image.source,
-      crop.sourceX,
-      crop.sourceY,
-      crop.sourceSize,
-      crop.sourceSize,
+      cropRect.sourceX,
+      cropRect.sourceY,
+      cropRect.sourceSize,
+      cropRect.sourceSize,
       0,
       0,
       PROFILE_AVATAR_SIZE,
       PROFILE_AVATAR_SIZE,
     )
 
-    for (const quality of [0.88, 0.78, 0.68, 0.58, 0.48]) {
+    let smallestBlob: Blob | null = null
+    for (const quality of [0.86, 0.78, 0.7, 0.62, 0.54, 0.46]) {
       const blob = await canvasToWebp(canvas, quality)
-      if (blob.size <= PROFILE_AVATAR_OUTPUT_MAX_BYTES) return blob
+      smallestBlob = blob
+      if (blob.size <= PROFILE_AVATAR_OUTPUT_TARGET_BYTES) return blob
     }
+    if (smallestBlob && smallestBlob.size <= PROFILE_AVATAR_OUTPUT_MAX_BYTES) return smallestBlob
     throw new Error(i18n.t('auth:services.avatar.compressedTooLarge'))
   } finally {
     image.cleanup()

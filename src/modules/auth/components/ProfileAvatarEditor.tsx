@@ -4,11 +4,16 @@ import { Button } from '@/components/ui/Button'
 import { ParticipantAvatar } from '@/shared/components/ParticipantAvatar'
 import {
   getMyProfileIdentity,
+  prepareAvatarImage,
   removeProfileAvatar,
-  uploadProfileAvatar,
+  uploadPreparedAvatar,
+  validateAvatarFile,
+  type AvatarCrop,
+  type AvatarMutationResult,
   type ProfileIdentity,
 } from '../services/profile-avatar.service'
 import { useTranslation } from '@/shared/i18n'
+import { AvatarCropModal } from './AvatarCropModal'
 
 type ProfileAvatarEditorProps = {
   name: string
@@ -27,6 +32,8 @@ export function ProfileAvatarEditor({
   const [loading, setLoading] = useState(true)
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [cropFile, setCropFile] = useState<File | null>(null)
+  const [cropError, setCropError] = useState<string | null>(null)
 
   useEffect(() => {
     let cancelled = false
@@ -48,14 +55,52 @@ export function ProfileAvatarEditor({
     onChanged?.(profile)
   }
 
-  async function handleFile(file: File | undefined) {
+  function handleFile(file: File | undefined) {
     if (!file || busy) return
-    setBusy(true)
+    const validationError = validateAvatarFile(file)
+    if (validationError) {
+      setError(validationError)
+      if (inputRef.current) inputRef.current.value = ''
+      return
+    }
     setError(null)
-    const result = await uploadProfileAvatar(file)
+    setCropError(null)
+    setCropFile(file)
+  }
+
+  async function handleCropConfirm(crop: AvatarCrop) {
+    if (!cropFile || busy) return
+    setBusy(true)
+    setCropError(null)
+    let result: AvatarMutationResult
+    try {
+      const prepared = await prepareAvatarImage(cropFile, crop)
+      result = await uploadPreparedAvatar(prepared)
+    } catch (processingError) {
+      setBusy(false)
+      setCropError(
+        processingError instanceof Error
+          ? processingError.message
+          : t('services.avatar.processingFailed', { ns: 'auth' }),
+      )
+      return
+    }
     setBusy(false)
-    if (result.error) setError(result.error)
+    if (result.error) {
+      setCropError(result.error)
+      applyIdentity(result.identity)
+      return
+    }
     applyIdentity(result.identity)
+    setCropFile(null)
+    setCropError(null)
+    if (inputRef.current) inputRef.current.value = ''
+  }
+
+  function handleCropCancel() {
+    if (busy) return
+    setCropFile(null)
+    setCropError(null)
     if (inputRef.current) inputRef.current.value = ''
   }
 
@@ -98,7 +143,7 @@ export function ProfileAvatarEditor({
         accept="image/jpeg,image/png,image/webp"
         className="sr-only"
         aria-label={t('avatar.select', { ns: 'auth' })}
-        onChange={(event) => void handleFile(event.target.files?.[0])}
+        onChange={(event) => handleFile(event.target.files?.[0])}
       />
 
       <div className={claim ? 'mt-3 flex flex-wrap gap-2' : 'flex flex-wrap justify-center gap-2'}>
@@ -131,6 +176,16 @@ export function ProfileAvatarEditor({
       ) : null}
       {!claim ? (
         <p className="text-center text-[10px] text-zinc-500">{t('avatar.formats', { ns: 'auth' })}</p>
+      ) : null}
+
+      {cropFile ? (
+        <AvatarCropModal
+          file={cropFile}
+          busy={busy}
+          error={cropError}
+          onCancel={handleCropCancel}
+          onConfirm={(crop) => void handleCropConfirm(crop)}
+        />
       ) : null}
     </div>
   )

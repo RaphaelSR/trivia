@@ -60,7 +60,7 @@
 - Conta, claim e avatar ficam fora de `TriviaSession` e do domínio de pontuação/turnos.
 - Partidas ao vivo finalizam por uma RPC aditiva idempotente; importações e RPCs históricas mantêm seus contratos.
 - QR é gerado localmente por `src/shared/components/LocalQrCode.tsx`.
-- Avatares passam por `src/modules/auth/services/profile-avatar.service.ts`: o navegador recorta e comprime a imagem, o Storage guarda somente `uid/uuid.webp` e RPCs retornam identidade apenas para sessões/jogos compartilhados.
+- Avatares passam por `src/modules/auth/services/profile-avatar.service.ts`: a pessoa ajusta enquadramento e zoom no navegador; o canvas gera WebP 512×512 com alvo de 350 KB e limite rígido de 1 MB. O Storage guarda somente `uid/uuid.webp` — nunca base64 no banco — e RPCs retornam identidade apenas para sessões/jogos compartilhados.
 - A UI usa `ParticipantAvatar` com fallback local por iniciais; somente `demo` não aciona serviços de identidade. Partidas completas deslogadas também permanecem totalmente locais.
 - Detalhes: [`docs/online/ARQUITETURA-ONLINE.md`](./online/ARQUITETURA-ONLINE.md).
 

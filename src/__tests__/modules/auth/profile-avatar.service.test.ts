@@ -4,9 +4,11 @@ jest.mock('@/shared/services/supabase.client', () => ({
 }))
 
 import {
+  calculateAvatarCrop,
   calculateSquareCrop,
   listLiveParticipantIdentities,
   PROFILE_AVATAR_OUTPUT_MAX_BYTES,
+  PROFILE_AVATAR_OUTPUT_TARGET_BYTES,
   PROFILE_AVATAR_SOURCE_MAX_BYTES,
   prepareAvatarImage,
   removeProfileAvatar,
@@ -70,10 +72,24 @@ it('valida formato/tamanho de origem e calcula crop central', () => {
   expect(calculateSquareCrop(600, 1000)).toEqual({ sourceX: 0, sourceY: 200, sourceSize: 600 })
 })
 
+it('aplica zoom e limita o ponto focal para o recorte nunca sair da imagem', () => {
+  expect(calculateAvatarCrop(1200, 800, {
+    zoom: 2,
+    focusX: 0.75,
+    focusY: 0.25,
+  })).toEqual({ sourceX: 700, sourceY: 0, sourceSize: 400 })
+
+  expect(calculateAvatarCrop(600, 1000, {
+    zoom: 3,
+    focusX: -10,
+    focusY: 10,
+  })).toEqual({ sourceX: 0, sourceY: 800, sourceSize: 200 })
+})
+
 it('recorta 512x512 e reduz qualidade ate o WebP caber em 1 MB', async () => {
   const drawImage = jest.fn()
   const toBlob = jest.fn((callback: BlobCallback, _type?: string, quality?: number) => {
-    const size = (quality ?? 1) > 0.8 ? PROFILE_AVATAR_OUTPUT_MAX_BYTES + 10 : 128
+    const size = (quality ?? 1) > 0.8 ? PROFILE_AVATAR_OUTPUT_TARGET_BYTES + 10 : 128
     callback(new Blob([new Uint8Array(size)], { type: 'image/webp' }))
   })
   const fakeCanvas = {

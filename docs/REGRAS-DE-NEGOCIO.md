@@ -93,6 +93,7 @@
 - Links antigos `/claim?token=` e `/claim?game=` permanecem compatíveis.
 - Finalizar novamente a mesma partida sincronizada deve devolver o mesmo jogo normalizado, sem duplicar histórico.
 - Avatar é opcional, pertence à conta e não renomeia o participante dentro de uma partida.
+- Antes do upload, a pessoa pode reposicionar e aproximar a imagem. O arquivo final é WebP 512×512, busca ficar em até 350 KB e nunca ultrapassa 1 MB; a imagem fica no Storage, não em base64 dentro do banco.
 - A origem aceita JPEG, PNG ou WebP de até 5 MB; antes do upload, o navegador recorta ao centro, redimensiona para `512x512` e gera WebP de até 1 MB.
 - Troca e remoção preservam o avatar anterior quando a operação não pode ser concluída; falhas de imagem ou rede usam iniciais e não bloqueiam o jogo.
 - O host vê avatar apenas de contas com claim ativo em sua sessão; no histórico, somente dono e participantes vinculados consultam as identidades daquele jogo.
