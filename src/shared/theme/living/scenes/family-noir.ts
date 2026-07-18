@@ -53,7 +53,7 @@ const WINDOW = {
 } as const
 
 export const familyNoirRenderer: LivingSceneRenderer = {
-  create({ viewport: initialViewport, random }) {
+  create({ viewport: initialViewport, random, emitAudioEvent = () => undefined }) {
     let viewport = initialViewport
     let blindPhase = random() * TAU
     let lampFlicker = 0
@@ -121,9 +121,11 @@ export const familyNoirRenderer: LivingSceneRenderer = {
         if (nextLampFlicker <= 0) {
           lampFlicker = 1
           nextLampFlicker = 7 + random() * 12
+          emitAudioEvent({ cue: 'lamp-flicker', x: 0.18, intensity: 0.35 })
         }
         if (nextCar <= 0 && carApproach < 0) {
           carApproach = 0
+          emitAudioEvent({ cue: 'vehicle-pass', x: 0.82, intensity: 0.72 })
         }
         if (carApproach >= 0) {
           carApproach += delta * 0.085

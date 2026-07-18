@@ -46,7 +46,7 @@ const MAX_DRONES = 4
 const MAX_DUST = 64
 
 export const wastelandRooftopsRenderer: LivingSceneRenderer = {
-  create({ viewport: initialViewport, random }) {
+  create({ viewport: initialViewport, random, emitAudioEvent = () => undefined }) {
     let viewport = initialViewport
     let stormFlash = 0
     let nextStorm = 4 + random() * 8
@@ -99,11 +99,17 @@ export const wastelandRooftopsRenderer: LivingSceneRenderer = {
           stormFlash = 1
           lightningShape = random() * 40
           nextStorm = 7 + random() * 14
+          emitAudioEvent({
+            cue: 'thunder',
+            x: 0.2 + (lightningShape % 0.6),
+            intensity: 0.86,
+          })
         }
         if (nextFlare <= 0) {
           flare = 1
           flareX = 0.2 + random() * 0.6
           nextFlare = 10 + random() * 12
+          emitAudioEvent({ cue: 'flare', x: flareX, intensity: 0.66 })
         }
 
         const activeRunners = getActiveCount(runners.length, viewport, 2)
@@ -135,6 +141,12 @@ export const wastelandRooftopsRenderer: LivingSceneRenderer = {
           if (drone.scanCooldown <= 0) {
             drone.scan = 1.6 + random() * 1.1
             drone.scanCooldown = 4 + random() * 7
+            emitAudioEvent({
+              cue: 'drone-scan',
+              sourceId: `drone-${drones.indexOf(drone)}`,
+              x: clamp(drone.x),
+              intensity: 0.45,
+            })
           }
         })
 

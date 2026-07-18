@@ -1,5 +1,9 @@
 import { getSceneDensity, seededRandom } from './core'
-import type { LivingSceneDefinition, LivingSceneViewport } from './types'
+import type {
+  LivingSceneAudioEvent,
+  LivingSceneDefinition,
+  LivingSceneViewport,
+} from './types'
 
 export const LIVING_SCENE_FPS = 30
 export const LIVING_SCENE_FIXED_STEP_SECONDS = 1 / LIVING_SCENE_FPS
@@ -37,6 +41,10 @@ export function createLivingSceneViewport(
 export function mountLivingScene(
   canvas: HTMLCanvasElement,
   definition: LivingSceneDefinition,
+  options: {
+    motionMode?: 'full' | 'ambient'
+    onAudioEvent?: (event: LivingSceneAudioEvent) => void
+  } = {},
 ) {
   const canvasContext = canvas.getContext('2d')
   if (!canvasContext) return () => undefined
@@ -45,13 +53,23 @@ export function mountLivingScene(
 
   let reduceMotion = motionQuery.matches
   let viewport = readViewport()
+  let disposed = false
   const scene = definition.renderer.create({
     viewport,
     seed: definition.seed,
     random: seededRandom(definition.seed),
+    emitAudioEvent: (event) => {
+      if (disposed || document.hidden || reduceMotion) return
+      options.onAudioEvent?.({
+        ...event,
+        x: event.x === undefined ? undefined : Math.min(1, Math.max(0, event.x)),
+        intensity: event.intensity === undefined
+          ? undefined
+          : Math.min(1, Math.max(0, event.intensity)),
+      })
+    },
   })
   let frameId = 0
-  let disposed = false
   let lastFrameMs: number | null = null
   let accumulatorSeconds = 0
   let elapsedSeconds = 0
@@ -103,18 +121,22 @@ export function mountLivingScene(
     accumulatorSeconds += deltaSeconds
 
     let updateCount = 0
+    const fixedStep = options.motionMode === 'ambient'
+      ? LIVING_SCENE_FIXED_STEP_SECONDS * 2
+      : LIVING_SCENE_FIXED_STEP_SECONDS
+    const motionScale = options.motionMode === 'ambient' ? 0.58 : 1
     while (
-      accumulatorSeconds >= LIVING_SCENE_FIXED_STEP_SECONDS &&
+      accumulatorSeconds >= fixedStep &&
       updateCount < MAX_UPDATES_PER_FRAME
     ) {
-      scene.update(LIVING_SCENE_FIXED_STEP_SECONDS)
-      elapsedSeconds += LIVING_SCENE_FIXED_STEP_SECONDS
-      accumulatorSeconds -= LIVING_SCENE_FIXED_STEP_SECONDS
+      scene.update(fixedStep * motionScale)
+      elapsedSeconds += fixedStep * motionScale
+      accumulatorSeconds -= fixedStep
       updateCount += 1
     }
 
     if (updateCount === MAX_UPDATES_PER_FRAME) {
-      accumulatorSeconds %= LIVING_SCENE_FIXED_STEP_SECONDS
+      accumulatorSeconds %= fixedStep
     }
     if (updateCount > 0) render()
 

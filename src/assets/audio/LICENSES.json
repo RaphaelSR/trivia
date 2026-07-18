@@ -1,0 +1,60 @@
+{
+  "schemaVersion": 1,
+  "assets": [
+    {
+      "file": "kenney/ui-select-001.ogg",
+      "originalFile": "Audio/select_001.ogg",
+      "pack": "Interface Sounds 1.0",
+      "creator": "Kenney",
+      "source": "https://kenney.nl/assets/interface-sounds",
+      "license": "CC0 1.0 Universal",
+      "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
+      "sha256": "aec0c31ea934a35936ae0d2ab8fac8123c93aa5647f935853a58dbaf90278b7a",
+      "changes": "Renamed only"
+    },
+    {
+      "file": "kenney/ui-click-003.ogg",
+      "originalFile": "Audio/click_003.ogg",
+      "pack": "Interface Sounds 1.0",
+      "creator": "Kenney",
+      "source": "https://kenney.nl/assets/interface-sounds",
+      "license": "CC0 1.0 Universal",
+      "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
+      "sha256": "2fa929138bc3a0f432696588f66eac94b8f6d463905ec8808c6461ce4b054292",
+      "changes": "Renamed only"
+    },
+    {
+      "file": "kenney/laser-small-000.ogg",
+      "originalFile": "Audio/laserSmall_000.ogg",
+      "pack": "Sci-Fi Sounds 1.0",
+      "creator": "Kenney",
+      "source": "https://kenney.nl/assets/sci-fi-sounds",
+      "license": "CC0 1.0 Universal",
+      "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
+      "sha256": "72b589eadd41781257ac859e4f4d030222e623390e4a1a83f6d05329a6e026f1",
+      "changes": "Renamed only"
+    },
+    {
+      "file": "kenney/explosion-crunch-000.ogg",
+      "originalFile": "Audio/explosionCrunch_000.ogg",
+      "pack": "Sci-Fi Sounds 1.0",
+      "creator": "Kenney",
+      "source": "https://kenney.nl/assets/sci-fi-sounds",
+      "license": "CC0 1.0 Universal",
+      "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
+      "sha256": "4b597d658d0ae101f0a030fbeea5fc3a4292ab85f017470a8254a8e7959cbd69",
+      "changes": "Renamed only"
+    },
+    {
+      "file": "kenney/impact-metal-000.ogg",
+      "originalFile": "Audio/impactMetal_000.ogg",
+      "pack": "Sci-Fi Sounds 1.0",
+      "creator": "Kenney",
+      "source": "https://kenney.nl/assets/sci-fi-sounds",
+      "license": "CC0 1.0 Universal",
+      "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
+      "sha256": "956c6612a256aa1a67a2327fffe2454f6b1d82e4c1c2be28fd66916335d5b1d6",
+      "changes": "Renamed only"
+    }
+  ]
+}

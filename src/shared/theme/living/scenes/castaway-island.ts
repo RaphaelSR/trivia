@@ -68,7 +68,7 @@ const ROUTINE_X: Record<CastawayRoutine, number> = {
 }
 
 export const castawayIslandRenderer: LivingSceneRenderer = {
-  create({ viewport: initialViewport, random }) {
+  create({ viewport: initialViewport, random, emitAudioEvent = () => undefined }) {
     let viewport = initialViewport
     let fireBoost = 0
     let nextGust = 3 + random() * 5
@@ -142,6 +142,11 @@ export const castawayIslandRenderer: LivingSceneRenderer = {
         if (nextGust <= 0) {
           fireBoost = 0.55 + random() * 0.45
           nextGust = 6 + random() * 10
+          emitAudioEvent({
+            cue: 'fire-gust',
+            x: 0.282,
+            intensity: fireBoost,
+          })
         }
 
         surf.forEach((band) => {

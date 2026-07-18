@@ -107,6 +107,45 @@ describe('living scene engine', () => {
     unmount()
   })
 
+  it('suprime eventos de áudio em movimento reduzido e depois do descarte', () => {
+    const onAudioEvent = jest.fn()
+    let emitAfterCreate: ((event: { cue: 'laser' }) => void) | undefined
+    const definition: LivingSceneDefinition = {
+      seed: 10,
+      layer: 'full',
+      renderer: {
+        create({ emitAudioEvent }) {
+          emitAfterCreate = emitAudioEvent
+          emitAudioEvent?.({ cue: 'laser' })
+          return {
+            resize() {},
+            update() {},
+            render() {},
+          }
+        },
+      },
+    }
+    const context = {
+      clearRect: jest.fn(),
+      setTransform: jest.fn(),
+    } as unknown as CanvasRenderingContext2D
+    HTMLCanvasElement.prototype.getContext = jest.fn(() => context) as unknown as typeof HTMLCanvasElement.prototype.getContext
+    window.matchMedia = createMatchMedia(true)
+    window.requestAnimationFrame = jest.fn(() => 1)
+    window.cancelAnimationFrame = jest.fn()
+
+    const unmount = mountLivingScene(
+      document.createElement('canvas'),
+      definition,
+      { onAudioEvent },
+    )
+
+    expect(onAudioEvent).not.toHaveBeenCalled()
+    unmount()
+    emitAfterCreate?.({ cue: 'laser' })
+    expect(onAudioEvent).not.toHaveBeenCalled()
+  })
+
   it('cancela o loop quando a aba fica oculta e retoma sem salto de tempo', () => {
     let scheduledFrame: FrameRequestCallback | undefined
     let hidden = false
@@ -139,6 +178,48 @@ describe('living scene engine', () => {
     scheduledFrame?.(9000)
     expect(update).not.toHaveBeenCalled()
 
+    unmount()
+  })
+
+  it('encaminha eventos de áudio uma vez pelo update e normaliza o payload', () => {
+    let scheduledFrame: FrameRequestCallback | undefined
+    const onAudioEvent = jest.fn()
+    const definition: LivingSceneDefinition = {
+      seed: 21,
+      layer: 'full',
+      renderer: {
+        create({ emitAudioEvent }) {
+          return {
+            resize() {},
+            update() {
+              emitAudioEvent?.({ cue: 'laser', x: 1.4, intensity: -0.2 })
+            },
+            render() {},
+          }
+        },
+      },
+    }
+    const context = {
+      clearRect: jest.fn(),
+      setTransform: jest.fn(),
+    } as unknown as CanvasRenderingContext2D
+    HTMLCanvasElement.prototype.getContext = jest.fn(() => context) as unknown as typeof HTMLCanvasElement.prototype.getContext
+    window.matchMedia = createMatchMedia(false)
+    window.requestAnimationFrame = jest.fn((callback) => {
+      scheduledFrame = callback
+      return 33
+    })
+    window.cancelAnimationFrame = jest.fn()
+
+    const unmount = mountLivingScene(
+      document.createElement('canvas'),
+      definition,
+      { onAudioEvent },
+    )
+    scheduledFrame?.(0)
+    scheduledFrame?.(40)
+
+    expect(onAudioEvent).toHaveBeenCalledWith({ cue: 'laser', x: 1, intensity: 0 })
     unmount()
   })
 })

@@ -1,67 +1,143 @@
-/**
- * sound-settings
- *
- * Preferências de som (T9), persistidas no localStorage. Cache em memória para
- * leitura barata na hora de tocar (eventos de som são frequentes, ex. tick).
- *
- * Default: DESLIGADO (opt-in) — assim os modos demo/offline não mudam de
- * comportamento até o usuário ativar os sons na seção "Sons".
- */
+import { STORAGE_KEYS } from '@/shared/constants/storage'
+import { storageService } from './storage.service'
 
-const STORAGE_KEY = 'trivia-sound-settings'
+export type SoundMode = 'off' | 'theme' | 'all'
+export type VisualEffectsMode = 'full' | 'ambient' | 'still'
 
 export interface SoundSettings {
-  /** Liga/desliga global. Default false (opt-in). */
-  enabled: boolean
-  /** Volume 0..1. */
+  version: 2
+  mode: SoundMode
   volume: number
-  /** Sons do cronômetro (tique nos últimos segundos + fim do tempo). */
+  themeVolume: number
+  gameVolume: number
+  ambience: boolean
+  sceneEffects: boolean
+  ui: boolean
   timer: boolean
-  /** Sons de feedback de resposta (acerto / erro-anulação). */
   feedback: boolean
+  roulette: boolean
+  visualEffects: VisualEffectsMode
 }
 
 export const DEFAULT_SOUND_SETTINGS: SoundSettings = {
-  enabled: false,
+  version: 2,
+  mode: 'off',
   volume: 0.7,
+  themeVolume: 0.55,
+  gameVolume: 0.8,
+  ambience: true,
+  sceneEffects: true,
+  ui: true,
   timer: true,
   feedback: true,
+  roulette: true,
+  visualEffects: 'full',
 }
 
+const modes = new Set<SoundMode>(['off', 'theme', 'all'])
+const visualModes = new Set<VisualEffectsMode>(['full', 'ambient', 'still'])
+const listeners = new Set<() => void>()
 let cache: SoundSettings | null = null
+let cachedRaw: string | null | undefined
+let storageListenerAttached = false
 
-function readStorage(): SoundSettings {
-  if (typeof window === 'undefined' || !window.localStorage) return DEFAULT_SOUND_SETTINGS
-  try {
-    const raw = window.localStorage.getItem(STORAGE_KEY)
-    if (!raw) return DEFAULT_SOUND_SETTINGS
-    const parsed = JSON.parse(raw) as Partial<SoundSettings>
-    return {
-      enabled: typeof parsed.enabled === 'boolean' ? parsed.enabled : DEFAULT_SOUND_SETTINGS.enabled,
-      volume: typeof parsed.volume === 'number' ? Math.min(1, Math.max(0, parsed.volume)) : DEFAULT_SOUND_SETTINGS.volume,
-      timer: typeof parsed.timer === 'boolean' ? parsed.timer : DEFAULT_SOUND_SETTINGS.timer,
-      feedback: typeof parsed.feedback === 'boolean' ? parsed.feedback : DEFAULT_SOUND_SETTINGS.feedback,
-    }
-  } catch {
-    return DEFAULT_SOUND_SETTINGS
+function clamp(value: unknown, fallback: number) {
+  return typeof value === 'number' && Number.isFinite(value)
+    ? Math.min(1, Math.max(0, value))
+    : fallback
+}
+
+function boolean(value: unknown, fallback: boolean) {
+  return typeof value === 'boolean' ? value : fallback
+}
+
+function parseSettings(value: unknown): SoundSettings {
+  if (!value || typeof value !== 'object') return DEFAULT_SOUND_SETTINGS
+  const parsed = value as Record<string, unknown>
+  const legacyEnabled = parsed.enabled
+  const mode = modes.has(parsed.mode as SoundMode)
+    ? parsed.mode as SoundMode
+    : legacyEnabled === true
+      ? 'all'
+      : 'off'
+
+  return {
+    version: 2,
+    mode,
+    volume: clamp(parsed.volume, DEFAULT_SOUND_SETTINGS.volume),
+    themeVolume: clamp(parsed.themeVolume, DEFAULT_SOUND_SETTINGS.themeVolume),
+    gameVolume: clamp(parsed.gameVolume, DEFAULT_SOUND_SETTINGS.gameVolume),
+    ambience: boolean(parsed.ambience, DEFAULT_SOUND_SETTINGS.ambience),
+    sceneEffects: boolean(parsed.sceneEffects, DEFAULT_SOUND_SETTINGS.sceneEffects),
+    ui: boolean(parsed.ui, DEFAULT_SOUND_SETTINGS.ui),
+    timer: boolean(parsed.timer, DEFAULT_SOUND_SETTINGS.timer),
+    feedback: boolean(parsed.feedback, DEFAULT_SOUND_SETTINGS.feedback),
+    roulette: boolean(parsed.roulette, DEFAULT_SOUND_SETTINGS.roulette),
+    visualEffects: visualModes.has(parsed.visualEffects as VisualEffectsMode)
+      ? parsed.visualEffects as VisualEffectsMode
+      : DEFAULT_SOUND_SETTINGS.visualEffects,
   }
 }
 
-export function getSoundSettings(): SoundSettings {
-  if (!cache) cache = readStorage()
+function readStorage() {
+  const raw = storageService.get(STORAGE_KEYS.soundSettings)
+  if (cache && raw === cachedRaw) return cache
+  cachedRaw = raw
+  if (!raw) {
+    cache = DEFAULT_SOUND_SETTINGS
+    return cache
+  }
+
+  try {
+    cache = parseSettings(JSON.parse(raw))
+  } catch {
+    cache = DEFAULT_SOUND_SETTINGS
+  }
   return cache
 }
 
+function emitChange() {
+  listeners.forEach((listener) => listener())
+}
+
+function attachStorageListener() {
+  if (storageListenerAttached || typeof window === 'undefined') return
+  storageListenerAttached = true
+  window.addEventListener('storage', (event) => {
+    if (event.key !== null && event.key !== STORAGE_KEYS.soundSettings) return
+    cachedRaw = undefined
+    cache = null
+    emitChange()
+  })
+}
+
+export function getSoundSettings(): SoundSettings {
+  attachStorageListener()
+  return readStorage()
+}
+
 export function setSoundSettings(patch: Partial<SoundSettings>): SoundSettings {
-  const next = { ...getSoundSettings(), ...patch }
-  next.volume = Math.min(1, Math.max(0, next.volume))
+  const next = parseSettings({ ...getSoundSettings(), ...patch, version: 2 })
+  const raw = JSON.stringify(next)
   cache = next
-  if (typeof window !== 'undefined' && window.localStorage) {
-    try {
-      window.localStorage.setItem(STORAGE_KEY, JSON.stringify(next))
-    } catch {
-      /* ignore quota/private-mode errors */
-    }
-  }
+  const persisted = storageService.set(STORAGE_KEYS.soundSettings, raw)
+  cachedRaw = persisted ? raw : storageService.get(STORAGE_KEYS.soundSettings)
+  emitChange()
   return next
+}
+
+export function subscribeSoundSettings(listener: () => void) {
+  attachStorageListener()
+  listeners.add(listener)
+  return () => {
+    listeners.delete(listener)
+  }
+}
+
+export function themeSoundsEnabled(settings = getSoundSettings()) {
+  return settings.mode === 'theme' || settings.mode === 'all'
+}
+
+export function gameSoundsEnabled(settings = getSoundSettings()) {
+  return settings.mode === 'all'
 }

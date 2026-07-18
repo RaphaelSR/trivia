@@ -12,7 +12,7 @@ import {
   Theater,
   Volume2,
 } from 'lucide-react'
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState, type KeyboardEvent } from 'react'
 import { toast } from 'sonner'
 import { Button } from '@/components/ui/Button'
 import { FilmRoulette } from '@/components/ui/FilmRoulette'
@@ -77,7 +77,7 @@ import { ConflictResolutionModal } from '@/components/ui/ConflictResolutionModal
 import { VersionHistoryModal } from '@/components/ui/VersionHistoryModal'
 import { describeMove, listCheckpoints, saveCheckpoint, type SessionCheckpoint } from '@/modules/game/infrastructure/session-checkpoint.service'
 import { listSessionSnapshots, type SessionSnapshot } from '@/modules/game/infrastructure/session-snapshot.service'
-import { SoundSettingsModal } from '@/components/ui/SoundSettingsModal'
+import { SoundSettingsPanel } from '@/components/ui/SoundSettingsModal'
 import { playSound } from '@/shared/services/audio.service'
 import { AuthPanel } from '@/modules/auth/components/AuthPanel'
 import { useLiveParticipantIdentities } from '@/modules/auth/hooks/useLiveParticipantIdentities'
@@ -227,6 +227,30 @@ export function ControlDashboard() {
   const [finishedCopyBusy, setFinishedCopyBusy] = useState(false)
   const [finishedCopyError, setFinishedCopyError] = useState<string | null>(null)
   const [sessionStartupBusy, setSessionStartupBusy] = useState(false)
+  const [themeSettingsTab, setThemeSettingsTab] = useState<'themes' | 'audio'>('themes')
+
+  const handleThemeSettingsTabKeyDown = (event: KeyboardEvent<HTMLButtonElement>) => {
+    const tabs = ['themes', 'audio'] as const
+    const currentIndex = tabs.indexOf(themeSettingsTab)
+    let nextIndex: number | null = null
+    if (event.key === 'ArrowRight' || event.key === 'ArrowDown') {
+      nextIndex = (currentIndex + 1) % tabs.length
+    } else if (event.key === 'ArrowLeft' || event.key === 'ArrowUp') {
+      nextIndex = (currentIndex - 1 + tabs.length) % tabs.length
+    } else if (event.key === 'Home') {
+      nextIndex = 0
+    } else if (event.key === 'End') {
+      nextIndex = tabs.length - 1
+    }
+    if (nextIndex === null) return
+
+    event.preventDefault()
+    const nextTab = tabs[nextIndex]
+    setThemeSettingsTab(nextTab)
+    event.currentTarget.ownerDocument
+      .getElementById(`theme-settings-tab-${nextTab}`)
+      ?.focus()
+  }
 
   const getTimerForPoints = (points: number) => {
     if (timerOverrides[points] !== undefined) return timerOverrides[points]
@@ -448,9 +472,6 @@ export function ControlDashboard() {
     }
   }, [snapshotFailing, t])
 
-  // T9 — configurações de som.
-  const [soundSettingsOpen, setSoundSettingsOpen] = useState(false)
-
   // T4 — histórico de versões (snapshots na nuvem + checkpoints locais por jogada).
   const [versionsOpen, setVersionsOpen] = useState(false)
   const [snapshots, setSnapshots] = useState<SessionSnapshot[]>([])
@@ -638,6 +659,7 @@ export function ControlDashboard() {
 
   const handleOpenTheme = () => {
     setActivePanel('theme')
+    setThemeSettingsTab('themes')
     setThemeModalOpen(true)
   }
 
@@ -1208,7 +1230,7 @@ export function ControlDashboard() {
 
   return (
     <>
-    <ThemeBackground theme={themeMode} />
+    <ThemeBackground theme={themeMode} audioEnabled />
     <ControlShell
       sidebarCollapsed={sidebarCollapsed}
       topbar={
@@ -1349,7 +1371,17 @@ export function ControlDashboard() {
           <Button variant="outline" size="icon" aria-label={t('dashboard.quickActions.scoreboard')} onClick={handleOpenScoreboard}>
             <ClipboardList size={16} />
           </Button>
-          <Button variant="outline" size="icon" aria-label={t('dashboard.quickActions.sound')} title={t('dashboard.quickActions.sound')} onClick={() => setSoundSettingsOpen(true)}>
+          <Button
+            variant="outline"
+            size="icon"
+            aria-label={t('dashboard.quickActions.sound')}
+            title={t('dashboard.quickActions.sound')}
+            onClick={() => {
+              setActivePanel('theme')
+              setThemeSettingsTab('audio')
+              setThemeModalOpen(true)
+            }}
+          >
             <Volume2 size={16} />
           </Button>
           <Button variant="ghost" size="icon" aria-label={t('dashboard.quickActions.help')} onClick={handleOpenInfo}>
@@ -1767,13 +1799,61 @@ export function ControlDashboard() {
         isOpen={themeModalOpen}
         title={t('dashboard.theme.title')}
         description={t('dashboard.theme.description')}
+        size="lg"
         onClose={() => {
           setThemeModalOpen(false)
           setActivePanel('board')
         }}
       >
-        <div className="max-h-[min(68dvh,680px)] overflow-y-auto pr-1">
-          <ThemePicker value={themeMode} onChange={setTheme} />
+        <div className="mb-4 grid grid-cols-2 gap-2 rounded-2xl border border-[var(--color-border)] bg-black/10 p-1" role="tablist" aria-label={t('dashboard.theme.tabsLabel')}>
+          <button
+            id="theme-settings-tab-themes"
+            type="button"
+            role="tab"
+            aria-selected={themeSettingsTab === 'themes'}
+            aria-controls="theme-settings-panel-themes"
+            tabIndex={themeSettingsTab === 'themes' ? 0 : -1}
+            onClick={() => setThemeSettingsTab('themes')}
+            onKeyDown={handleThemeSettingsTabKeyDown}
+            className={`flex items-center justify-center gap-2 rounded-xl px-3 py-2 text-sm font-semibold transition ${themeSettingsTab === 'themes' ? 'bg-[var(--color-primary)] text-white shadow-sm' : 'text-[var(--color-muted)] hover:text-[var(--color-text)]'}`}
+          >
+            <Palette size={16} />
+            {t('dashboard.theme.visualTab')}
+          </button>
+          <button
+            id="theme-settings-tab-audio"
+            type="button"
+            role="tab"
+            aria-selected={themeSettingsTab === 'audio'}
+            aria-controls="theme-settings-panel-audio"
+            tabIndex={themeSettingsTab === 'audio' ? 0 : -1}
+            onClick={() => setThemeSettingsTab('audio')}
+            onKeyDown={handleThemeSettingsTabKeyDown}
+            className={`flex items-center justify-center gap-2 rounded-xl px-3 py-2 text-sm font-semibold transition ${themeSettingsTab === 'audio' ? 'bg-[var(--color-primary)] text-white shadow-sm' : 'text-[var(--color-muted)] hover:text-[var(--color-text)]'}`}
+          >
+            <Volume2 size={16} />
+            {t('dashboard.theme.audioTab')}
+          </button>
+        </div>
+        <div
+          id="theme-settings-panel-themes"
+          role="tabpanel"
+          aria-labelledby="theme-settings-tab-themes"
+          tabIndex={0}
+          hidden={themeSettingsTab !== 'themes'}
+          className="max-h-[min(68dvh,680px)] overflow-y-auto pr-1"
+        >
+          {themeSettingsTab === 'themes' ? <ThemePicker value={themeMode} onChange={setTheme} /> : null}
+        </div>
+        <div
+          id="theme-settings-panel-audio"
+          role="tabpanel"
+          aria-labelledby="theme-settings-tab-audio"
+          tabIndex={0}
+          hidden={themeSettingsTab !== 'audio'}
+          className="max-h-[min(68dvh,680px)] overflow-y-auto pr-1"
+        >
+          {themeSettingsTab === 'audio' ? <SoundSettingsPanel currentTheme={themeMode} /> : null}
         </div>
       </Modal>
 
@@ -1938,11 +2018,6 @@ export function ControlDashboard() {
         checkpoints={checkpoints}
         onRestoreCheckpoint={handleRestoreCheckpoint}
         cloudAvailable={syncEnabled}
-      />
-
-      <SoundSettingsModal
-        isOpen={soundSettingsOpen}
-        onClose={() => setSoundSettingsOpen(false)}
       />
 
       <SessionManager

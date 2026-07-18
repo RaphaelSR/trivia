@@ -64,7 +64,7 @@ export const PIXEL_BOMB_ARENA_SPAWN_CELLS: readonly GridPoint[] = [
 ]
 
 export const pixelBombArenaRenderer: LivingSceneRenderer = {
-  create({ viewport: initialViewport, random }) {
+  create({ viewport: initialViewport, random, emitAudioEvent = () => undefined }) {
     let viewport = initialViewport
     const spawnCells = PIXEL_BOMB_ARENA_SPAWN_CELLS
     const colors = [
@@ -170,6 +170,12 @@ export const pixelBombArenaRenderer: LivingSceneRenderer = {
         }
       })
       blasts.push(blast)
+      emitAudioEvent({
+        cue: 'explosion',
+        sourceId: `bomb-${bomb.column}-${bomb.row}`,
+        x: (bomb.column + 0.5) / COLUMNS,
+        intensity: power === 3 ? 1 : 0.72,
+      })
     }
 
     return {
@@ -200,6 +206,12 @@ export const pixelBombArenaRenderer: LivingSceneRenderer = {
                 fuse: 1.8 + random() * 0.8,
                 color: runner.color,
                 pulse: random() * Math.PI * 2,
+              })
+              emitAudioEvent({
+                cue: 'bomb-place',
+                sourceId: `runner-${runners.indexOf(runner)}`,
+                x: (runner.cell.column + 0.5) / COLUMNS,
+                intensity: 0.55,
               })
             }
             runner.bombTimer = 3.2 + random() * 3.8
