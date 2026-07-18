@@ -58,7 +58,7 @@ const MAX_FIGHTERS = 10
 const MAX_TRAILS = 74
 
 export const starfighterBattleRenderer: LivingSceneRenderer = {
-  create({ viewport: initialViewport, random }) {
+  create({ viewport: initialViewport, random, emitAudioEvent = () => undefined }) {
     let viewport = initialViewport
     let jumpFlash = 0
     let nextReinforcement = 4 + random() * 7
@@ -122,6 +122,12 @@ export const starfighterBattleRenderer: LivingSceneRenderer = {
         life: 1.45,
       })
       fighter.cooldown = 1.1 + random() * 2.4
+      emitAudioEvent({
+        cue: 'laser',
+        sourceId: `fighter-${fighters.indexOf(fighter)}`,
+        x: clamp(fighter.x),
+        intensity: 0.48 + fighter.depth * 0.38,
+      })
     }
 
     return {
@@ -147,10 +153,17 @@ export const starfighterBattleRenderer: LivingSceneRenderer = {
           reinforcement.hitFlash = 0
           jumpFlash = 1
           nextReinforcement = 7 + random() * 11
+          emitAudioEvent({
+            cue: 'jump-in',
+            sourceId: `fighter-${fighters.indexOf(reinforcement)}`,
+            x: reinforcement.fleet === 0 ? 0.05 : 0.95,
+            intensity: 0.76,
+          })
         }
         if (nextBroadside <= 0) {
           broadside = 1
           nextBroadside = 10 + random() * 14
+          emitAudioEvent({ cue: 'broadside', x: 0.5, intensity: 0.82 })
         }
 
         activeFighters.forEach((fighter) => {
@@ -199,6 +212,12 @@ export const starfighterBattleRenderer: LivingSceneRenderer = {
               size: 0.6 + random() * 0.75,
               phase: random() * TAU,
               fleet: target.fleet,
+            })
+            emitAudioEvent({
+              cue: 'impact',
+              sourceId: `fighter-${fighters.indexOf(target)}`,
+              x: clamp(bolt.x),
+              intensity: 0.62 + target.depth * 0.34,
             })
             bolts.splice(index, 1)
           } else if (bolt.life <= 0 || bolt.x < -0.2 || bolt.x > 1.2 || bolt.y < -0.2 || bolt.y > 1.2) {

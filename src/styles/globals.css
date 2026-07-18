@@ -328,6 +328,10 @@
     animation: web-city-foreground-swing 13s cubic-bezier(.45,.02,.55,.98) infinite;
   }
   .web-city-action__swinger svg { display: block; width: 100%; overflow: visible; }
+  [data-web-city-action][data-theme-motion="ambient"] .web-city-action__swinger {
+    animation-duration: 20s;
+    opacity: .72;
+  }
   .web-city-action__web { fill: none; stroke: rgba(242,247,255,.82); stroke-width: 1.4; }
   .web-city-action__hero { stroke-linecap: round; stroke-linejoin: round; }
   .web-city-action__body,
@@ -560,6 +564,15 @@
       opacity: .24;
       transform: translate3d(82vw,5vh,0) rotate(20deg) scale(.8);
     }
+  }
+
+  .theme-scene[data-theme-motion="still"] *,
+  [data-web-city-action][data-theme-motion="still"] * {
+    animation: none !important;
+  }
+
+  .theme-scene[data-theme-motion="ambient"] > canvas {
+    opacity: .82;
   }
 
   .control-shell {

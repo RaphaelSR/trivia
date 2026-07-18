@@ -463,8 +463,9 @@ export const game = {
     uniqueLabel: 'Únicos',
     indicatedLabel: 'Indicaram',
     title: 'Sorteio de filmes',
-    disableSound: 'Desativar som',
-    enableSound: 'Ativar som',
+    disableSound: 'Desativar som da roleta',
+    enableSound: 'Ativar som da roleta',
+    enableAllSounds: 'Ativar todos os sons, incluindo a roleta',
     history: 'Histórico',
   },
   board: {

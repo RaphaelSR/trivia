@@ -7,6 +7,10 @@ jest.mock('@/shared/components/LivingThemeCanvas', () => ({
   LivingThemeCanvas: ({ theme }: { theme: string }) => <canvas data-living-scene={theme} />,
 }))
 
+jest.mock('@/shared/components/ThemeAudioController', () => ({
+  ThemeAudioController: ({ theme }: { theme: string }) => <span data-theme-audio={theme} />,
+}))
+
 describe('ThemeBackground', () => {
   it.each(LIVING_THEME_IDS)('renderiza o cenário decorativo %s fora da interação', (theme) => {
     const { container } = render(<ThemeBackground theme={theme} />)
@@ -20,6 +24,14 @@ describe('ThemeBackground', () => {
   it('não adiciona camada extra para temas que usam somente tokens', () => {
     const { container } = render(<ThemeBackground theme="light" />)
     expect(container).toBeEmptyDOMElement()
+  })
+
+  it('monta o controlador de áudio somente quando o contexto oferece controles', () => {
+    const { container, rerender } = render(<ThemeBackground theme="light" />)
+    expect(container.querySelector('[data-theme-audio]')).not.toBeInTheDocument()
+
+    rerender(<ThemeBackground theme="light" audioEnabled />)
+    expect(container.querySelector('[data-theme-audio="light"]')).toBeInTheDocument()
   })
 
   it('mantém a ação frontal da Teia Urbana decorativa e sem interceptar interação', () => {

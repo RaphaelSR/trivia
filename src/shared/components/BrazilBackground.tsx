@@ -1,4 +1,5 @@
 import { useEffect, useRef } from 'react'
+import type { VisualEffectsMode } from '@/shared/services/sound-settings'
 
 interface Particle {
   x: number
@@ -149,7 +150,7 @@ function drawFlagRibbon(ctx: CanvasRenderingContext2D, width: number, height: nu
   ctx.restore()
 }
 
-export function BrazilBackground() {
+export function BrazilBackground({ motionMode = 'full' }: { motionMode?: VisualEffectsMode }) {
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const particlesRef = useRef<Particle[]>([])
   const animFrameRef = useRef<number>(0)
@@ -161,8 +162,16 @@ export function BrazilBackground() {
     if (!canvasContext) return
     const canvas = canvasElement
     const ctx = canvasContext
+    const motionQuery = window.matchMedia('(prefers-reduced-motion: reduce)')
+    let reduceMotion = motionQuery.matches
+    let lastFrameAt = Number.NEGATIVE_INFINITY
+    let lastVisualTime = 0
 
-    function resize() {
+    function currentMotion() {
+      return reduceMotion ? 'still' : motionMode
+    }
+
+    function resizeCanvas() {
       canvas.width = window.innerWidth
       canvas.height = window.innerHeight
     }
@@ -186,18 +195,19 @@ export function BrazilBackground() {
       })
     }
 
-    resize()
+    resizeCanvas()
     createParticles()
-    window.addEventListener('resize', resize)
 
-    function animate(time: number) {
+    function drawFrame(time: number, advanceScale: number) {
       ctx.clearRect(0, 0, canvas.width, canvas.height)
       drawFlagRibbon(ctx, canvas.width, canvas.height, time)
 
       for (const particle of particlesRef.current) {
-        particle.x += particle.speedX
-        particle.y += particle.speedY + Math.sin(time * 0.001 + particle.x * 0.01) * 0.025
-        particle.rotation += particle.rotationSpeed
+        if (advanceScale > 0) {
+          particle.x += particle.speedX * advanceScale
+          particle.y += (particle.speedY + Math.sin(time * 0.001 + particle.x * 0.01) * 0.025) * advanceScale
+          particle.rotation += particle.rotationSpeed * advanceScale
+        }
 
         if (particle.x > canvas.width + particle.size * 4) {
           particle.x = -particle.size * 4
@@ -210,23 +220,69 @@ export function BrazilBackground() {
         else if (particle.type === 'trophy') drawWorldCupTrophy(ctx, particle)
         else drawStar(ctx, particle)
       }
+    }
+
+    function animate(time: number) {
+      const activeMotion = currentMotion()
+      if (activeMotion === 'still') return
+      if (activeMotion === 'ambient' && time - lastFrameAt < 1000 / 15) {
+        animFrameRef.current = requestAnimationFrame(animate)
+        return
+      }
+      const elapsedMs = Number.isFinite(lastFrameAt)
+        ? Math.max(0, time - lastFrameAt)
+        : 1000 / 60
+      const motionScale = activeMotion === 'ambient' ? 0.58 : 1
+      const advanceScale = Math.min(4, elapsedMs / (1000 / 60)) * motionScale
+      lastFrameAt = time
+      lastVisualTime += elapsedMs * motionScale
+      drawFrame(lastVisualTime, advanceScale)
 
       animFrameRef.current = requestAnimationFrame(animate)
     }
 
-    animFrameRef.current = requestAnimationFrame(animate)
+    function restartAnimation() {
+      cancelAnimationFrame(animFrameRef.current)
+      animFrameRef.current = 0
+      lastFrameAt = Number.NEGATIVE_INFINITY
+      drawFrame(lastVisualTime, 0)
+      if (currentMotion() !== 'still') {
+        animFrameRef.current = requestAnimationFrame(animate)
+      }
+    }
+
+    function handleResize() {
+      resizeCanvas()
+      createParticles()
+      drawFrame(lastVisualTime, 0)
+    }
+
+    function handleMotionChange(event: MediaQueryListEvent) {
+      reduceMotion = event.matches
+      restartAnimation()
+    }
+
+    drawFrame(0, 0)
+    if (currentMotion() !== 'still') {
+      animFrameRef.current = requestAnimationFrame(animate)
+    }
+    window.addEventListener('resize', handleResize)
+    motionQuery.addEventListener('change', handleMotionChange)
 
     return () => {
-      window.removeEventListener('resize', resize)
+      window.removeEventListener('resize', handleResize)
+      motionQuery.removeEventListener('change', handleMotionChange)
       cancelAnimationFrame(animFrameRef.current)
     }
-  }, [])
+  }, [motionMode])
 
   return (
     <canvas
       ref={canvasRef}
       className="pointer-events-none fixed inset-0 z-0"
       style={{ opacity: 0.95 }}
+      data-theme-motion={motionMode}
+      aria-hidden="true"
     />
   )
 }

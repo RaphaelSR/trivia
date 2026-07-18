@@ -38,7 +38,7 @@ const MAX_CARS = 9
 const MAX_RAIN = 54
 
 export const neonGrandPrixRenderer: LivingSceneRenderer = {
-  create({ viewport: initialViewport, random }) {
+  create({ viewport: initialViewport, random, emitAudioEvent = () => undefined }) {
     let viewport = initialViewport
     let raceClock = 0
     let leaderFlash = 0
@@ -103,6 +103,12 @@ export const neonGrandPrixRenderer: LivingSceneRenderer = {
           if (car.boostCooldown <= 0 && car.progress > 0.18 && car.progress < 0.7) {
             car.boost = 0.8 + random() * 0.55
             car.boostCooldown = 5 + random() * 8
+            emitAudioEvent({
+              cue: 'race-boost',
+              sourceId: `car-${index}`,
+              x: clamp(0.5 + car.lane * 0.28),
+              intensity: Math.min(1, car.boost / 1.35),
+            })
           }
 
           const laneForce = (car.targetLane - car.lane) * 2.5
@@ -112,6 +118,12 @@ export const neonGrandPrixRenderer: LivingSceneRenderer = {
           car.progress = wrap(car.progress + delta * (car.speed + (car.boost > 0 ? 0.026 : 0)))
           if (car.progress < previousProgress) {
             car.targetLane = -0.82 + random() * 1.64
+            emitAudioEvent({
+              cue: 'race-lap',
+              sourceId: `car-${index}`,
+              x: clamp(0.5 + car.lane * 0.28),
+              intensity: index === 0 ? 0.8 : 0.5,
+            })
           }
         })
 

@@ -1,4 +1,5 @@
 import type { CSSProperties } from 'react'
+import { useSoundSettings } from '@/hooks/useSoundSettings'
 import type { ThemeMode } from '@/shared/types/game'
 import {
   isFullLivingTheme,
@@ -7,9 +8,11 @@ import {
 import { BrazilBackground } from './BrazilBackground'
 import { EasterBackground } from './EasterBackground'
 import { LivingThemeCanvas } from './LivingThemeCanvas'
+import { ThemeAudioController } from './ThemeAudioController'
 
 type ThemeBackgroundProps = {
   theme: ThemeMode
+  audioEnabled?: boolean
 }
 
 type SceneStyle = CSSProperties & Record<`--${string}`, string | number>
@@ -18,18 +21,26 @@ type SceneStyle = CSSProperties & Record<`--${string}`, string | number>
  * Cenários são puramente decorativos e ficam fora da árvore de interação.
  * Os temas mais simples usam apenas o backdrop definido nos tokens.
  */
-export function ThemeBackground({ theme }: ThemeBackgroundProps) {
-  if (theme === 'brazil') return <BrazilBackground />
-  if (theme === 'easter') return <EasterBackground />
+export function ThemeBackground({ theme, audioEnabled = false }: ThemeBackgroundProps) {
+  const { settings } = useSoundSettings()
+  const audio = audioEnabled ? <ThemeAudioController theme={theme} /> : null
+  if (theme === 'brazil') {
+    return <>{audio}<BrazilBackground motionMode={settings.visualEffects} /></>
+  }
+  if (theme === 'easter') {
+    return <>{audio}<EasterBackground motionMode={settings.visualEffects} /></>
+  }
   const livingTheme = isLivingTheme(theme) ? theme : null
-  if (!livingTheme) return null
+  if (!livingTheme) return audio
 
   return (
     <>
+      {audio}
       <div
         className="theme-scene pointer-events-none fixed inset-0 z-0 overflow-hidden"
         data-theme-scene={theme}
         data-theme-art={isFullLivingTheme(livingTheme) ? 'true' : undefined}
+        data-theme-motion={settings.visualEffects}
         aria-hidden="true"
       >
         {theme === 'world-cup-2026' ? <WorldCupScene /> : null}
@@ -38,7 +49,9 @@ export function ThemeBackground({ theme }: ThemeBackgroundProps) {
         {theme === 'storybook' ? <StorybookScene /> : null}
         <LivingThemeCanvas theme={livingTheme} />
       </div>
-      {theme === 'web-city' ? <WebCityActionOverlay /> : null}
+      {theme === 'web-city' && settings.visualEffects !== 'still'
+        ? <WebCityActionOverlay motionMode={settings.visualEffects} />
+        : null}
     </>
   )
 }
@@ -47,9 +60,9 @@ export function ThemeBackground({ theme }: ThemeBackgroundProps) {
  * A silhueta cruza o primeiro plano para manter a ação legível mesmo sobre os
  * painéis do jogo. É puramente decorativa, não recebe foco nem intercepta input.
  */
-function WebCityActionOverlay() {
+function WebCityActionOverlay({ motionMode }: { motionMode: 'full' | 'ambient' }) {
   return (
-    <div className="web-city-action pointer-events-none fixed inset-0 overflow-hidden" data-web-city-action aria-hidden="true">
+    <div className="web-city-action pointer-events-none fixed inset-0 overflow-hidden" data-web-city-action data-theme-motion={motionMode} aria-hidden="true">
       <span className="web-city-action__swinger">
         <svg viewBox="0 -88 92 212" role="presentation">
           <path className="web-city-action__web" d="M84 -86 Q70 -30 48 20" />

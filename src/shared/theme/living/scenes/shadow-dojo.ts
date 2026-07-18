@@ -23,6 +23,7 @@ type DojoFighter = {
   action: FighterAction
   actionElapsed: number
   actionDuration: number
+  causesImpact: boolean
   phase: number
   primary: string
   glow: string
@@ -45,7 +46,7 @@ const FIGHTER_COLORS = [
 ] as const
 
 export const shadowDojoRenderer: LivingSceneRenderer = {
-  create({ viewport: initialViewport, random }) {
+  create({ viewport: initialViewport, random, emitAudioEvent = () => undefined }) {
     let viewport = initialViewport
     let exchangeTimer = 1.5 + random() * 2
     let lightningTimer = 6 + random() * 8
@@ -59,6 +60,7 @@ export const shadowDojoRenderer: LivingSceneRenderer = {
       action: 'idle',
       actionElapsed: random() * 1.4,
       actionDuration: 1.7 + random(),
+      causesImpact: false,
       phase: random() * TAU,
       primary: FIGHTER_COLORS[index][0],
       glow: FIGHTER_COLORS[index][1],
@@ -83,10 +85,16 @@ export const shadowDojoRenderer: LivingSceneRenderer = {
       depth: 0.2 + random() * 0.8,
     }))
 
-    function setAction(fighter: DojoFighter, action: FighterAction, duration: number) {
+    function setAction(
+      fighter: DojoFighter,
+      action: FighterAction,
+      duration: number,
+      causesImpact = false,
+    ) {
       fighter.action = action
       fighter.actionElapsed = 0
       fighter.actionDuration = duration
+      fighter.causesImpact = causesImpact
     }
 
     function beginExchange() {
@@ -103,15 +111,22 @@ export const shadowDojoRenderer: LivingSceneRenderer = {
       defender.targetX = defender.homeX
 
       if (dramatic > 0.72) {
-        setAction(attacker, 'leap', 1.25)
+        setAction(attacker, 'leap', 1.25, true)
         setAction(defender, 'block', 1.25)
       } else if (dramatic > 0.36) {
-        setAction(attacker, 'strike', 0.95)
+        setAction(attacker, 'strike', 0.95, true)
         setAction(defender, 'block', 0.95)
       } else {
-        setAction(attacker, 'sweep', 1.1)
+        setAction(attacker, 'sweep', 1.1, true)
         setAction(defender, 'leap', 1.1)
       }
+
+      emitAudioEvent({
+        cue: 'combat-strike',
+        sourceId: `fighter-${attackerIndex}`,
+        x: clamp((attacker.x + defender.x) / 2),
+        intensity: 0.55 + dramatic * 0.4,
+      })
 
       if (activeCount > 2) {
         const observer = fighters[2]
@@ -135,15 +150,31 @@ export const shadowDojoRenderer: LivingSceneRenderer = {
         if (lightningTimer <= 0) {
           lightning = 1
           lightningTimer = 8 + random() * 12
+          emitAudioEvent({ cue: 'thunder', x: 0.5, intensity: 0.72 })
         }
 
-        fighters.forEach((fighter) => {
+        fighters.forEach((fighter, index) => {
+          const previousProgress = clamp(fighter.actionElapsed / fighter.actionDuration)
           fighter.actionElapsed += delta
           const actionProgress = clamp(fighter.actionElapsed / fighter.actionDuration)
           const approach = fighter.action === 'strike' || fighter.action === 'sweep' || fighter.action === 'leap'
             ? Math.sin(actionProgress * Math.PI)
             : smoothstep(actionProgress)
           fighter.x = lerp(fighter.x, lerp(fighter.homeX, fighter.targetX, approach), 1 - Math.pow(0.02, delta))
+
+          if (
+            previousProgress < 0.52
+            && actionProgress >= 0.52
+            && fighter.causesImpact
+            && (fighter.action === 'strike' || fighter.action === 'sweep' || fighter.action === 'leap')
+          ) {
+            emitAudioEvent({
+              cue: 'impact',
+              sourceId: `fighter-${index}`,
+              x: clamp(fighter.x),
+              intensity: fighter.action === 'leap' ? 0.82 : 0.68,
+            })
+          }
 
           if (actionProgress >= 1) {
             fighter.targetX = fighter.homeX

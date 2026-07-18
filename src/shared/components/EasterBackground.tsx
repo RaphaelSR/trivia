@@ -1,4 +1,5 @@
 import { useEffect, useRef } from 'react'
+import type { VisualEffectsMode } from '@/shared/services/sound-settings'
 
 interface Particle {
   x: number
@@ -104,7 +105,7 @@ function drawStar(ctx: CanvasRenderingContext2D, p: Particle) {
   ctx.restore()
 }
 
-export function EasterBackground() {
+export function EasterBackground({ motionMode = 'full' }: { motionMode?: VisualEffectsMode }) {
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const particlesRef = useRef<Particle[]>([])
   const animFrameRef = useRef<number>(0)
@@ -114,40 +115,47 @@ export function EasterBackground() {
     if (!canvas) return
     const ctx = canvas.getContext('2d')
     if (!ctx) return
-    const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches
+    const motionQuery = window.matchMedia('(prefers-reduced-motion: reduce)')
+    let reduceMotion = motionQuery.matches
+    let lastFrameAt = Number.NEGATIVE_INFINITY
 
-    function resize() {
+    function currentMotion() {
+      return reduceMotion ? 'still' : motionMode
+    }
+
+    function resizeCanvas() {
       canvas!.width = window.innerWidth
       canvas!.height = window.innerHeight
     }
-    resize()
-    window.addEventListener('resize', resize)
 
-    // create particles
-    const count = Math.min(Math.floor(window.innerWidth / 50), 30)
-    particlesRef.current = Array.from({ length: count }, () => {
-      const types: Particle['type'][] = ['egg', 'egg', 'egg', 'bunny', 'star', 'star']
-      return {
-        x: Math.random() * canvas.width,
-        y: Math.random() * canvas.height,
-        size: 8 + Math.random() * 14,
-        speedY: -(0.15 + Math.random() * 0.35),
-        speedX: (Math.random() - 0.5) * 0.3,
-        rotation: Math.random() * Math.PI * 2,
-        rotationSpeed: (Math.random() - 0.5) * 0.008,
-        type: types[Math.floor(Math.random() * types.length)],
-        color: COLORS[Math.floor(Math.random() * COLORS.length)],
-        opacity: 0.18 + Math.random() * 0.25,
-      }
-    })
+    function createParticles() {
+      const count = Math.min(Math.floor(window.innerWidth / 50), 30)
+      particlesRef.current = Array.from({ length: count }, () => {
+        const types: Particle['type'][] = ['egg', 'egg', 'egg', 'bunny', 'star', 'star']
+        return {
+          x: Math.random() * canvas!.width,
+          y: Math.random() * canvas!.height,
+          size: 8 + Math.random() * 14,
+          speedY: -(0.15 + Math.random() * 0.35),
+          speedX: (Math.random() - 0.5) * 0.3,
+          rotation: Math.random() * Math.PI * 2,
+          rotationSpeed: (Math.random() - 0.5) * 0.008,
+          type: types[Math.floor(Math.random() * types.length)],
+          color: COLORS[Math.floor(Math.random() * COLORS.length)],
+          opacity: 0.18 + Math.random() * 0.25,
+        }
+      })
+    }
 
-    function animate() {
+    function drawFrame(advanceScale: number) {
       ctx!.clearRect(0, 0, canvas!.width, canvas!.height)
 
       for (const p of particlesRef.current) {
-        p.y += p.speedY
-        p.x += p.speedX
-        p.rotation += p.rotationSpeed
+        if (advanceScale > 0) {
+          p.y += p.speedY * advanceScale
+          p.x += p.speedX * advanceScale
+          p.rotation += p.rotationSpeed * advanceScale
+        }
 
         // wrap around
         if (p.y < -p.size * 3) {
@@ -159,24 +167,71 @@ export function EasterBackground() {
         else if (p.type === 'bunny') drawBunny(ctx!, p)
         else drawStar(ctx!, p)
       }
+    }
 
-      if (!reduceMotion) {
+    function animate(time: number) {
+      const activeMotion = currentMotion()
+      if (activeMotion === 'still') return
+      if (activeMotion === 'ambient' && time - lastFrameAt < 1000 / 15) {
+        animFrameRef.current = requestAnimationFrame(animate)
+        return
+      }
+      const elapsedMs = Number.isFinite(lastFrameAt)
+        ? Math.max(0, time - lastFrameAt)
+        : 1000 / 60
+      const motionScale = activeMotion === 'ambient' ? 0.58 : 1
+      const advanceScale = Math.min(4, elapsedMs / (1000 / 60)) * motionScale
+      lastFrameAt = time
+      drawFrame(advanceScale)
+      if (currentMotion() !== 'still') {
         animFrameRef.current = requestAnimationFrame(animate)
       }
     }
-    animate()
+
+    function restartAnimation() {
+      cancelAnimationFrame(animFrameRef.current)
+      animFrameRef.current = 0
+      lastFrameAt = Number.NEGATIVE_INFINITY
+      drawFrame(0)
+      if (currentMotion() !== 'still') {
+        animFrameRef.current = requestAnimationFrame(animate)
+      }
+    }
+
+    function handleResize() {
+      resizeCanvas()
+      createParticles()
+      drawFrame(0)
+    }
+
+    function handleMotionChange(event: MediaQueryListEvent) {
+      reduceMotion = event.matches
+      restartAnimation()
+    }
+
+    resizeCanvas()
+    createParticles()
+    drawFrame(0)
+    if (currentMotion() !== 'still') {
+      animFrameRef.current = requestAnimationFrame(animate)
+    }
+    window.addEventListener('resize', handleResize)
+    motionQuery.addEventListener('change', handleMotionChange)
 
     return () => {
-      window.removeEventListener('resize', resize)
+      window.removeEventListener('resize', handleResize)
+      motionQuery.removeEventListener('change', handleMotionChange)
       cancelAnimationFrame(animFrameRef.current)
     }
-  }, [])
+  }, [motionMode])
 
   return (
     <canvas
       ref={canvasRef}
       className="pointer-events-none fixed inset-0 z-0"
       style={{ opacity: 0.9 }}
+      data-theme-motion={motionMode}
+      aria-hidden="true"
     />
   )
 }

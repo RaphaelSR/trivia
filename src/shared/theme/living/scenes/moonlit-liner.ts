@@ -51,7 +51,7 @@ const MAX_ICE_FLOES = 9
 const MAX_GLINTS = 34
 
 export const moonlitLinerRenderer: LivingSceneRenderer = {
-  create({ viewport: initialViewport, random }) {
+  create({ viewport: initialViewport, random, emitAudioEvent = () => undefined }) {
     let viewport = initialViewport
     let deckGlow = 0
     let nextDeckGlow = 4 + random() * 6
@@ -116,12 +116,18 @@ export const moonlitLinerRenderer: LivingSceneRenderer = {
         if (nextDeckGlow <= 0) {
           deckGlow = 1
           nextDeckGlow = 9 + random() * 13
+          emitAudioEvent({ cue: 'deck-swell', x: 0.47, intensity: 0.42 })
         }
         if (nextIceSpark <= 0) {
           iceSpark = 1
           iceSparkX = 0.7 + random() * 0.22
           iceSparkY = 0.62 + random() * 0.22
           nextIceSpark = 7 + random() * 12
+          emitAudioEvent({
+            cue: 'ice-crack',
+            x: iceSparkX,
+            intensity: 0.48,
+          })
         }
 
         waves.forEach((wave) => {

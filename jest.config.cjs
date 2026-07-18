@@ -6,6 +6,7 @@ module.exports = {
     // vite-env.ts usa import.meta.env (sintaxe Vite, inválida em CJS);
     // nos testes ele é trocado pelo stub que lê process.env.
     'vite-env$': '<rootDir>/src/shared/services/vite-env.jest.ts',
+    '\\.(ogg|mp3|wav)(\\?url)?$': '<rootDir>/src/__tests__/assetMock.js',
     '^@/(.*)$': '<rootDir>/src/$1',
     '\\.(css|less|scss|sass)$': 'identity-obj-proxy',
   },

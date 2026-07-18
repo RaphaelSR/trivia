@@ -44,11 +44,12 @@ const MAX_LANTERNS = 42
 const MAX_MOTES = 36
 
 export const enchantedKingdomRenderer: LivingSceneRenderer = {
-  create({ viewport: initialViewport, random }) {
+  create({ viewport: initialViewport, random, emitAudioEvent = () => undefined }) {
     let viewport = initialViewport
     let spell = 0
     let nextSpell = 2.5 + random() * 5
     let comet = -1
+    let cometAudioPlayed = false
     let nextComet = 6 + random() * 9
     let procession = random()
 
@@ -93,13 +94,20 @@ export const enchantedKingdomRenderer: LivingSceneRenderer = {
         if (nextSpell <= 0) {
           spell = 1
           nextSpell = 7 + random() * 10
+          emitAudioEvent({ cue: 'magic', x: 0.72, intensity: 0.72 })
         }
         if (nextComet <= 0 && comet < 0) {
           comet = 0
+          cometAudioPlayed = false
           nextComet = 10 + random() * 14
         }
         if (comet >= 0) {
+          const previousComet = comet
           comet += delta * 0.22
+          if (!cometAudioPlayed && previousComet < 0.19 && comet >= 0.19) {
+            cometAudioPlayed = true
+            emitAudioEvent({ cue: 'flyby', x: 0.95, intensity: 0.58 })
+          }
           if (comet > 1.25) comet = -1
         }
 

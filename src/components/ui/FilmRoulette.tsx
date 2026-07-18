@@ -1,6 +1,6 @@
 import { ChevronLeft, Film, History, Minus, Plus, RotateCcw, Shuffle, Users, Volume2, VolumeX, X } from 'lucide-react'
 import { createPortal } from 'react-dom'
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { Button } from './Button'
 import { MultiSelectField } from './MultiSelectField'
 import { RouletteFilmPicker, type RouletteFilm } from './RouletteFilmPicker'
@@ -11,6 +11,8 @@ import { getStreamingPlatformInfo, getFilmGenreInfo, type CustomFilm } from '../
 import type { TriviaParticipant, TriviaTeam } from '../../modules/trivia/types'
 import { drawUniqueFilms, type RouletteResult as DrawRouletteResult } from '../../modules/trivia/utils/drawUniqueFilms'
 import { useTranslation } from '@/shared/i18n'
+import { useSoundSettings } from '@/hooks/useSoundSettings'
+import { playSound, unlockAudio } from '@/shared/services/audio.service'
 
 type FilmRouletteProps = {
   isOpen: boolean
@@ -51,46 +53,9 @@ const SEGMENT_COLORS = [
   '#a855f7', '#84cc16', '#e11d48', '#0ea5e9', '#d946ef',
 ]
 
-function createAudioContext() {
-  try {
-    return new (window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext)()
-  } catch {
-    return null
-  }
-}
-
-function playTick(ctx: AudioContext, volume: number) {
-  const osc = ctx.createOscillator()
-  const gain = ctx.createGain()
-  osc.connect(gain)
-  gain.connect(ctx.destination)
-  osc.frequency.value = 800 + Math.random() * 400
-  osc.type = 'sine'
-  gain.gain.setValueAtTime(volume * 0.08, ctx.currentTime)
-  gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.05)
-  osc.start(ctx.currentTime)
-  osc.stop(ctx.currentTime + 0.05)
-}
-
-function playVictory(ctx: AudioContext) {
-  const notes = [523, 659, 784, 1047] // C5, E5, G5, C6
-  notes.forEach((freq, i) => {
-    const osc = ctx.createOscillator()
-    const gain = ctx.createGain()
-    osc.connect(gain)
-    gain.connect(ctx.destination)
-    osc.frequency.value = freq
-    osc.type = 'sine'
-    const t = ctx.currentTime + i * 0.12
-    gain.gain.setValueAtTime(0.12, t)
-    gain.gain.exponentialRampToValueAtTime(0.001, t + 0.3)
-    osc.start(t)
-    osc.stop(t + 0.3)
-  })
-}
-
 export function FilmRoulette({ isOpen, onClose, teams, participants }: FilmRouletteProps) {
   const { t, i18n } = useTranslation(['game', 'common'])
+  const { settings: soundSettings, update: updateSoundSettings } = useSoundSettings()
   const locale = i18n.resolvedLanguage ?? i18n.language
   const [config, setConfig] = useState<RouletteConfig>({ maxFilms: 5, allowMultiplePerPerson: false })
   const [selectedParticipants, setSelectedParticipants] = useState<SelectedParticipant[]>([])
@@ -101,18 +66,17 @@ export function FilmRoulette({ isOpen, onClose, teams, participants }: FilmRoule
   const [showHistory, setShowHistory] = useState(false)
   const [currentStep, setCurrentStep] = useState<Step>('films')
   const [revealedResults, setRevealedResults] = useState<number>(0)
-  const [soundEnabled, setSoundEnabled] = useState(true)
   const [pointerBounce, setPointerBounce] = useState(false)
   const animationRef = useRef<number>(0)
-  const audioCtxRef = useRef<AudioContext | null>(null)
   const lastSegmentRef = useRef<number>(-1)
   const wheelRef = useRef<SVGSVGElement>(null)
   const rotationRef = useRef(0)
-
-  const getAudioCtx = useCallback(() => {
-    if (!audioCtxRef.current) audioCtxRef.current = createAudioContext()
-    return audioCtxRef.current
-  }, [])
+  const rouletteSoundEnabled = soundSettings.mode === 'all' && soundSettings.roulette
+  const rouletteSoundLabel = rouletteSoundEnabled
+    ? t('roulette.disableSound', { ns: 'game' })
+    : soundSettings.mode === 'all'
+      ? t('roulette.enableSound', { ns: 'game' })
+      : t('roulette.enableAllSounds', { ns: 'game' })
 
   useEffect(() => {
     if (isOpen) {
@@ -168,7 +132,7 @@ export function FilmRoulette({ isOpen, onClose, teams, participants }: FilmRoule
     setIsSpinning(true)
     lastSegmentRef.current = -1
 
-    const ctx = soundEnabled ? getAudioCtx() : null
+    if (rouletteSoundEnabled) void unlockAudio()
     const filmCount = getSelectedFilmsCount()
     const spinDuration = 5000
     const startTime = performance.now()
@@ -189,13 +153,12 @@ export function FilmRoulette({ isOpen, onClose, teams, participants }: FilmRoule
       rotationRef.current = currentRotation
 
       // Tick sound on each segment crossing
-      if (ctx && filmCount > 0) {
+      if (rouletteSoundEnabled && filmCount > 0) {
         const normalizedAngle = ((currentRotation % 360) + 360) % 360
         const currentSegment = Math.floor(normalizedAngle / (360 / filmCount))
         if (currentSegment !== lastSegmentRef.current) {
           lastSegmentRef.current = currentSegment
-          const volume = Math.max(0.3, 1 - progress * 0.7)
-          playTick(ctx, volume)
+          playSound('rouletteTick')
           setPointerBounce(true)
           setTimeout(() => setPointerBounce(false), 80)
         }
@@ -240,7 +203,7 @@ export function FilmRoulette({ isOpen, onClose, teams, participants }: FilmRoule
       saveToHistory(newResults)
 
       // Victory sound
-      if (ctx) playVictory(ctx)
+      if (rouletteSoundEnabled) playSound('rouletteVictory')
 
       // Reveal results one by one
       newResults.forEach((_, i) => {
@@ -713,11 +676,18 @@ export function FilmRoulette({ isOpen, onClose, teams, participants }: FilmRoule
           <div className="flex items-center gap-1">
             <button
               type="button"
-              onClick={() => setSoundEnabled(v => !v)}
+              onClick={() => {
+                updateSoundSettings(rouletteSoundEnabled
+                  ? { roulette: false }
+                  : { mode: 'all', roulette: true })
+                if (!rouletteSoundEnabled) void unlockAudio()
+              }}
               className="rounded-lg p-1.5 text-[var(--color-muted)] transition-colors hover:bg-[var(--color-border)]/40 hover:text-[var(--color-text)]"
-              title={soundEnabled ? t('roulette.disableSound', { ns: 'game' }) : t('roulette.enableSound', { ns: 'game' })}
+              title={rouletteSoundLabel}
+              aria-label={rouletteSoundLabel}
+              aria-pressed={rouletteSoundEnabled}
             >
-              {soundEnabled ? <Volume2 size={16} /> : <VolumeX size={16} />}
+              {rouletteSoundEnabled ? <Volume2 size={16} /> : <VolumeX size={16} />}
             </button>
             <button
               type="button"

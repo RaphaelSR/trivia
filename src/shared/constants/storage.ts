@@ -3,6 +3,7 @@ import type { GameMode } from '../types/game'
 export const STORAGE_KEYS = {
   language: 'trivia-language',
   themeMode: 'trivia-theme-mode',
+  soundSettings: 'trivia-sound-settings',
   onboardingSeen: 'trivia-onboarding-seen',
   customFilms: 'trivia-custom-films',
   rouletteHistory: 'trivia-roulette-history',

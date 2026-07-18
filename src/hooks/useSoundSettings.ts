@@ -1,19 +1,21 @@
-import { useCallback, useState } from 'react'
+import { useCallback, useSyncExternalStore } from 'react'
 import {
+  DEFAULT_SOUND_SETTINGS,
   getSoundSettings,
   setSoundSettings,
+  subscribeSoundSettings,
   type SoundSettings,
-} from '../shared/services/sound-settings'
+} from '@/shared/services/sound-settings'
 
-/**
- * Lê/atualiza as preferências de som (T9). A fonte é o módulo sound-settings
- * (localStorage + cache); este hook mantém um espelho em estado para a UI.
- */
 export function useSoundSettings() {
-  const [settings, setSettings] = useState<SoundSettings>(() => getSoundSettings())
+  const settings = useSyncExternalStore(
+    subscribeSoundSettings,
+    getSoundSettings,
+    () => DEFAULT_SOUND_SETTINGS,
+  )
 
   const update = useCallback((patch: Partial<SoundSettings>) => {
-    setSettings(setSoundSettings(patch))
+    setSoundSettings(patch)
   }, [])
 
   return { settings, update }

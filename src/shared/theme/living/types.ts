@@ -39,10 +39,40 @@ export type LivingSceneViewport = {
   density: number
 }
 
+export type SceneAudioCue =
+  | 'race-boost'
+  | 'race-lap'
+  | 'bomb-place'
+  | 'explosion'
+  | 'combat-strike'
+  | 'thunder'
+  | 'drone-scan'
+  | 'flare'
+  | 'magic'
+  | 'flyby'
+  | 'laser'
+  | 'impact'
+  | 'jump-in'
+  | 'broadside'
+  | 'deck-swell'
+  | 'ice-crack'
+  | 'ocean-accent'
+  | 'fire-gust'
+  | 'vehicle-pass'
+  | 'lamp-flicker'
+
+export type LivingSceneAudioEvent = {
+  cue: SceneAudioCue
+  sourceId?: string
+  x?: number
+  intensity?: number
+}
+
 export type LivingSceneInit = {
   viewport: LivingSceneViewport
   seed: number
   random: () => number
+  emitAudioEvent?: (event: LivingSceneAudioEvent) => void
 }
 
 /**
