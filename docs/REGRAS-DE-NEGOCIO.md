@@ -11,6 +11,12 @@
 - Uma sessão contém: metadados, tema, times, participantes, board, turno ativo e histórico de mímica.
 - A partida completa ativa pode ser restaurada do armazenamento local, independentemente de login.
 - O histórico mantém no máximo 20 sessões salvas.
+- Ao entrar em uma partida completa que possua estado salvo, o host escolhe explicitamente entre continuar uma sessão existente ou começar uma partida realmente nova. Nenhuma origem substitui outra antes dessa decisão.
+- Cada partida nova recebe um `TriviaSession.id` exclusivo. Criar uma partida não reseta nem reaproveita o ID da anterior; o estado anterior permanece como sessão salva.
+- Dispositivo e nuvem só representam versões comparáveis quando possuem o mesmo `TriviaSession.id`. IDs diferentes são partidas distintas e nunca são mesclados nem escolhidos por data automaticamente.
+- Para o mesmo ID, um `eventLog` que contém integralmente o outro é a versão mais avançada. Históricos divergentes exigem escolha humana; timestamp é contexto, não autorização para descartar progresso.
+- O seletor de entrada informa origem, atualização, perguntas respondidas, placar, times e última ação legível. Sessões locais e remotas arquivadas continuam disponíveis para retomada.
+- Se a listagem da nuvem falhar, o jogo local permanece intacto e a interface oferece nova tentativa. A falha não autoriza sobrescrever a nuvem nem oculta a incerteza.
 
 ## Board
 - O board é formado por colunas de filmes.

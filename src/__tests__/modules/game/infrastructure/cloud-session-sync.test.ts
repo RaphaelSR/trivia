@@ -282,6 +282,54 @@ describe('CloudSessionSync — debounce / coalescing', () => {
   })
 })
 
+describe('CloudSessionSync — troca atomica por RPC', () => {
+  let sync: CloudSessionSync
+
+  beforeEach(() => {
+    jest.useFakeTimers()
+    jest.clearAllMocks()
+    mockIsConfigured.mockReturnValue(true)
+  })
+
+  afterEach(() => {
+    sync.dispose()
+    jest.useRealTimers()
+  })
+
+  it('prefere a RPC de ciclo de vida e envia a identidade completa da sessão', async () => {
+    const rpc = jest.fn().mockResolvedValue({ data: 'row-id', error: null })
+    const from = jest.fn()
+    mockGetClient.mockReturnValue({ auth: buildAuthMock(), rpc, from })
+    sync = createCloudSessionSync()
+    const latest = makeSession({ id: 'new-session', title: 'Nova noite' })
+
+    sync.pushSnapshot(latest, { title: 'Nova noite' })
+    await sync.flushNow()
+
+    expect(rpc).toHaveBeenCalledWith('save_online_session_snapshot', {
+      p_session: latest,
+      p_title: 'Nova noite',
+      p_mode: 'cloud',
+    })
+    expect(from).not.toHaveBeenCalled()
+    expect(sync.hasPendingSync()).toBe(false)
+  })
+
+  it('mantém o snapshot pendente se a RPC/migration falhar e não sobrescreve via fallback', async () => {
+    const rpc = jest.fn().mockResolvedValue({ data: null, error: { message: 'function missing' } })
+    const from = jest.fn()
+    mockGetClient.mockReturnValue({ auth: buildAuthMock(), rpc, from })
+    sync = createCloudSessionSync()
+
+    sync.pushSnapshot(makeSession({ id: 'safe-local' }))
+    await sync.flushNow()
+
+    expect(sync.hasPendingSync()).toBe(true)
+    expect(sync.getStatus()).toBe('pending')
+    expect(from).not.toHaveBeenCalled()
+  })
+})
+
 // ── Suite 4: Resilience — network failures ────────────────────────────────────
 
 describe('CloudSessionSync — resilience / retry on network failure', () => {
@@ -584,6 +632,18 @@ describe('CloudSessionSync — reconcile', () => {
     mockGetClient.mockReturnValue({ auth: buildNoAuthMock(), from: jest.fn() })
     const r = await sync.reconcile(new Date().toISOString())
     expect(r.action).toBe('none')
+  })
+
+  it('nunca escolhe automaticamente entre partidas com IDs diferentes', async () => {
+    const cloudSession = makeSession({ id: 'old-cloud-game' })
+    const cloudAt = new Date(Date.now() + 60_000).toISOString()
+    const localAt = new Date(Date.now() - 60_000).toISOString()
+    mockGetClient.mockReturnValue({ auth: buildAuthMock(), from: buildCloudMock(cloudSession, cloudAt) })
+
+    const r = await sync.reconcile(localAt, makeSession({ id: 'brand-new-local-game' }))
+
+    expect(r.action).toBe('conflict')
+    expect(r.cloudSession?.id).toBe('old-cloud-game')
   })
 
   // ── Detecção de conflito (T7) — progresso = nº de cartas respondidas ────────

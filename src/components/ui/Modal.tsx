@@ -25,19 +25,21 @@ type ModalProps = {
   children: ReactNode
   onClose: () => void
   size?: 'sm' | 'md' | 'lg' | 'xl'
+  /** Impede fechar por X/Escape quando uma decisão explícita é obrigatória. */
+  dismissible?: boolean
 }
 
-export function Modal({ isOpen, title, description, children, onClose, size = 'md' }: ModalProps) {
+export function Modal({ isOpen, title, description, children, onClose, size = 'md', dismissible = true }: ModalProps) {
   const { t } = useTranslation('common')
   // Esc fecha — padrão de teclado esperado em qualquer modal.
   useEffect(() => {
     if (!isOpen) return
     const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') onClose()
+      if (event.key === 'Escape' && dismissible) onClose()
     }
     document.addEventListener('keydown', handleKeyDown)
     return () => document.removeEventListener('keydown', handleKeyDown)
-  }, [isOpen, onClose])
+  }, [dismissible, isOpen, onClose])
 
   if (!isOpen) return null
 
@@ -49,15 +51,17 @@ export function Modal({ isOpen, title, description, children, onClose, size = 'm
             <h2 className="text-lg font-semibold text-[var(--color-text)]">{title}</h2>
             {description ? <p className="mt-0.5 text-xs text-[var(--color-muted)]">{description}</p> : null}
           </div>
-          <Button
-            variant="ghost"
-            size="icon"
-            aria-label={t('actions.close')}
-            onClick={onClose}
-            className="-mr-1 -mt-1 h-11 w-11 shrink-0"
-          >
-            <X size={16} />
-          </Button>
+          {dismissible ? (
+            <Button
+              variant="ghost"
+              size="icon"
+              aria-label={t('actions.close')}
+              onClick={onClose}
+              className="-mr-1 -mt-1 h-11 w-11 shrink-0"
+            >
+              <X size={16} />
+            </Button>
+          ) : null}
         </div>
         <div className="min-h-0 flex-1 overflow-y-auto px-5 pb-5 pt-4">{children}</div>
       </div>

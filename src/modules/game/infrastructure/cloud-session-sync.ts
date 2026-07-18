@@ -12,8 +12,8 @@
  * - flushNow() forces an immediate write (beforeunload / visibilitychange=hidden).
  * - pullActiveSnapshot() fetches the user's active cloud record for use during
  *   login / cross-device hydration.
- * - reconcile() performs last-write-wins comparison between local and cloud so
- *   callers can decide which copy to keep; this service never mutates local state.
+ * - reconcile() só compara versões da mesma sessão; eventLog decide avanço
+ *   causal e conflitos nunca descartam uma partida silenciosamente.
  * - Resilience: any network or auth failure is caught, console.warn'd at most
  *   once, and the pending snapshot is PRESERVED so the next push, 'online'
  *   event, or flushNow() retries automatically.
@@ -229,6 +229,13 @@ class CloudSessionSyncImpl implements CloudSessionSync {
       return { action: 'use-cloud', cloudSession: cloud.session, cloudUpdatedAt: cloud.updatedAt }
     }
 
+    // IDs diferentes representam partidas diferentes. Nunca compare datas ou
+    // quantidade de respostas para decidir entre elas: isso fazia uma partida
+    // antiga na nuvem reaparecer sobre uma partida nova do dispositivo.
+    if (localSession && localSession.id !== cloud.session.id) {
+      return { action: 'conflict', cloudSession: cloud.session, cloudUpdatedAt: cloud.updatedAt }
+    }
+
     const cloudIsNewer = cloudTs > localTs
 
     // Mesma partida com eventLog nos dois lados → decisão pela revisão
@@ -344,35 +351,40 @@ class CloudSessionSyncImpl implements CloudSessionSync {
     this._setStatus('syncing')
 
     const record = this.pending
-    const userId = authSession.user.id
 
     try {
-      // update-then-insert strategy: avoids conflicts with the partial unique
-      // index (online_sessions_one_active_per_user_idx) that only covers
-      // status='active' rows.
-      const { data: updated, error: updateError } = await client
-        .from('online_sessions')
-        .update({
-          title: record.title,
-          mode: 'cloud',
-          session: record.session,
+      // A RPC faz a troca por TriviaSession.id em uma unica transacao. Se o
+      // snapshot representa outra partida, a anterior e arquivada em vez de
+      // ser sobrescrita. userId foi validado acima; a RPC ainda usa auth.uid().
+      const rpcCapableClient = client as typeof client & { rpc?: typeof client.rpc }
+      if (typeof rpcCapableClient.rpc === 'function') {
+        const { error: saveError } = await rpcCapableClient.rpc('save_online_session_snapshot', {
+          p_session: record.session,
+          p_title: record.title,
+          p_mode: 'cloud',
         })
-        .eq('user_id', userId)
-        .eq('status', 'active')
-        .select('id')
-
-      if (updateError) throw updateError
-
-      if (!updated || updated.length === 0) {
-        // No active row yet — insert one.
-        const { error: insertError } = await client.from('online_sessions').insert({
-          user_id: userId,
-          status: 'active',
-          title: record.title,
-          mode: 'cloud',
-          session: record.session,
-        })
-        if (insertError) throw insertError
+        if (saveError) throw saveError
+      } else {
+        // Compatibilidade exclusiva com adaptadores/test doubles antigos. O
+        // supabase-js real sempre possui rpc(); sem a migration a chamada RPC
+        // falha e o snapshot permanece pendente, nunca cai neste overwrite.
+        const { data: updated, error: updateError } = await client
+          .from('online_sessions')
+          .update({ title: record.title, mode: 'cloud', session: record.session })
+          .eq('user_id', authSession.user.id)
+          .eq('status', 'active')
+          .select('id')
+        if (updateError) throw updateError
+        if (!updated || updated.length === 0) {
+          const { error: insertError } = await client.from('online_sessions').insert({
+            user_id: authSession.user.id,
+            status: 'active',
+            title: record.title,
+            mode: 'cloud',
+            session: record.session,
+          })
+          if (insertError) throw insertError
+        }
       }
 
       // Success: clear pending only if a newer push hasn't replaced it.
@@ -415,7 +427,7 @@ class CloudSessionSyncImpl implements CloudSessionSync {
   }
 
   /**
-   * Caminho de saída da página: dispara o PATCH keepalive (sobrevive ao
+   * Caminho de saída da página: dispara a RPC keepalive (sobrevive ao
    * unload) e, em paralelo, o flush assíncrono normal — se a página continuar
    * viva (beforeunload cancelado, aba apenas oculta), ele confirma o envio e
    * limpa o pendente. O keepalive não limpa `pending` porque não há como

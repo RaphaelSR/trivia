@@ -59,6 +59,8 @@ Mapa enxuto para navegar pelo produto sem depender de notas operacionais ou cont
 - Serviços compartilhados: `src/shared/services`.
 - O jogo é local-first; sincronização em nuvem é assíncrona e não pode bloquear uma jogada.
 - Checkpoints preservam pontos de retorno antes de jogadas e ações destrutivas.
+- A entrada da partida compara dispositivo e conta antes de ligar o sync. IDs distintos são jogos distintos; conflitos da mesma sessão exigem escolha explícita.
+- Começar uma nova partida preserva a anterior, cria novo ID e troca a sessão online ativa por uma única RPC transacional.
 
 ## Conta e recursos conectados
 

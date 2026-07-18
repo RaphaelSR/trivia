@@ -48,7 +48,7 @@ export interface CloudSyncConflict {
  * - 'synced'     : last flush succeeded, nothing pending
  * - 'pending'    : flush failed or auth missing; data is saved locally pending retry
  */
-export type CloudSyncStatus = 'local-only' | 'syncing' | 'synced' | 'pending'
+export type CloudSyncStatus = 'local-only' | 'review-needed' | 'syncing' | 'synced' | 'pending'
 
 export interface UseCloudSyncOptions {
   /** Session to back up. */
@@ -77,6 +77,11 @@ export interface UseCloudSyncOptions {
    * Pass null when there is no local session saved yet.
    */
   localUpdatedAtIso: string | null
+  /**
+   * Desative quando uma etapa anterior já exibiu local/nuvem e o host fez a
+   * escolha explicitamente. Evita perguntar novamente ou desfazer a escolha.
+   */
+  reconcileOnEnable?: boolean
 }
 
 /**
@@ -95,6 +100,7 @@ export function useCloudSync({
   onRestore,
   onConflict,
   localUpdatedAtIso,
+  reconcileOnEnable = true,
 }: UseCloudSyncOptions): {
   status: CloudSyncStatus
   forceSync: () => Promise<ForceSyncResult>
@@ -197,6 +203,7 @@ export function useCloudSync({
     if (reconciledRef.current) return
 
     reconciledRef.current = true
+    if (!reconcileOnEnable) return
 
     const sync = syncRef.current
 
@@ -240,7 +247,7 @@ export function useCloudSync({
     // Intentionally exhaustive: we want this to run exactly once when enabled
     // transitions to true. localUpdatedAtIso is captured at activation time.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [enabled])
+  }, [enabled, reconcileOnEnable])
 
   // PUSH: whenever session changes while enabled (and the session has teams)
   useEffect(() => {

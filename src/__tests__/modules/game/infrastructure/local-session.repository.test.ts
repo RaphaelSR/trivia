@@ -1,5 +1,6 @@
 import { LocalSessionRepository } from '@/modules/game/infrastructure/local-session.repository'
 import { storageService } from '@/shared/services/storage.service'
+import { STORAGE_KEYS } from '@/shared/constants/storage'
 import type { TriviaSession } from '@/modules/trivia/types'
 import { restorePersistedSession } from '@/modules/game/domain/session'
 
@@ -81,6 +82,20 @@ describe('LocalSessionRepository', () => {
     ])
   })
 
+  it('reativa uma partida anterior sem perder a atual nem alterar suas identidades', () => {
+    const first = repository.saveSession(makeSession('session-first'), 'offline', 'Primeira')!
+    repository.saveSession(makeSession('session-second'), 'offline', 'Segunda', null)
+
+    expect(repository.saveCompleteSession(first)).toBe(true)
+
+    expect(repository.loadActiveSession()?.session.id).toBe('session-first')
+    expect(repository.loadSession('session-second')?.id).toBe('session-second')
+    expect(repository.loadSessionHistory().map((entry) => entry.id)).toEqual([
+      'session-first',
+      'session-second',
+    ])
+  })
+
   it('substitui o registro ativo legado sem duplicar a partida no histórico', () => {
     const legacy = makeSession('empty-session')
     legacy.scheduledAt = '2026-07-16T10:00:00.000Z'
@@ -109,6 +124,22 @@ describe('LocalSessionRepository — quota e órfãos', () => {
     const result = repo.saveSession(makeSession('sess-quota'), 'offline', 'Nome')
 
     expect(result).toBeNull()
+    spy.mockRestore()
+  })
+
+  it('não troca a sessão ativa quando a gravação do histórico falha', () => {
+    const repo = new LocalSessionRepository()
+    repo.saveSession(makeSession('sess-segura'), 'offline', 'Segura')
+    const originalSetJson = storageService.setJson.bind(storageService)
+    const spy = jest.spyOn(storageService, 'setJson').mockImplementation((key, value) => {
+      if (key === STORAGE_KEYS.sessionHistory) return false
+      return originalSetJson(key, value)
+    })
+
+    const result = repo.saveSession(makeSession('sess-incompleta'), 'offline', 'Incompleta', null)
+
+    expect(result).toBeNull()
+    expect(repo.loadActiveSession()?.session.id).toBe('sess-segura')
     spy.mockRestore()
   })
 

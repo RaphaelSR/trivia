@@ -234,30 +234,32 @@ export class SupabaseSessionRepository implements SessionRepository {
     snapshot.user_id = authSession.user.id
 
     try {
-      // update-then-insert strategy (avoids ON CONFLICT with partial index)
-      const { data: updated, error: updateError } = await client
-        .from('online_sessions')
-        .update({
-          title: snapshot.title,
-          mode: snapshot.mode,
-          session: snapshot.session,
+      const rpcCapableClient = client as typeof client & { rpc?: typeof client.rpc }
+      if (typeof rpcCapableClient.rpc === 'function') {
+        const { error: saveError } = await rpcCapableClient.rpc('save_online_session_snapshot', {
+          p_session: snapshot.session,
+          p_title: snapshot.title,
+          p_mode: snapshot.mode,
         })
-        .eq('user_id', snapshot.user_id)
-        .eq('status', 'active')
-        .select('id')
-
-      if (updateError) throw updateError
-
-      if (!updated || updated.length === 0) {
-        // No active row yet — insert
-        const { error: insertError } = await client.from('online_sessions').insert({
-          user_id: snapshot.user_id,
-          status: 'active',
-          title: snapshot.title,
-          mode: snapshot.mode,
-          session: snapshot.session,
-        })
-        if (insertError) throw insertError
+        if (saveError) throw saveError
+      } else {
+        const { data: updated, error: updateError } = await client
+          .from('online_sessions')
+          .update({ title: snapshot.title, mode: snapshot.mode, session: snapshot.session })
+          .eq('user_id', snapshot.user_id)
+          .eq('status', 'active')
+          .select('id')
+        if (updateError) throw updateError
+        if (!updated || updated.length === 0) {
+          const { error: insertError } = await client.from('online_sessions').insert({
+            user_id: snapshot.user_id,
+            status: 'active',
+            title: snapshot.title,
+            mode: snapshot.mode,
+            session: snapshot.session,
+          })
+          if (insertError) throw insertError
+        }
       }
 
       // Flush succeeded — clear the pending snapshot (only if it hasn't been
@@ -309,7 +311,7 @@ export class SupabaseSessionRepository implements SessionRepository {
   }
 
   /**
-   * Caminho de saída da página: PATCH keepalive (sobrevive ao unload) +
+   * Caminho de saída da página: RPC keepalive (sobrevive ao unload) +
    * flush assíncrono normal para o caso de a página continuar viva.
    */
   private _emergencyFlush(): void {

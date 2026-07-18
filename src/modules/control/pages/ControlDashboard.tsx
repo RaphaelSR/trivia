@@ -67,7 +67,11 @@ import { buildParticipantScoreBreakdown, buildTeamScoreboard } from '../utils/sc
 import type { OnboardingConfig } from '../types/control.types'
 import { useAuth } from '@/modules/auth/hooks/useAuth'
 import { isSupabaseConfigured } from '@/shared/services/supabase.client'
-import { useCloudSync, type CloudSyncConflict } from '@/modules/game/application/useCloudSync'
+import {
+  useCloudSync,
+  type CloudSyncConflict,
+  type CloudSyncStatus,
+} from '@/modules/game/application/useCloudSync'
 import { useTabGuard } from '@/modules/game/application/useTabGuard'
 import { ConflictResolutionModal } from '@/components/ui/ConflictResolutionModal'
 import { VersionHistoryModal } from '@/components/ui/VersionHistoryModal'
@@ -86,6 +90,10 @@ import {
   type FinishedGameCopyMode,
 } from '@/modules/game/domain/historical-game-copy'
 import { createSessionRepository } from '@/modules/game/infrastructure/repository.factory'
+import { createSessionForMode } from '@/modules/game/domain/session'
+import { hasMeaningfulSessionData } from '@/modules/game/domain/session-start'
+import { useSessionStartup, type SessionStartCandidate } from '@/modules/game/application/useSessionStartup'
+import { SessionStartModal } from '../components/SessionStartModal'
 // PIN será gerenciado pelo hook usePinManagement
 
 export function ControlDashboard() {
@@ -117,9 +125,27 @@ export function ControlDashboard() {
   } = useTriviaSession()
   const { theme: themeMode, setTheme } = useThemeMode()
   const { gameMode, getModeDisplayName } = useGameMode()
-  const { user } = useAuth()
+  const { user, loading: authLoading = false } = useAuth()
   const { verifyPin, saveCustomPin, clearCustomPin, hasCustomPin } = usePinManagement()
-  const { currentSession, saveSession, saveNewSession, loadSession, getSessionStatus } = useOfflineSession()
+  const {
+    currentSession,
+    sessionHistory = [],
+    storageReady = true,
+    saveSession,
+    saveNewSession,
+    activateSessionRecord,
+    loadSession,
+    getSessionStatus,
+  } = useOfflineSession()
+  const sessionStartup = useSessionStartup({
+    gameMode,
+    userId: user?.id ?? null,
+    authLoading,
+    storageReady,
+    currentSession,
+    sessionHistory,
+    loadSession,
+  })
   const dashboardState = useControlDashboardState()
   const {
     selectedIds,
@@ -191,6 +217,7 @@ export function ControlDashboard() {
   const [finishedCopyTarget, setFinishedCopyTarget] = useState<TriviaSession | null>(null)
   const [finishedCopyBusy, setFinishedCopyBusy] = useState(false)
   const [finishedCopyError, setFinishedCopyError] = useState<string | null>(null)
+  const [sessionStartupBusy, setSessionStartupBusy] = useState(false)
 
   const getTimerForPoints = (points: number) => {
     if (timerOverrides[points] !== undefined) return timerOverrides[points]
@@ -279,19 +306,19 @@ export function ControlDashboard() {
 
   // Detecta primeira vez e mostra onboarding automaticamente
   useEffect(() => {
-    if (gameMode === 'offline') {
+    if (gameMode === 'offline' && sessionStartup.status === 'resolved') {
       const hasSeenOnboarding = storageService.get(STORAGE_KEYS.onboardingSeen)
       if (!hasSeenOnboarding && !offlineOnboardingOpen) {
         // Primeira vez: abre onboarding automaticamente
         setOfflineOnboardingOpen(true)
       }
     }
-  }, [gameMode, offlineOnboardingOpen, setOfflineOnboardingOpen])
+  }, [gameMode, offlineOnboardingOpen, sessionStartup.status, setOfflineOnboardingOpen])
 
   // Mostra sugestão de onboarding de forma não forçada (apenas se já viu onboarding antes)
   useEffect(() => {
     const hasSeenOnboarding = storageService.get(STORAGE_KEYS.onboardingSeen)
-    if (gameMode === 'offline' && orderedTeams.length === 0 && !showOnboardingSuggestion && hasSeenOnboarding) {
+    if (gameMode === 'offline' && sessionStartup.status === 'resolved' && orderedTeams.length === 0 && !showOnboardingSuggestion && hasSeenOnboarding) {
       // Aguarda 2 segundos antes de mostrar a sugestão (apenas se já viu antes)
       const timer = setTimeout(() => {
         setShowOnboardingSuggestion(true)
@@ -299,7 +326,7 @@ export function ControlDashboard() {
       
       return () => clearTimeout(timer)
     }
-  }, [gameMode, orderedTeams.length, showOnboardingSuggestion, setShowOnboardingSuggestion])
+  }, [gameMode, orderedTeams.length, sessionStartup.status, showOnboardingSuggestion, setShowOnboardingSuggestion])
 
   // Salva sessão automaticamente quando há mudanças (modo offline e online; demo fica fora).
   // Jogadas (carta respondida / placar) salvam NA HORA — fechar a aba logo após
@@ -309,7 +336,7 @@ export function ControlDashboard() {
   // jogada acontece ("voltar para antes de responder X").
   const prevSessionRef = useRef<TriviaSession | null>(null)
   useEffect(() => {
-    if ((gameMode === 'offline' || gameMode === 'online') && orderedTeams.length > 0) {
+    if (sessionStartup.status === 'resolved' && (gameMode === 'offline' || gameMode === 'online') && orderedTeams.length > 0) {
       const progressSignature = `${countAnsweredTiles(session.board)}:${session.teams.reduce((sum, team) => sum + team.score, 0)}`
       const significantChange =
         lastSavedProgressRef.current !== null && progressSignature !== lastSavedProgressRef.current
@@ -356,14 +383,18 @@ export function ControlDashboard() {
 
       return () => clearTimeout(timer);
     }
-  }, [session, gameMode, orderedTeams.length, saveSession, t])
+  }, [session, gameMode, orderedTeams.length, saveSession, sessionStartup.status, t])
 
   // Backup na nuvem em background para o jogo local-first.
   // Quando o usuário está logado e o Supabase está configurado:
   //  - empurra cada mudança de sessão com debounce (2.5 s);
   //  - ao ativar (login/mount), reconcilia com a nuvem e restaura se mais novo.
   // Demo nunca sincroniza (enabled=false quando gameMode==='demo').
-  const syncEnabled = gameMode !== 'demo' && Boolean(user) && isSupabaseConfigured()
+  const syncEnabled = gameMode !== 'demo' &&
+    sessionStartup.status === 'resolved' &&
+    sessionStartup.cloudSyncReady &&
+    Boolean(user) &&
+    isSupabaseConfigured()
   // Convites, identidades e avatares são capacidades da conta sincronizada,
   // não um terceiro estilo de jogo. Os valores internos de GameMode continuam
   // existindo apenas para manter rotas e sessões antigas compatíveis.
@@ -385,7 +416,11 @@ export function ControlDashboard() {
       saveSession(cloudSession, cloudSession.title)
     },
     onConflict: (conflict) => setSessionConflict(conflict),
+    reconcileOnEnable: false,
   })
+  const displayedSyncStatus: CloudSyncStatus = user && !sessionStartup.cloudSyncReady
+    ? 'review-needed'
+    : syncStatus
 
   // Outra aba deste navegador com a mesma sessão aberta? Duas abas se
   // sobrescrevem no localStorage — a UI avisa para jogar em uma só.
@@ -653,6 +688,107 @@ export function ControlDashboard() {
     }
     setFinishedCopyTarget(null)
   }, [finishedCopyBusy, finishedCopyTarget, openFinishedGameCopy, t])
+
+  const startFreshSession = useCallback(() => {
+    if (sessionStartupBusy) return
+    setSessionStartupBusy(true)
+    try {
+      // A partida anterior fica gravada com seu proprio ID antes da troca.
+      // Falha local interrompe a operacao: nunca limpamos o que nao conseguimos
+      // preservar primeiro.
+      if (hasMeaningfulSessionData(session) && !saveSession(session, session.title)) {
+        return
+      }
+
+      const locale = i18n.resolvedLanguage ?? i18n.language
+      const title = t('game:sessionCreation.defaultTitle', {
+        date: new Date().toLocaleDateString(locale),
+      })
+      const freshSession = createSessionForMode(gameMode, undefined, {
+        title,
+        themeName: session.theme.name,
+      })
+      const saved = saveNewSession(freshSession, title)
+      if (!saved) return
+
+      restoreSession(saved.session)
+      setGameEndNotified(false)
+      setSelectedIds(null)
+      setShowAnswer(false)
+      setQuestionRevealed(false)
+      setLibraryUnlocked(false)
+      clearCustomPin()
+      storageService.remove(STORAGE_KEYS.customFilms)
+      setSessionManagerOpen(false)
+      setActivePanel('board')
+      sessionStartup.resolve()
+      setOfflineOnboardingOpen(true)
+      toast.success(t('dashboard.notifications.newSessionCreated'))
+    } finally {
+      setSessionStartupBusy(false)
+    }
+  }, [
+    clearCustomPin,
+    gameMode,
+    i18n.language,
+    i18n.resolvedLanguage,
+    restoreSession,
+    saveNewSession,
+    saveSession,
+    session,
+    sessionStartup,
+    sessionStartupBusy,
+    setActivePanel,
+    setGameEndNotified,
+    setLibraryUnlocked,
+    setOfflineOnboardingOpen,
+    setSelectedIds,
+    setSessionManagerOpen,
+    setShowAnswer,
+    t,
+  ])
+
+  const handleStartupChoice = useCallback((candidate: SessionStartCandidate) => {
+    if (sessionStartupBusy) return
+    setSessionStartupBusy(true)
+    try {
+      // Uma partida finalizada que nao era a ativa continua passando pela
+      // protecao de copia; a ativa pode ser retomada para o fluxo de mimica.
+      if (!candidate.active && isFinishedBoard(candidate.record.session.board)) {
+        sessionStartup.resolve()
+        setFinishedCopyError(null)
+        setFinishedCopyTarget(candidate.record.session)
+        return
+      }
+
+      const activated = activateSessionRecord(candidate.record)
+      if (!activated) return
+      restoreSession(activated.session)
+      setGameEndNotified(isFinishedBoard(activated.session.board))
+      setSelectedIds(null)
+      setShowAnswer(false)
+      setQuestionRevealed(false)
+      setOfflineOnboardingOpen(false)
+      setSessionManagerOpen(false)
+      setActivePanel('board')
+      sessionStartup.resolve()
+      toast.success(t('dashboard.notifications.sessionResumed', { title: activated.session.title }))
+    } finally {
+      setSessionStartupBusy(false)
+    }
+  }, [
+    activateSessionRecord,
+    restoreSession,
+    sessionStartup,
+    sessionStartupBusy,
+    setActivePanel,
+    setGameEndNotified,
+    setOfflineOnboardingOpen,
+    setSelectedIds,
+    setSessionManagerOpen,
+    setShowAnswer,
+    t,
+  ])
 
   const handleLoadSession = (sessionId: string) => {
     const targetSession = loadSession(sessionId)
@@ -1072,9 +1208,13 @@ export function ControlDashboard() {
           title={sessionStatus.sessionName ?? session.title}
           mode={gameMode}
           modeLabel={getModeDisplayName(gameMode)}
-          syncStatus={gameMode !== 'demo' ? syncStatus : undefined}
+          syncStatus={gameMode !== 'demo' ? displayedSyncStatus : undefined}
           lastSyncedAt={gameMode !== 'demo' ? lastSyncedAt : undefined}
-          onForceSync={gameMode !== 'demo' ? handleForceSync : undefined}
+          onForceSync={gameMode !== 'demo'
+            ? sessionStartup.cloudSyncReady
+              ? handleForceSync
+              : sessionStartup.retry
+            : undefined}
           onOpenSessions={handleOpenSessions}
           onExit={() => {
             setActivePanel('board')
@@ -1746,6 +1886,18 @@ export function ControlDashboard() {
         participants={participants}
       />
 
+      <SessionStartModal
+        status={sessionStartup.status}
+        candidates={sessionStartup.candidates}
+        activeDevice={sessionStartup.activeDevice}
+        activeCloud={sessionStartup.activeCloud}
+        cloudUnavailable={sessionStartup.cloudUnavailable}
+        busy={sessionStartupBusy}
+        onRetry={sessionStartup.retry}
+        onChoose={handleStartupChoice}
+        onNew={startFreshSession}
+      />
+
       <OfflineOnboardingModal
         isOpen={offlineOnboardingOpen}
         onClose={() => {
@@ -1813,9 +1965,10 @@ export function ControlDashboard() {
           setSessionManagerOpen(false)
           setActivePanel('board')
         }}
-        cloudStatus={gameMode !== 'demo' ? syncStatus : undefined}
+        cloudStatus={gameMode !== 'demo' ? displayedSyncStatus : undefined}
         cloudLastSyncedAt={gameMode !== 'demo' ? lastSyncedAt : undefined}
         onOpenVersions={gameMode !== 'demo' ? () => setVersionsOpen(true) : undefined}
+        onReviewSessionSources={user ? sessionStartup.retry : undefined}
         onOpenAccount={isSupabaseConfigured() ? () => setAccountOpen(true) : undefined}
         onLoadSession={handleLoadSession}
         onNewSession={() => {
@@ -1823,20 +1976,7 @@ export function ControlDashboard() {
           setConfirmActionConfig({
             title: t('dashboard.dialogs.newGameTitle'),
             description: t('dashboard.dialogs.newGameDescription'),
-            onConfirm: () => {
-              // Limpa completamente a sessão atual antes de abrir onboarding
-              sessionManagement.resetGame({
-                teams: true,
-                participants: true,
-                questions: true,
-                films: true,
-                points: true,
-                themes: false, // Mantém o tema atual
-              })
-              // Abre onboarding para nova sessão
-              setOfflineOnboardingOpen(true)
-              setSessionManagerOpen(false)
-            },
+            onConfirm: startFreshSession,
             variant: 'warning',
           })
           setConfirmActionOpen(true)

@@ -5,7 +5,8 @@ O diretório mantém o nome `online` por compatibilidade documental. No produto,
 ## O que existe
 
 - autenticação por e-mail e senha;
-- um snapshot online ativo por conta, com reconciliacao entre dispositivos;
+- um snapshot online ativo por conta, com sessões anteriores arquivadas e retomáveis;
+- seleção explícita de entrada e reconciliação causal apenas entre versões do mesmo ID;
 - checkpoints locais e snapshots remotos de restauração;
 - histórico normalizado com times, participantes, filmes, perguntas e eventos;
 - convite individual legado (`/claim?token=`) e convite historico generico (`/claim?game=`);

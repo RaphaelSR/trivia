@@ -15,7 +15,8 @@ As migrations em `supabase/migrations/` são incrementais:
 - `0005`–`0007`: vínculo por e-mail, links de claim e contatos do próprio host;
 - `0008`: snapshots remotos de restauração;
 - `0009`: convite ao vivo, ledger `participant_claims` e finalização idempotente;
-- `0010`: avatar de perfil, bucket com escrita owner-only e leituras contextuais de identidade.
+- `0010`: avatar de perfil, bucket com escrita owner-only e leituras contextuais de identidade;
+- `0011`: identidade materializada da sessão online e troca atômica da sessão ativa.
 
 O histórico normalizado usa `games`, `game_teams`, `game_participants`, `game_films`, `game_questions`, `score_events`, `score_event_recipients` e `game_raw_snapshots`. O snapshot integral é preservado para reprocessamento; listagens usam tabelas normalizadas.
 
@@ -37,11 +38,19 @@ Garantias:
 
 Partidas completas novas recebem um `TriviaSession.id` opaco e exclusivo já na criação. O ID fixo `empty-session`, emitido por versões antigas, é reconhecido somente na restauração de partidas completas e substituído por uma identidade determinística baseada na data original da sessão. Assim, local e nuvem convergem para a mesma chave no primeiro carregamento, sem reescrever jogos já normalizados nem confundir duas partidas futuras na restrição idempotente.
 
-Não há backfill amplo e `online_sessions` não é arquivada pela migration `0009`; isso preserva o fluxo de restauração já usado por partidas reais. Uma evolução de arquivamento exige auditoria de dados separada.
+Não há backfill amplo na migration `0009`. A `0011` preenche apenas `session_client_id` a partir do ID já existente no próprio snapshot. A partir dela, criar ou retomar uma partida chama `save_online_session_snapshot`: sob lock da conta, a RPC arquiva uma sessão ativa de ID diferente e salva/reativa a escolhida na mesma transação. Sessões antigas continuam consultáveis e nenhuma linha de jogo normalizado é alterada.
+
+## Entrada e reconciliacao
+
+O dashboard carrega o catálogo local e remoto antes de iniciar `useCloudSync`. O host decide qual sessão abrir ou cria uma nova. IDs diferentes são partidas independentes; timestamp e quantidade de eventos não fazem uma partida vencer outra.
+
+Para duas versões do mesmo ID, o `eventLog` é a principal evidência causal: uma lista que contém integralmente a outra pode ser classificada como mais avançada. Se os logs divergem, a interface exige escolha. A versão não escolhida permanece no catálogo e pode ser retomada depois.
+
+Falha ao listar a nuvem mantém o gate aberto com retry. O cache local continua funcionando, mas o writer remoto permanece desabilitado. Depois da escolha, `useCloudSync` é o único writer do dashboard; autosave, flush para liberar QR e keepalive usam a RPC atômica. Uma falha preserva o snapshot pendente e nunca degrada para uma sequência parcial de `archive` + `insert`.
 
 ## Token permanente e rotação
 
-`online_sessions.join_token` pertence a `invite_session_id`, que é o `TriviaSession.id`. A linha de backup pode ser reaproveitada pela próxima partida, mas o token é rotacionado antes de representar a nova sessão. O token anterior já copiado para `games.join_token` continua funcionando no histórico.
+`online_sessions.join_token` pertence a `invite_session_id`, que é o `TriviaSession.id`. Uma nova partida cria outra linha ativa e arquiva atomicamente a anterior; o token anterior já copiado para `games.join_token` continua funcionando no histórico.
 
 A rotação depende de a nova partida possuir outro `TriviaSession.id`; por isso a identidade da sessão é uma regra de persistência, não um detalhe de interface. O upgrade do antigo ID fixo faz a próxima abertura/sincronização girar o token automaticamente, sem migration destrutiva no banco.
 

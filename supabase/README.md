@@ -6,7 +6,7 @@ As migrations são aplicadas manualmente via SQL Editor do painel do Supabase.
 
 1. Acesse [supabase.com/dashboard](https://supabase.com/dashboard) e abra seu projeto.
 2. No menu lateral, vá em **SQL Editor** → **New query**.
-3. Aplique em ordem apenas os arquivos ainda pendentes de `migrations/0001_*.sql` a `0010_*.sql`.
+3. Aplique em ordem apenas os arquivos ainda pendentes de `migrations/0001_*.sql` a `0011_*.sql`.
 4. Cole cada arquivo inteiro na área de edição e clique em **Run**.
 5. Execute os checks descritos em `docs/online/AMBIENTE-E-DEPLOY.md` antes de publicar o frontend correspondente.
 
@@ -18,6 +18,11 @@ concorrência da finalização contra o banco autenticado.
 avatares e RPCs de identidade contextual. Ela não substitui funções de claim ou
 finalização. Valide configuração do bucket, políticas owner-only, escopo das RPCs e
 preservação das contagens antes de publicar o frontend.
+
+`0011_session_lifecycle.sql` adiciona a identidade derivada da sessão a
+`online_sessions` e a RPC atômica usada por autosave e keepalive. Ela não altera jogos,
+claims ou snapshots normalizados. Antes de publicar, valide a função, o trigger, o
+índice e que a troca de sessão arquiva a anterior e salva a próxima na mesma transação.
 
 ## Habilitar autenticação por email
 
