@@ -50,6 +50,7 @@
     --surface-glass-bg: rgba(15, 23, 42, 0.78);       /* default (dark) — CALIBRATE alpha */
     --surface-glass-strong: rgba(15, 23, 42, 0.88);   /* toolbar / sidebar overlay */
     --surface-blur: 20px;                              /* backdrop blur radius */
+    --theme-backdrop: radial-gradient(circle at top, rgba(56, 189, 248, 0.14), transparent 24%), #08111f;
   }
 
   html {
@@ -59,10 +60,8 @@
   body {
     @apply m-0 min-h-screen antialiased;
     font-family: "IBM Plex Sans", sans-serif;
-    background:
-      radial-gradient(circle at top, rgba(56, 189, 248, 0.14), transparent 24%),
-      radial-gradient(circle at bottom right, rgba(129, 140, 248, 0.14), transparent 24%),
-      var(--color-surface);
+    background: var(--theme-backdrop);
+    background-attachment: fixed;
     color: var(--color-text);
   }
 
@@ -118,6 +117,309 @@
 }
 
 @layer components {
+  /* Miniaturas do catálogo: usam apenas CSS para continuar leves e offline. */
+  .theme-preview {
+    background: var(--preview-background, var(--gradient-primary));
+  }
+
+  .theme-preview::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.18), transparent 46%, rgba(0, 0, 0, 0.12));
+  }
+
+  .theme-preview__shape {
+    position: absolute;
+    z-index: 1;
+    display: block;
+    border: 1px solid rgba(255, 255, 255, 0.32);
+    background: rgba(255, 255, 255, 0.2);
+  }
+
+  .theme-preview__shape--one { left: 12%; top: 18%; width: 34px; height: 34px; border-radius: 999px; }
+  .theme-preview__shape--two { left: 44%; bottom: -12px; width: 68px; height: 42px; border-radius: 999px 999px 0 0; }
+  .theme-preview__shape--three { right: 14%; top: 14%; width: 8px; height: 8px; border-radius: 999px; box-shadow: 18px 22px 0 rgba(255,255,255,.38), -32px 30px 0 rgba(255,255,255,.28); }
+
+  .theme-preview[data-theme-preview="light"] { --preview-background: linear-gradient(135deg, #ffffff, #dbeafe 55%, #cffafe); }
+  .theme-preview[data-theme-preview="dark"] { --preview-background: linear-gradient(135deg, #07101f, #312e81 58%, #0ea5e9); }
+  .theme-preview[data-theme-preview="cinema"] { --preview-background: radial-gradient(circle at 72% 28%, #fde68a 0 4%, transparent 5%), linear-gradient(135deg, #0c0a09, #9a3412 66%, #f59e0b); }
+  .theme-preview[data-theme-preview="retro"] { --preview-background: linear-gradient(180deg, #19002f 0 55%, #ff0080 56% 58%, #00ffff 59% 62%, #19002f 63%); }
+  .theme-preview[data-theme-preview="matrix"] { --preview-background: repeating-linear-gradient(90deg, transparent 0 12px, rgba(0,255,65,.2) 13px 14px), linear-gradient(#001006, #000); }
+  .theme-preview[data-theme-preview="brazil"] { --preview-background: linear-gradient(145deg, #009739 0 45%, #ffdf00 46% 72%, #002776 73%); }
+  .theme-preview[data-theme-preview="easter"] { --preview-background: radial-gradient(ellipse at 22% 64%, #f9a8d4 0 10%, transparent 11%), radial-gradient(ellipse at 58% 42%, #a78bfa 0 11%, transparent 12%), linear-gradient(135deg, #faf5ff, #dbeafe); }
+  .theme-preview[data-theme-preview="world-cup-2026"] { --preview-background: linear-gradient(112deg, #75aadb 0 42%, #fff 43% 49%, #f6c445 50% 58%, #d52031 59% 100%); }
+  .theme-preview[data-theme-preview="world-cup-2026"] .theme-preview__shape--two { left: 33%; bottom: -27px; width: 92px; height: 58px; border-radius: 50% 50% 0 0; background: rgba(17, 94, 55, .62); }
+  .theme-preview[data-theme-preview="kawaii"] { --preview-background: radial-gradient(circle at 20% 22%, #fbcfe8, transparent 34%), radial-gradient(circle at 80% 72%, #99f6e4, transparent 34%), #ede9fe; }
+  .theme-preview[data-theme-preview="kawaii"] .theme-preview__shape--one { border-radius: 45% 55% 48% 52%; background: rgba(255,255,255,.75); box-shadow: 20px 7px 0 -3px rgba(255,255,255,.7); }
+  .theme-preview[data-theme-preview="neon-city"] { --preview-background: radial-gradient(circle at 68% 32%, #ff4fd8 0 12%, transparent 13%), linear-gradient(#0a0a29, #242064 58%, #03040f); }
+  .theme-preview[data-theme-preview="neon-city"] .theme-preview__shape--two { left: 0; bottom: 0; width: 100%; height: 30px; border: 0; border-radius: 0; background: repeating-linear-gradient(90deg, #090a20 0 14px, #27f4d2 15px 16px, #090a20 17px 28px); }
+  .theme-preview[data-theme-preview="storybook"] { --preview-background: radial-gradient(circle at 74% 25%, #fff1b2 0 9%, transparent 10%), linear-gradient(#171a3a, #3c356c 62%, #161a31); }
+  .theme-preview[data-theme-preview="storybook"] .theme-preview__shape--two { left: -8%; right: -8%; bottom: -24px; width: 116%; height: 58px; background: #202c3d; }
+  .theme-preview[data-theme-preview="web-city"] { --preview-background: radial-gradient(circle at 74% 24%, rgba(255,70,85,.68) 0 10%, transparent 11%), radial-gradient(circle, rgba(255,70,85,.25) 0 1px, transparent 1.5px) 0 0/9px 9px, linear-gradient(#090c24, #252054 60%, #050611); }
+  .theme-preview[data-theme-preview="web-city"] .theme-preview__shape--two { left: 0; bottom: 0; width: 100%; height: 34px; border: 0; border-radius: 0; background: repeating-linear-gradient(90deg, #080a1c 0 16px, #4c8dff 17px 18px, #080a1c 19px 31px); }
+  .theme-preview[data-theme-preview="deep-space"] { --preview-background: radial-gradient(circle at 72% 35%, #c8bfff 0 11%, #7155cf 12% 19%, transparent 20%), radial-gradient(circle at 24% 30%, rgba(163,96,255,.36), transparent 30%), #030413; }
+  .theme-preview[data-theme-preview="deep-space"] .theme-preview__shape--one { left: 55%; top: 29%; width: 54px; height: 12px; transform: rotate(-12deg); background: transparent; border-color: rgba(216,209,255,.5); }
+  .theme-preview[data-theme-preview="midnight-cinema"] { --preview-background: radial-gradient(circle at 78% 16%, rgba(255,237,185,.48), transparent 17%), linear-gradient(#080b12, #1b141a 65%, #050608); }
+  .theme-preview[data-theme-preview="midnight-cinema"] .theme-preview__shape--two { left: 26%; bottom: 0; width: 54%; height: 42px; border-radius: 3px 3px 0 0; background: #0a090c; box-shadow: inset 0 9px 0 rgba(228,173,85,.3); }
+  .theme-preview[data-theme-preview="underwater"] { --preview-background: radial-gradient(ellipse at 50% -10%, rgba(163,244,255,.34), transparent 46%), linear-gradient(#075271, #063047 56%, #020c18); }
+  .theme-preview[data-theme-preview="underwater"] .theme-preview__shape--one { left: 65%; top: 14%; width: 24px; height: 18px; border-radius: 50% 50% 42% 42%; background: rgba(168,140,255,.4); box-shadow: 0 0 14px rgba(168,140,255,.4); }
+  .theme-preview[data-theme-preview="underwater"] .theme-preview__shape--two { left: -6%; bottom: -24px; width: 112%; height: 46px; background: rgba(2,18,28,.75); }
+
+  /* Cenários animados. Todos são decorativos, sem assets remotos ou custo de rede. */
+  .theme-scene {
+    isolation: isolate;
+  }
+
+  .web-city-action {
+    z-index: 30;
+  }
+  .web-city-action__swinger {
+    position: absolute;
+    left: -13vw;
+    top: -2vh;
+    width: clamp(70px, 7vw, 112px);
+    color: #f2f7ff;
+    opacity: 0;
+    filter: drop-shadow(0 0 12px rgba(80, 170, 255, .62)) drop-shadow(0 8px 12px rgba(0, 0, 0, .45));
+    transform-origin: 84% 0;
+    animation: web-city-foreground-swing 13s cubic-bezier(.45,.02,.55,.98) infinite;
+  }
+  .web-city-action__swinger svg { display: block; width: 100%; overflow: visible; }
+  .web-city-action__web { fill: none; stroke: rgba(242,247,255,.82); stroke-width: 1.4; }
+  .web-city-action__hero { stroke-linecap: round; stroke-linejoin: round; }
+  .web-city-action__body,
+  .web-city-action__head { fill: #e73346; stroke: #200814; stroke-width: 2.2; }
+  .web-city-action__arm { fill: none; stroke: #e73346; stroke-width: 7; }
+  .web-city-action__leg { fill: none; stroke: #2f6ee5; stroke-width: 9; }
+  .web-city-action__eye { fill: #f7fbff; stroke: #200814; stroke-width: 1; }
+  .web-city-action__suit-line { fill: none; stroke: rgba(25,42,95,.72); stroke-width: 1.5; }
+  .web-city-action__web-pattern { fill: none; stroke: rgba(248,250,255,.42); stroke-width: 1; }
+
+  @keyframes web-city-foreground-swing {
+    0% { opacity: 0; transform: translate3d(-12vw,-8vh,0) rotate(-22deg) scale(.78); }
+    7% { opacity: .84; }
+    42% { opacity: .9; transform: translate3d(52vw,17vh,0) rotate(7deg) scale(1.12); }
+    76% { opacity: .82; transform: translate3d(96vw,8vh,0) rotate(25deg) scale(.94); }
+    92%, 100% { opacity: 0; transform: translate3d(122vw,-9vh,0) rotate(37deg) scale(.78); }
+  }
+
+  @media (max-width: 640px) {
+    .web-city-action__swinger {
+      width: 48px;
+      filter: drop-shadow(0 0 8px rgba(80, 170, 255, .48)) drop-shadow(0 5px 7px rgba(0, 0, 0, .38));
+      animation-name: web-city-foreground-swing-mobile;
+    }
+  }
+
+  @keyframes web-city-foreground-swing-mobile {
+    0% { opacity: 0; transform: translate3d(-14vw,-5vh,0) rotate(-18deg) scale(.72); }
+    8% { opacity: .7; }
+    44% { opacity: .76; transform: translate3d(56vw,4vh,0) rotate(5deg) scale(.88); }
+    78% { opacity: .64; transform: translate3d(104vw,-1vh,0) rotate(23deg) scale(.76); }
+    92%, 100% { opacity: 0; transform: translate3d(124vw,-8vh,0) rotate(34deg) scale(.68); }
+  }
+
+  .theme-scene[data-theme-scene="world-cup-2026"] {
+    background: linear-gradient(112deg, rgba(117,170,219,.18) 0 48%, rgba(246,196,69,.08) 49% 53%, rgba(213,32,49,.14) 54%);
+  }
+
+  .world-cup-scene__light {
+    position: absolute;
+    top: -18%;
+    width: 24%;
+    height: 90%;
+    background: linear-gradient(180deg, rgba(255,255,255,.46), transparent 78%);
+    filter: blur(12px);
+    opacity: .5;
+    transform-origin: top;
+    animation: stadium-sweep 9s ease-in-out infinite alternate;
+  }
+  .world-cup-scene__light--left { left: 3%; transform: rotate(-18deg); }
+  .world-cup-scene__light--right { right: 3%; transform: rotate(18deg); animation-delay: -4.5s; }
+  .world-cup-scene__stadium {
+    position: absolute;
+    left: 50%;
+    bottom: -18vh;
+    width: min(1200px, 130vw);
+    height: 48vh;
+    transform: translateX(-50%);
+    border: clamp(18px, 3vw, 42px) solid rgba(12,62,105,.13);
+    border-bottom: 0;
+    border-radius: 50% 50% 0 0;
+    box-shadow: inset 0 12px 0 rgba(255,255,255,.34), 0 -18px 70px rgba(255,255,255,.2);
+  }
+  .world-cup-scene__pitch {
+    position: absolute;
+    left: 50%;
+    bottom: -13vh;
+    width: min(900px, 105vw);
+    height: 34vh;
+    transform: translateX(-50%) perspective(450px) rotateX(62deg);
+    transform-origin: bottom;
+    border: 2px solid rgba(255,255,255,.34);
+    border-radius: 50% 50% 8% 8%;
+    background: repeating-linear-gradient(90deg, rgba(28,129,76,.2) 0 10%, rgba(19,112,64,.27) 10% 20%);
+  }
+  .world-cup-scene__confetti {
+    position: absolute;
+    top: -8%;
+    left: var(--x);
+    width: 5px;
+    height: 14px;
+    border-radius: 2px;
+    background: hsl(var(--hue) 76% 55% / .7);
+    animation: confetti-fall var(--duration) linear infinite;
+    animation-delay: var(--delay);
+  }
+
+  .kawaii-scene__rainbow {
+    position: absolute;
+    right: -7vw;
+    top: 8vh;
+    width: min(420px, 48vw);
+    aspect-ratio: 1.8;
+    border-radius: 50% 50% 0 0;
+    background: repeating-radial-gradient(ellipse at 50% 100%, transparent 0 40%, rgba(244,114,182,.2) 41% 48%, rgba(196,181,253,.22) 49% 56%, rgba(153,246,228,.24) 57% 64%, transparent 65%);
+    opacity: .8;
+  }
+  .kawaii-scene__cloud {
+    position: absolute;
+    width: 120px;
+    height: 42px;
+    border-radius: 999px;
+    background: rgba(255,255,255,.66);
+    box-shadow: 0 18px 50px rgba(168,85,165,.12);
+    animation: cloud-float 13s ease-in-out infinite alternate;
+  }
+  .kawaii-scene__cloud::before,
+  .kawaii-scene__cloud::after {
+    content: "";
+    position: absolute;
+    bottom: 8px;
+    border-radius: 50%;
+    background: inherit;
+  }
+  .kawaii-scene__cloud::before { left: 18px; width: 48px; height: 48px; }
+  .kawaii-scene__cloud::after { right: 18px; width: 62px; height: 62px; }
+  .kawaii-scene__cloud i { position: absolute; z-index: 1; top: 19px; width: 4px; height: 6px; border-radius: 50%; background: rgba(75,51,72,.45); }
+  .kawaii-scene__cloud i:first-child { left: 48px; }
+  .kawaii-scene__cloud i:last-child { left: 68px; }
+  .kawaii-scene__cloud--one { left: 5vw; top: 16vh; }
+  .kawaii-scene__cloud--two { right: 13vw; bottom: 14vh; transform: scale(.76); animation-delay: -6s; }
+  .kawaii-scene__sparkle {
+    position: absolute;
+    left: var(--x);
+    top: var(--y);
+    width: var(--size);
+    aspect-ratio: 1;
+    border-radius: 50%;
+    background: rgba(168,85,165,.38);
+    box-shadow: 0 0 14px rgba(244,114,182,.48);
+    animation: sparkle-pulse var(--duration) ease-in-out infinite alternate;
+  }
+
+  .neon-city-scene__sun {
+    position: absolute;
+    left: 68%;
+    top: 11%;
+    width: clamp(110px, 18vw, 240px);
+    aspect-ratio: 1;
+    border-radius: 50%;
+    background: repeating-linear-gradient(180deg, #ff74df 0 9%, transparent 10% 13%);
+    filter: drop-shadow(0 0 28px rgba(255,79,216,.34));
+    opacity: .52;
+  }
+  .neon-city-scene__haze {
+    position: absolute;
+    inset: 32% 0 auto;
+    height: 32%;
+    background: linear-gradient(90deg, transparent, rgba(39,244,210,.09), rgba(255,79,216,.11), transparent);
+    filter: blur(26px);
+    animation: neon-haze 9s ease-in-out infinite alternate;
+  }
+  .neon-city-scene__skyline {
+    position: absolute;
+    left: -3%;
+    bottom: 0;
+    width: 106%;
+    background-color: #08091b;
+    background-image: repeating-linear-gradient(90deg, transparent 0 14px, rgba(39,244,210,.22) 15px 17px, transparent 18px 31px), repeating-linear-gradient(0deg, transparent 0 17px, rgba(255,79,216,.15) 18px 20px);
+    clip-path: polygon(0 43%, 5% 43%, 5% 20%, 11% 20%, 11% 55%, 17% 55%, 17% 6%, 24% 6%, 24% 47%, 31% 47%, 31% 29%, 38% 29%, 38% 61%, 44% 61%, 44% 13%, 52% 13%, 52% 50%, 59% 50%, 59% 23%, 66% 23%, 66% 58%, 72% 58%, 72% 9%, 80% 9%, 80% 46%, 87% 46%, 87% 25%, 94% 25%, 94% 52%, 100% 52%, 100% 100%, 0 100%);
+  }
+  .neon-city-scene__skyline--back { height: 52%; opacity: .38; transform: translateY(-7%); filter: blur(1px); }
+  .neon-city-scene__skyline--front { height: 43%; opacity: .74; }
+  .neon-city-scene__street {
+    position: absolute;
+    left: 50%;
+    bottom: -24%;
+    width: 78%;
+    height: 54%;
+    transform: translateX(-50%) perspective(480px) rotateX(68deg);
+    transform-origin: bottom;
+    background: repeating-linear-gradient(90deg, transparent 0 9%, rgba(39,244,210,.19) 10%), repeating-linear-gradient(0deg, transparent 0 14%, rgba(255,79,216,.18) 15%);
+  }
+
+  .storybook-scene__moon {
+    position: absolute;
+    right: 10vw;
+    top: 9vh;
+    width: clamp(80px, 11vw, 150px);
+    aspect-ratio: 1;
+    border-radius: 50%;
+    background: #fff1b2;
+    box-shadow: 0 0 70px rgba(247,198,93,.28);
+    opacity: .64;
+  }
+  .storybook-scene__moon::after {
+    content: "";
+    position: absolute;
+    inset: -8% -5% 12% 28%;
+    border-radius: 50%;
+    background: #1b1e40;
+  }
+  .storybook-scene__hill {
+    position: absolute;
+    left: -10%;
+    bottom: -18%;
+    width: 120%;
+    height: 52%;
+    border-radius: 50% 48% 0 0;
+  }
+  .storybook-scene__hill--back { bottom: -10%; transform: rotate(-4deg); background: rgba(70,70,105,.62); }
+  .storybook-scene__hill--front { left: -16%; transform: rotate(5deg); background: rgba(18,35,48,.86); }
+  .storybook-scene__firefly {
+    position: absolute;
+    left: var(--x);
+    top: var(--y);
+    width: 4px;
+    height: 4px;
+    border-radius: 50%;
+    background: #ffe49a;
+    box-shadow: 0 0 10px 3px rgba(247,198,93,.34);
+    animation: firefly-drift var(--duration) ease-in-out infinite alternate;
+    animation-delay: var(--delay);
+  }
+
+  @keyframes stadium-sweep { to { transform: rotate(10deg) translateX(18vw); opacity: .24; } }
+  @keyframes confetti-fall { to { transform: translate3d(7vw, 116vh, 0) rotate(520deg); } }
+  @keyframes cloud-float { to { transform: translate3d(7vw, 2vh, 0); } }
+  @keyframes sparkle-pulse { to { transform: scale(1.8); opacity: .28; } }
+  @keyframes neon-haze { to { transform: translateX(7vw); opacity: .45; } }
+  @keyframes firefly-drift { to { transform: translate3d(24px, -18px, 0) scale(1.45); opacity: .36; } }
+
+  @media (prefers-reduced-motion: reduce) {
+    .theme-scene *,
+    .theme-preview * {
+      animation: none !important;
+    }
+    .web-city-action__swinger {
+      animation: none !important;
+      opacity: .24;
+      transform: translate3d(82vw,5vh,0) rotate(20deg) scale(.8);
+    }
+  }
+
   .control-shell {
     position: relative;
     /* Intentionally transparent so the animated background canvas (z-0)

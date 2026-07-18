@@ -126,9 +126,13 @@
 - Sugestões externas de título e ano são opcionais; qualquer falha do provedor deve ser ignorada sem impedir a inclusão manual ou o sorteio.
 
 ## Tema e interface
-- Temas válidos: `light`, `dark`, `cinema`, `retro`, `matrix`, `brazil`, `easter`.
-- O projeto mantém um tema sazonal `easter` além dos temas base.
-- A direção visual alvo continua `dark glassmorphism`, mantendo os outros temas funcionais.
+- Temas válidos: `light`, `dark`, `cinema`, `retro`, `matrix`, `brazil`, `easter`, `world-cup-2026`, `kawaii`, `neon-city`, `storybook`, `web-city`, `deep-space`, `midnight-cinema` e `underwater`.
+- `src/shared/constants/theme.ts` é o catálogo canônico consumido tanto pelo onboarding quanto pelas configurações; um tema não pode existir em apenas um dos fluxos.
+- Temas com cenário são decorativos, locais e independentes do estado do jogo. Falha visual ou movimento reduzido não altera board, pontuação, turnos ou persistência.
+- Animações devem respeitar `prefers-reduced-motion`, manter contraste das superfícies e não depender de assets remotos.
+- Cenários procedurais devem limitar densidade no mobile, limitar o DPR, pausar em aba oculta e evitar qualquer efeito sobre timers ou a frequência de persistência do jogo.
+- O tema inicial continua sendo `light`; a escolha explícita continua persistida localmente.
+- Avatar é identidade da conta, fora de `TriviaSession`: quando existir, aparece no acesso à conta e nos contextos compartilhados; sem foto ou em falha de rede, a interface usa iniciais.
 
 ## Configuração inicial
 - O assistente da partida completa abre automaticamente na primeira vez, mas pode ser cancelado sem bloquear o painel.

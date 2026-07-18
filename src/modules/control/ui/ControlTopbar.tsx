@@ -3,6 +3,7 @@ import { Button } from '@/components/ui/Button'
 import type { CloudSyncStatus } from '@/modules/game/application/useCloudSync'
 import { SyncStatusIndicator } from './SyncStatusIndicator'
 import { useTranslation } from '@/shared/i18n'
+import { ParticipantAvatar } from '@/shared/components/ParticipantAvatar'
 
 interface ControlTopbarProps {
   title: string
@@ -16,6 +17,8 @@ interface ControlTopbarProps {
   onToggleSidebar: () => void
   /** Quando definido, exibe o botão de conta ao lado do Database. */
   onOpenAccount?: () => void
+  accountName?: string
+  accountAvatarUrl?: string | null
 }
 
 const modeIcons = {
@@ -30,7 +33,7 @@ const modeBgClasses = {
   online: 'bg-[var(--color-primary)]/15 text-[var(--color-primary)] border-[var(--color-primary)]/30',
 }
 
-export function ControlTopbar({ title, modeLabel, mode, syncStatus, lastSyncedAt, onForceSync, onOpenSessions, onExit, onToggleSidebar, onOpenAccount }: ControlTopbarProps) {
+export function ControlTopbar({ title, modeLabel, mode, syncStatus, lastSyncedAt, onForceSync, onOpenSessions, onExit, onToggleSidebar, onOpenAccount, accountName, accountAvatarUrl }: ControlTopbarProps) {
   const { t } = useTranslation('control')
   const ModeIcon = modeIcons[mode]
 
@@ -56,7 +59,16 @@ export function ControlTopbar({ title, modeLabel, mode, syncStatus, lastSyncedAt
       <div className="flex shrink-0 items-center gap-1.5">
         {onOpenAccount !== undefined ? (
           <Button variant="ghost" size="icon" aria-label={t('topbar.account')} onClick={onOpenAccount}>
-            <UserCircle size={15} />
+            {accountName ? (
+              <ParticipantAvatar
+                name={accountName}
+                src={accountAvatarUrl}
+                size={27}
+                className="border-[var(--color-primary)]/25 bg-[var(--color-primary)]/12 shadow-sm"
+              />
+            ) : (
+              <UserCircle size={15} />
+            )}
           </Button>
         ) : null}
         <Button variant="ghost" size="icon" aria-label={t('topbar.sessions')} onClick={onOpenSessions}>

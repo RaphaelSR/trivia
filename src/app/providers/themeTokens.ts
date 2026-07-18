@@ -28,7 +28,8 @@ export const themeTokens: Record<ThemeMode, Record<string, string>> = {
     // CALIBRATE: solid theme — surfaces are mostly opaque, slight glass feel
     "--surface-glass-bg": "rgba(255, 255, 255, 0.76)",
     "--surface-glass-strong": "rgba(255, 255, 255, 0.90)",
-    "--surface-blur": "20px"
+    "--surface-blur": "20px",
+    "--theme-backdrop": "radial-gradient(circle at 12% 0%, rgba(79, 70, 229, 0.12), transparent 28%), radial-gradient(circle at 92% 100%, rgba(34, 211, 238, 0.13), transparent 30%), #f8fafc"
   },
   dark: {
     "--color-primary": "#818cf8",
@@ -57,7 +58,8 @@ export const themeTokens: Record<ThemeMode, Record<string, string>> = {
     // CALIBRATE: solid dark theme — surfaces mostly opaque, subtle glass tint
     "--surface-glass-bg": "rgba(15, 23, 42, 0.78)",
     "--surface-glass-strong": "rgba(15, 23, 42, 0.90)",
-    "--surface-blur": "20px"
+    "--surface-blur": "20px",
+    "--theme-backdrop": "radial-gradient(circle at 12% 0%, rgba(56, 189, 248, 0.14), transparent 28%), radial-gradient(circle at 90% 100%, rgba(129, 140, 248, 0.16), transparent 30%), #08111f"
   },
   cinema: {
     "--color-primary": "#fb923c",
@@ -86,7 +88,8 @@ export const themeTokens: Record<ThemeMode, Record<string, string>> = {
     // CALIBRATE: solid cinema theme — dark warm tint, mostly opaque
     "--surface-glass-bg": "rgba(28, 25, 23, 0.80)",
     "--surface-glass-strong": "rgba(28, 25, 23, 0.92)",
-    "--surface-blur": "20px"
+    "--surface-blur": "20px",
+    "--theme-backdrop": "radial-gradient(circle at 50% 0%, rgba(251, 146, 60, 0.2), transparent 30%), linear-gradient(160deg, #0c0a09, #1c1917 56%, #431407)"
   },
   retro: {
     "--color-primary": "#ff0080",
@@ -115,7 +118,8 @@ export const themeTokens: Record<ThemeMode, Record<string, string>> = {
     // CALIBRATE: solid retro theme — deep purple tint, mostly opaque
     "--surface-glass-bg": "rgba(26, 0, 51, 0.80)",
     "--surface-glass-strong": "rgba(26, 0, 51, 0.92)",
-    "--surface-blur": "20px"
+    "--surface-blur": "20px",
+    "--theme-backdrop": "radial-gradient(circle at 75% 12%, rgba(0, 255, 255, 0.18), transparent 26%), radial-gradient(circle at 14% 88%, rgba(255, 0, 128, 0.22), transparent 28%), #16002e"
   },
   matrix: {
     "--color-primary": "#00ff00",
@@ -144,7 +148,8 @@ export const themeTokens: Record<ThemeMode, Record<string, string>> = {
     // CALIBRATE: solid matrix theme — black tint, keep very opaque for terminal feel
     "--surface-glass-bg": "rgba(0, 0, 0, 0.82)",
     "--surface-glass-strong": "rgba(0, 0, 0, 0.93)",
-    "--surface-blur": "20px"
+    "--surface-blur": "20px",
+    "--theme-backdrop": "repeating-linear-gradient(0deg, rgba(0, 255, 65, 0.025) 0 1px, transparent 1px 4px), radial-gradient(circle at 50% 0%, rgba(0, 255, 65, 0.1), transparent 34%), #000805"
   },
   brazil: {
     "--color-primary": "#009739",
@@ -174,7 +179,8 @@ export const themeTokens: Record<ThemeMode, Record<string, string>> = {
     // Increase toward 0.72 if text becomes hard to read; decrease toward 0.45 for more drama.
     "--surface-glass-bg": "rgba(241, 248, 233, 0.58)",
     "--surface-glass-strong": "rgba(241, 248, 233, 0.78)",
-    "--surface-blur": "22px"
+    "--surface-blur": "22px",
+    "--theme-backdrop": "radial-gradient(circle at 18% 0%, rgba(255, 223, 0, 0.24), transparent 28%), linear-gradient(145deg, #f7fee7, #dcfce7 48%, #eff6ff)"
   },
   easter: {
     "--color-primary": "#7c3aed",
@@ -204,7 +210,240 @@ export const themeTokens: Record<ThemeMode, Record<string, string>> = {
     // Increase toward 0.72 if text becomes hard to read; decrease toward 0.45 for more drama.
     "--surface-glass-bg": "rgba(250, 245, 255, 0.56)",
     "--surface-glass-strong": "rgba(250, 245, 255, 0.76)",
-    "--surface-blur": "22px"
+    "--surface-blur": "22px",
+    "--theme-backdrop": "radial-gradient(circle at 12% 0%, rgba(244, 114, 182, 0.2), transparent 28%), radial-gradient(circle at 90% 88%, rgba(129, 140, 248, 0.2), transparent 30%), #fff7fd"
+  },
+  'world-cup-2026': {
+    "--color-primary": "#0758a8",
+    "--color-secondary": "#d52031",
+    "--color-surface": "#eaf5ff",
+    "--color-background": "#ffffff",
+    "--color-border": "#b6d5ed",
+    "--color-text": "#10253d",
+    "--color-muted": "#51677b",
+    "--color-tooltip-bg": "#10253d",
+    "--color-tooltip-text": "#ffffff",
+    "--color-shadow": "#052f5e",
+    "--color-disabled": "#dbeaf4",
+    "--color-disabled-text": "#688195",
+    "--color-overlay": "rgba(5, 27, 52, 0.56)",
+    "--glass-bg": "rgba(255, 255, 255, 0.78)",
+    "--glass-border": "rgba(7, 88, 168, 0.2)",
+    "--glass-shadow": "rgba(5, 47, 94, 0.16)",
+    "--gradient-primary": "linear-gradient(125deg, #75aadb 0%, #ffffff 34%, #f6c445 56%, #d52031 100%)",
+    "--sidebar-bg": "rgba(248, 252, 255, 0.92)",
+    "--sidebar-border": "rgba(7, 88, 168, 0.2)",
+    "--sidebar-text": "#10253d",
+    "--sidebar-muted": "#405a70",
+    "--sidebar-active-text": "#061b31",
+    "--sidebar-badge-text": "#173b5f",
+    "--surface-glass-bg": "rgba(247, 252, 255, 0.62)",
+    "--surface-glass-strong": "rgba(247, 252, 255, 0.84)",
+    "--surface-blur": "24px",
+    "--theme-backdrop": "radial-gradient(circle at 50% 0%, rgba(255, 255, 255, 0.9), transparent 27%), linear-gradient(112deg, #dff3ff 0 47%, #fff3d1 53%, #ffe2e3 100%)"
+  },
+  kawaii: {
+    "--color-primary": "#a855a5",
+    "--color-secondary": "#2e9c91",
+    "--color-surface": "#fff7fb",
+    "--color-background": "#fffdfd",
+    "--color-border": "#efd2e6",
+    "--color-text": "#4b3348",
+    "--color-muted": "#80677c",
+    "--color-tooltip-bg": "#4b3348",
+    "--color-tooltip-text": "#fffafd",
+    "--color-shadow": "#b66aa7",
+    "--color-disabled": "#f8eaf3",
+    "--color-disabled-text": "#aa8aa2",
+    "--color-overlay": "rgba(75, 51, 72, 0.38)",
+    "--glass-bg": "rgba(255, 253, 253, 0.72)",
+    "--glass-border": "rgba(168, 85, 165, 0.16)",
+    "--glass-shadow": "rgba(182, 106, 167, 0.14)",
+    "--gradient-primary": "linear-gradient(135deg, #f9a8d4 0%, #c4b5fd 48%, #99f6e4 100%)",
+    "--sidebar-bg": "rgba(255, 250, 253, 0.92)",
+    "--sidebar-border": "rgba(168, 85, 165, 0.16)",
+    "--sidebar-text": "#4b3348",
+    "--sidebar-muted": "#72596d",
+    "--sidebar-active-text": "#382235",
+    "--sidebar-badge-text": "#63415f",
+    "--surface-glass-bg": "rgba(255, 250, 253, 0.58)",
+    "--surface-glass-strong": "rgba(255, 250, 253, 0.8)",
+    "--surface-blur": "24px",
+    "--theme-backdrop": "radial-gradient(circle at 18% 12%, rgba(249, 168, 212, 0.34), transparent 26%), radial-gradient(circle at 88% 5%, rgba(153, 246, 228, 0.38), transparent 26%), linear-gradient(160deg, #fff9fc, #f5f0ff 52%, #effffb)"
+  },
+  'neon-city': {
+    "--color-primary": "#27f4d2",
+    "--color-secondary": "#ff4fd8",
+    "--color-surface": "#090a20",
+    "--color-background": "#111229",
+    "--color-border": "#34345f",
+    "--color-text": "#f7f5ff",
+    "--color-muted": "#b7b3d4",
+    "--color-tooltip-bg": "#27f4d2",
+    "--color-tooltip-text": "#090a20",
+    "--color-shadow": "#000000",
+    "--color-disabled": "#252542",
+    "--color-disabled-text": "#777595",
+    "--color-overlay": "rgba(2, 2, 15, 0.78)",
+    "--glass-bg": "rgba(9, 10, 32, 0.76)",
+    "--glass-border": "rgba(39, 244, 210, 0.2)",
+    "--glass-shadow": "rgba(255, 79, 216, 0.2)",
+    "--gradient-primary": "linear-gradient(135deg, #27f4d2 0%, #5b5ff5 48%, #ff4fd8 100%)",
+    "--sidebar-bg": "rgba(8, 9, 29, 0.91)",
+    "--sidebar-border": "rgba(39, 244, 210, 0.2)",
+    "--sidebar-text": "#f7f5ff",
+    "--sidebar-muted": "#cbc7e4",
+    "--sidebar-active-text": "#ffffff",
+    "--sidebar-badge-text": "#d9fff8",
+    "--surface-glass-bg": "rgba(9, 10, 32, 0.64)",
+    "--surface-glass-strong": "rgba(9, 10, 32, 0.84)",
+    "--surface-blur": "22px",
+    "--theme-backdrop": "radial-gradient(circle at 50% 18%, rgba(255, 79, 216, 0.2), transparent 24%), linear-gradient(180deg, #08081d, #11103b 55%, #03040f)"
+  },
+  storybook: {
+    "--color-primary": "#f7c65d",
+    "--color-secondary": "#a78bfa",
+    "--color-surface": "#11152e",
+    "--color-background": "#1a1e3b",
+    "--color-border": "#44496d",
+    "--color-text": "#fff8df",
+    "--color-muted": "#cbc2aa",
+    "--color-tooltip-bg": "#fff8df",
+    "--color-tooltip-text": "#20223e",
+    "--color-shadow": "#050711",
+    "--color-disabled": "#2b2e4d",
+    "--color-disabled-text": "#8d8da4",
+    "--color-overlay": "rgba(5, 7, 17, 0.7)",
+    "--glass-bg": "rgba(17, 21, 46, 0.72)",
+    "--glass-border": "rgba(247, 198, 93, 0.18)",
+    "--glass-shadow": "rgba(5, 7, 17, 0.46)",
+    "--gradient-primary": "linear-gradient(135deg, #f7c65d 0%, #d977b7 46%, #7c6ee6 100%)",
+    "--sidebar-bg": "rgba(17, 21, 46, 0.92)",
+    "--sidebar-border": "rgba(247, 198, 93, 0.18)",
+    "--sidebar-text": "#fff8df",
+    "--sidebar-muted": "#ddd4bd",
+    "--sidebar-active-text": "#ffffff",
+    "--sidebar-badge-text": "#fff1bf",
+    "--surface-glass-bg": "rgba(17, 21, 46, 0.62)",
+    "--surface-glass-strong": "rgba(17, 21, 46, 0.84)",
+    "--surface-blur": "23px",
+    "--theme-backdrop": "radial-gradient(circle at 76% 15%, rgba(247, 198, 93, 0.19), transparent 18%), linear-gradient(180deg, #161938, #24234c 57%, #101426)"
+  },
+  'web-city': {
+    "--color-primary": "#ff4655",
+    "--color-secondary": "#4c8dff",
+    "--color-surface": "#070a18",
+    "--color-background": "#11152b",
+    "--color-border": "#353b63",
+    "--color-text": "#f7f8ff",
+    "--color-muted": "#bdc4dd",
+    "--color-tooltip-bg": "#f7f8ff",
+    "--color-tooltip-text": "#080b20",
+    "--color-shadow": "#010207",
+    "--color-disabled": "#222743",
+    "--color-disabled-text": "#838ba8",
+    "--color-overlay": "rgba(1, 2, 10, 0.78)",
+    "--glass-bg": "rgba(7, 10, 24, 0.74)",
+    "--glass-border": "rgba(255, 70, 85, 0.22)",
+    "--glass-shadow": "rgba(76, 141, 255, 0.22)",
+    "--gradient-primary": "linear-gradient(135deg, #ff4655 0%, #6f3fe9 48%, #4c8dff 100%)",
+    "--sidebar-bg": "rgba(7, 10, 24, 0.9)",
+    "--sidebar-border": "rgba(255, 70, 85, 0.22)",
+    "--sidebar-text": "#f7f8ff",
+    "--sidebar-muted": "#d2d6e7",
+    "--sidebar-active-text": "#ffffff",
+    "--sidebar-badge-text": "#ffe4e6",
+    "--surface-glass-bg": "rgba(7, 10, 24, 0.55)",
+    "--surface-glass-strong": "rgba(7, 10, 24, 0.86)",
+    "--surface-blur": "22px",
+    "--theme-backdrop": "radial-gradient(circle at 76% 20%, rgba(255, 70, 85, 0.18), transparent 24%), linear-gradient(180deg, #080b20, #161943 58%, #03040c)"
+  },
+  'deep-space': {
+    "--color-primary": "#a78bfa",
+    "--color-secondary": "#38bdf8",
+    "--color-surface": "#030413",
+    "--color-background": "#0b0d25",
+    "--color-border": "#343661",
+    "--color-text": "#f4f2ff",
+    "--color-muted": "#c0bdd8",
+    "--color-tooltip-bg": "#e9e5ff",
+    "--color-tooltip-text": "#090b25",
+    "--color-shadow": "#000000",
+    "--color-disabled": "#1d203d",
+    "--color-disabled-text": "#7f82a1",
+    "--color-overlay": "rgba(1, 2, 12, 0.8)",
+    "--glass-bg": "rgba(3, 4, 19, 0.75)",
+    "--glass-border": "rgba(167, 139, 250, 0.21)",
+    "--glass-shadow": "rgba(56, 189, 248, 0.18)",
+    "--gradient-primary": "linear-gradient(135deg, #a78bfa 0%, #7c3aed 45%, #38bdf8 100%)",
+    "--sidebar-bg": "rgba(3, 4, 19, 0.91)",
+    "--sidebar-border": "rgba(167, 139, 250, 0.21)",
+    "--sidebar-text": "#f4f2ff",
+    "--sidebar-muted": "#d8d4eb",
+    "--sidebar-active-text": "#ffffff",
+    "--sidebar-badge-text": "#ede9fe",
+    "--surface-glass-bg": "rgba(3, 4, 19, 0.55)",
+    "--surface-glass-strong": "rgba(3, 4, 19, 0.86)",
+    "--surface-blur": "23px",
+    "--theme-backdrop": "radial-gradient(circle at 28% 34%, rgba(126, 87, 255, 0.2), transparent 34%), linear-gradient(180deg, #030413, #090b28 58%, #02030b)"
+  },
+  'midnight-cinema': {
+    "--color-primary": "#e4ad55",
+    "--color-secondary": "#a63848",
+    "--color-surface": "#08090c",
+    "--color-background": "#151318",
+    "--color-border": "#484047",
+    "--color-text": "#f6eddd",
+    "--color-muted": "#c5b9ad",
+    "--color-tooltip-bg": "#f6eddd",
+    "--color-tooltip-text": "#111014",
+    "--color-shadow": "#000000",
+    "--color-disabled": "#29262a",
+    "--color-disabled-text": "#8e8582",
+    "--color-overlay": "rgba(0, 0, 0, 0.82)",
+    "--glass-bg": "rgba(8, 9, 12, 0.76)",
+    "--glass-border": "rgba(228, 173, 85, 0.2)",
+    "--glass-shadow": "rgba(0, 0, 0, 0.58)",
+    "--gradient-primary": "linear-gradient(135deg, #e4ad55 0%, #7f2937 58%, #22171b 100%)",
+    "--sidebar-bg": "rgba(8, 9, 12, 0.93)",
+    "--sidebar-border": "rgba(228, 173, 85, 0.2)",
+    "--sidebar-text": "#f6eddd",
+    "--sidebar-muted": "#d9cec3",
+    "--sidebar-active-text": "#fffaf0",
+    "--sidebar-badge-text": "#f8e7c8",
+    "--surface-glass-bg": "rgba(8, 9, 12, 0.56)",
+    "--surface-glass-strong": "rgba(8, 9, 12, 0.88)",
+    "--surface-blur": "20px",
+    "--theme-backdrop": "radial-gradient(circle at 78% 15%, rgba(255, 237, 185, 0.15), transparent 22%), linear-gradient(180deg, #080b12, #15131b 58%, #050608)"
+  },
+  underwater: {
+    "--color-primary": "#45d6c3",
+    "--color-secondary": "#a88cff",
+    "--color-surface": "#031521",
+    "--color-background": "#08283a",
+    "--color-border": "#28576a",
+    "--color-text": "#e8fbff",
+    "--color-muted": "#afd4dc",
+    "--color-tooltip-bg": "#dffbff",
+    "--color-tooltip-text": "#042333",
+    "--color-shadow": "#01080e",
+    "--color-disabled": "#123a49",
+    "--color-disabled-text": "#76a5ae",
+    "--color-overlay": "rgba(1, 12, 22, 0.78)",
+    "--glass-bg": "rgba(3, 21, 33, 0.73)",
+    "--glass-border": "rgba(69, 214, 195, 0.2)",
+    "--glass-shadow": "rgba(1, 8, 14, 0.48)",
+    "--gradient-primary": "linear-gradient(135deg, #45d6c3 0%, #1685a3 48%, #a88cff 100%)",
+    "--sidebar-bg": "rgba(3, 21, 33, 0.91)",
+    "--sidebar-border": "rgba(69, 214, 195, 0.2)",
+    "--sidebar-text": "#e8fbff",
+    "--sidebar-muted": "#c8e6eb",
+    "--sidebar-active-text": "#ffffff",
+    "--sidebar-badge-text": "#d8fffa",
+    "--surface-glass-bg": "rgba(3, 21, 33, 0.55)",
+    "--surface-glass-strong": "rgba(3, 21, 33, 0.85)",
+    "--surface-blur": "23px",
+    "--theme-backdrop": "radial-gradient(circle at 50% 0%, rgba(116, 224, 238, 0.16), transparent 33%), linear-gradient(180deg, #063b53, #062b43 48%, #020c18)"
   }
 }
 
@@ -217,7 +456,7 @@ export function applyTheme(mode: ThemeMode) {
   root.dataset.theme = mode
 
   // Aplicar color-scheme para melhor suporte aos temas
-  if (mode === "light" || mode === "brazil" || mode === "easter") {
+  if (mode === "light" || mode === "brazil" || mode === "easter" || mode === "world-cup-2026" || mode === "kawaii") {
     root.style.colorScheme = "light"
   } else {
     root.style.colorScheme = "dark"

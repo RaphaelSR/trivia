@@ -23,7 +23,7 @@
 
 ## Regras Essenciais
 - `GameMode`: `demo | offline | online`
-- `ThemeMode`: `light | dark | cinema | retro | matrix | brazil | easter`
+- `ThemeMode`: `light | dark | cinema | retro | matrix | brazil | easter | world-cup-2026 | kawaii | neon-city | storybook | web-city | deep-space | midnight-cinema | underwater`
 - `TileState`: `available | active | answered`
 - `MimicaScoringMode`: `full-current | half-current | steal | everyone | void`
 - Jogo termina quando todas as tiles estão `answered`.
