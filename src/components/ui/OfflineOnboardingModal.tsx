@@ -6,6 +6,8 @@ import { useThemeMode } from "../../app/providers/useThemeMode";
 import type { OnboardingConfig } from "@/modules/control/types/control.types";
 import type { ThemeMode } from "@/shared/types/game";
 import { useTranslation } from "@/shared/i18n";
+import { ThemePicker } from "@/shared/components/ThemePicker";
+import { getThemeOption } from "@/shared/constants/theme";
 
 interface OfflineOnboardingModalProps {
   isOpen: boolean;
@@ -40,15 +42,6 @@ export function OfflineOnboardingModal({
     ns: 'game',
     date: new Date().toLocaleDateString(locale),
   });
-  const themeOptions: Array<{ id: ThemeMode; name: string; description: string }> = [
-    { id: "dark", name: t('onboarding.themes.dark.name', { ns: 'game' }), description: t('onboarding.themes.dark.description', { ns: 'game' }) },
-    { id: "light", name: t('onboarding.themes.light.name', { ns: 'game' }), description: t('onboarding.themes.light.description', { ns: 'game' }) },
-    { id: "cinema", name: t('onboarding.themes.cinema.name', { ns: 'game' }), description: t('onboarding.themes.cinema.description', { ns: 'game' }) },
-    { id: "retro", name: t('onboarding.themes.retro.name', { ns: 'game' }), description: t('onboarding.themes.retro.description', { ns: 'game' }) },
-    { id: "matrix", name: t('onboarding.themes.matrix.name', { ns: 'game' }), description: t('onboarding.themes.matrix.description', { ns: 'game' }) },
-    { id: "brazil", name: t('onboarding.themes.brazil.name', { ns: 'game' }), description: t('onboarding.themes.brazil.description', { ns: 'game' }) },
-    { id: "easter", name: t('onboarding.themes.easter.name', { ns: 'game' }), description: t('onboarding.themes.easter.description', { ns: 'game' }) },
-  ];
   const [currentStep, setCurrentStep] = useState(1);
   const [config, setConfig] = useState<OnboardingConfig>(() => createInitialConfig(theme, defaultSessionTitle));
   const handleThemeSelect = (themeId: ThemeMode) => {
@@ -171,36 +164,8 @@ export function OfflineOnboardingModal({
         </p>
       </div>
 
-      <div className="grid gap-4 max-h-[400px] overflow-y-auto pr-2">
-        {themeOptions.map((theme) => (
-          <button
-            key={theme.id}
-            onClick={() => handleThemeSelect(theme.id)}
-            className={`p-4 rounded-2xl border-2 transition-all ${
-              config.theme === theme.id
-                ? "border-[var(--color-primary)] bg-[var(--color-primary)]/5"
-                : "border-[var(--color-border)] hover:border-[var(--color-primary)]/50"
-            }`}
-          >
-            <div className="flex items-center gap-3">
-              <div
-                className={`w-4 h-4 rounded-full border-2 ${
-                  config.theme === theme.id
-                    ? "border-[var(--color-primary)] bg-[var(--color-primary)]"
-                    : "border-[var(--color-border)]"
-                }`}
-              />
-              <div className="text-left">
-                <h4 className="font-semibold text-[var(--color-text)]">
-                  {theme.name}
-                </h4>
-                <p className="text-sm text-[var(--color-muted)]">
-                  {theme.description}
-                </p>
-              </div>
-            </div>
-          </button>
-        ))}
+      <div className="max-h-[min(56dvh,520px)] overflow-y-auto pr-1">
+        <ThemePicker value={config.theme} onChange={handleThemeSelect} className="lg:grid-cols-2" />
       </div>
     </div>
   );
@@ -433,7 +398,7 @@ export function OfflineOnboardingModal({
             <div className="flex justify-between">
               <span className="text-[var(--color-muted)]">{t('onboarding.summary.theme', { ns: 'game' })}</span>
               <span className="text-[var(--color-text)]">
-                {themeOptions.find((t) => t.id === config.theme)?.name}
+                {t(`onboarding.themes.${getThemeOption(config.theme).translationKey}.name`, { ns: 'game' })}
               </span>
             </div>
             <div className="flex justify-between">

@@ -54,8 +54,8 @@ import { ControlTopbar } from '../ui/ControlTopbar'
 import { EmptyStatePanel } from '../ui/EmptyStatePanel'
 import { SidebarNavGroup } from '../ui/SidebarNavGroup'
 import { SidebarNavItem } from '../ui/SidebarNavItem'
-import { BrazilBackground } from '@/shared/components/BrazilBackground'
-import { EasterBackground } from '@/shared/components/EasterBackground'
+import { ThemeBackground } from '@/shared/components/ThemeBackground'
+import { ThemePicker } from '@/shared/components/ThemePicker'
 import { useControlDashboardState } from '../hooks/useControlDashboardState'
 import { useTeamManagement } from '../hooks/useTeamManagement'
 import { useSessionManagement } from '../hooks/useSessionManagement'
@@ -81,6 +81,7 @@ import { SoundSettingsModal } from '@/components/ui/SoundSettingsModal'
 import { playSound } from '@/shared/services/audio.service'
 import { AuthPanel } from '@/modules/auth/components/AuthPanel'
 import { useLiveParticipantIdentities } from '@/modules/auth/hooks/useLiveParticipantIdentities'
+import { useMyProfileIdentity } from '@/modules/auth/hooks/useMyProfileIdentity'
 import { ParticipantAvatar } from '@/shared/components/ParticipantAvatar'
 import { useTranslation } from 'react-i18next'
 import { useNavigate } from 'react-router-dom'
@@ -126,6 +127,14 @@ export function ControlDashboard() {
   const { theme: themeMode, setTheme } = useThemeMode()
   const { gameMode, getModeDisplayName } = useGameMode()
   const { user, loading: authLoading = false } = useAuth()
+  const { identity: accountIdentity, setIdentity: setAccountIdentity } = useMyProfileIdentity(
+    user?.id ?? null,
+    gameMode !== 'demo' && isSupabaseConfigured(),
+  )
+  const accountDisplayName = accountIdentity?.accountDisplayName
+    ?? (user?.user_metadata as Record<string, string> | undefined)?.display_name
+    ?? user?.email?.split('@')[0]
+    ?? undefined
   const { verifyPin, saveCustomPin, clearCustomPin, hasCustomPin } = usePinManagement()
   const {
     currentSession,
@@ -1199,8 +1208,7 @@ export function ControlDashboard() {
 
   return (
     <>
-    {themeMode === 'brazil' && <BrazilBackground />}
-    {themeMode === 'easter' && <EasterBackground />}
+    <ThemeBackground theme={themeMode} />
     <ControlShell
       sidebarCollapsed={sidebarCollapsed}
       topbar={
@@ -1222,6 +1230,8 @@ export function ControlDashboard() {
           }}
           onToggleSidebar={() => setMobileSidebarOpen(true)}
           onOpenAccount={isSupabaseConfigured() ? () => setAccountOpen(true) : undefined}
+          accountName={user ? accountDisplayName : undefined}
+          accountAvatarUrl={user ? accountIdentity?.avatarUrl : null}
         />
       }
       statusStrip={
@@ -1762,32 +1772,8 @@ export function ControlDashboard() {
           setActivePanel('board')
         }}
       >
-        <div className="grid gap-3 md:grid-cols-3">
-          {(
-            [
-              { id: 'light', label: t('game:onboarding.themes.light.name'), description: t('game:onboarding.themes.light.description') },
-              { id: 'dark', label: t('game:onboarding.themes.dark.name'), description: t('game:onboarding.themes.dark.description') },
-              { id: 'cinema', label: t('game:onboarding.themes.cinema.name'), description: t('game:onboarding.themes.cinema.description') },
-              { id: 'retro', label: t('game:onboarding.themes.retro.name'), description: t('game:onboarding.themes.retro.description') },
-              { id: 'matrix', label: t('game:onboarding.themes.matrix.name'), description: t('game:onboarding.themes.matrix.description') },
-              { id: 'brazil', label: t('game:onboarding.themes.brazil.name'), description: t('game:onboarding.themes.brazil.description') },
-              { id: 'easter', label: t('game:onboarding.themes.easter.name'), description: t('game:onboarding.themes.easter.description') },
-            ] as const
-          ).map((option) => (
-            <button
-              key={option.id}
-              type="button"
-              onClick={() => setTheme(option.id)}
-              className={`flex flex-col items-start gap-2 rounded-2xl border px-4 py-3 text-left ${
-                themeMode === option.id
-                  ? 'border-[var(--color-primary)] bg-[var(--color-primary)]/10'
-                  : 'border-[var(--color-border)] bg-[var(--color-background)]'
-              }`}
-            >
-              <span className="text-sm font-semibold text-[var(--color-text)]">{option.label}</span>
-              <span className="text-xs text-[var(--color-muted)]">{option.description}</span>
-            </button>
-          ))}
+        <div className="max-h-[min(68dvh,680px)] overflow-y-auto pr-1">
+          <ThemePicker value={themeMode} onChange={setTheme} />
         </div>
       </Modal>
 
@@ -2048,6 +2034,7 @@ export function ControlDashboard() {
           <AuthPanel
             onClose={() => setAccountOpen(false)}
             onOpenHistoricalCopy={openFinishedGameCopy}
+            onProfileIdentityChange={setAccountIdentity}
           />
         </div>
       )}

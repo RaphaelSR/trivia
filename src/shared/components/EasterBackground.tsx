@@ -114,6 +114,7 @@ export function EasterBackground() {
     if (!canvas) return
     const ctx = canvas.getContext('2d')
     if (!ctx) return
+    const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches
 
     function resize() {
       canvas!.width = window.innerWidth
@@ -159,7 +160,9 @@ export function EasterBackground() {
         else drawStar(ctx!, p)
       }
 
-      animFrameRef.current = requestAnimationFrame(animate)
+      if (!reduceMotion) {
+        animFrameRef.current = requestAnimationFrame(animate)
+      }
     }
     animate()
 

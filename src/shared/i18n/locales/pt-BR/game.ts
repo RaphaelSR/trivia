@@ -151,6 +151,21 @@ export const game = {
     themes: {
       title: 'Escolha o tema visual',
       description: 'Selecione o visual que combina melhor com o ambiente.',
+      livingBadge: 'Cenário vivo',
+      groups: {
+        classic: {
+          title: 'Estilos clássicos',
+          description: 'Paletas diretas para partidas com visual mais discreto.',
+        },
+        animated: {
+          title: 'Temas animados',
+          description: 'Elementos e ambientes leves em movimento.',
+        },
+        cinematic: {
+          title: 'Cenários vivos',
+          description: 'Experiências em camadas que se comportam como uma cena de filme ou fase de jogo.',
+        },
+      },
       dark: { name: 'Tema escuro', description: 'Cores escuras e elegantes' },
       light: { name: 'Tema claro', description: 'Cores claras e vibrantes' },
       cinema: { name: 'Tema cinema', description: 'Atmosfera cinematográfica' },
@@ -158,6 +173,38 @@ export const game = {
       matrix: { name: 'Tema Matrix', description: 'Verde digital e efeito de terminal' },
       brazil: { name: 'Tema Brasil 🇧🇷', description: 'Verde e amarelo inspirados na bandeira brasileira' },
       easter: { name: 'Páscoa 🐣', description: 'Tons pastel com ovos e coelhos flutuantes' },
+      worldCup2026: {
+        name: 'Final 2026 · Espanha × Argentina',
+        description: 'Estádio, refletores e as cores das duas seleções na grande decisão',
+      },
+      kawaii: {
+        name: 'Doce Nuvem',
+        description: 'Pastéis suaves, carinhas, estrelas e nuvens flutuantes',
+      },
+      neonCity: {
+        name: 'Cidade Neon',
+        description: 'Skyline cyberpunk, letreiros luminosos e profundidade urbana',
+      },
+      storybook: {
+        name: 'Bosque Encantado',
+        description: 'Lua, colinas e vaga-lumes em um cenário de conto ilustrado',
+      },
+      webCity: {
+        name: 'Teia Urbana',
+        description: 'Herói em movimento, portais, quadrinhos e uma metrópole em profundidade',
+      },
+      deepSpace: {
+        name: 'Órbita Cinemática',
+        description: 'Planeta, nave, nebulosa, meteoros e estrelas em múltiplos planos',
+      },
+      midnightCinema: {
+        name: 'Sessão da Meia-Noite',
+        description: 'Cinema antigo, chuva, névoa, projetor e suspense de filme clássico',
+      },
+      underwater: {
+        name: 'Cidade Submersa',
+        description: 'Ruínas, águas-vivas, cardumes, corais e luz atravessando o oceano',
+      },
     },
     pin: {
       title: 'PIN opcional de proteção',

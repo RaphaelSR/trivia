@@ -63,7 +63,19 @@
 - QR é gerado localmente por `src/shared/components/LocalQrCode.tsx`.
 - Avatares passam por `src/modules/auth/services/profile-avatar.service.ts`: a pessoa ajusta enquadramento e zoom no navegador; o canvas gera WebP 512×512 com alvo de 350 KB e limite rígido de 1 MB. O Storage guarda somente `uid/uuid.webp` — nunca base64 no banco — e RPCs retornam identidade apenas para sessões/jogos compartilhados.
 - A UI usa `ParticipantAvatar` com fallback local por iniciais; somente `demo` não aciona serviços de identidade. Partidas completas deslogadas também permanecem totalmente locais.
+- `useMyProfileIdentity` projeta a identidade da própria conta na topbar e na landing. Upload e remoção notificam esses consumidores pela callback do `AuthPanel`, sem copiar avatar para `TriviaSession`.
 - Detalhes: [`docs/online/ARQUITETURA-ONLINE.md`](./online/ARQUITETURA-ONLINE.md).
+
+## Temas e cenários
+
+- `THEME_OPTIONS` é o catálogo canônico; onboarding e configurações renderizam o mesmo `ThemePicker`.
+- `themeTokens.ts` controla cor, contraste, superfícies e backdrop. `ThemeBackground` adiciona somente decoração visual e nunca participa do domínio ou da persistência da partida.
+- Cenários leves usam CSS/DOM local; `LivingThemeCanvas` adiciona camadas procedurais aos novos temas e renderiza as cenas completas `web-city`, `deep-space`, `midnight-cinema` e `underwater`. Não existem downloads, chaves ou dependências de runtime.
+- Elementos narrativos que precisam cruzar o primeiro plano, como a silhueta de `web-city`, vivem em uma camada SVG separada, marcada como decorativa e `pointer-events: none`; no mobile recebem trajetória e escala próprias para não cobrir as cartas.
+- O canvas limita a animação a 30 FPS, DPR a 1,5 e quantidade de elementos conforme a largura. A animação pausa quando `document.hidden` e vira um quadro estático em `prefers-reduced-motion`.
+- O tema Brasil permanece exatamente como estava; o canvas legado de Páscoa continua isolado e congela em movimento reduzido.
+- Temas salvos anteriormente continuam válidos; o provider rejeita qualquer valor fora do catálogo e retorna ao default compartilhado.
+- `ControlShell` mantém o contêiner do sidebar montado em telas pequenas; `ControlSidebar` oculta apenas o corpo desktop e projeta o drawer fixo quando solicitado. Assim, tema e demais ferramentas laterais continuam acessíveis no mobile.
 
 ## Ciclo de vida e recuperacao de sessoes
 

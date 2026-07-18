@@ -75,9 +75,12 @@ Mapa enxuto para navegar pelo produto sem depender de notas operacionais ou cont
 
 ## Interface e temas
 
-- Temas válidos: `light`, `dark`, `cinema`, `retro`, `matrix`, `brazil` e `easter`.
+- Temas válidos: `light`, `dark`, `cinema`, `retro`, `matrix`, `brazil`, `easter`, `world-cup-2026`, `kawaii`, `neon-city`, `storybook`, `web-city`, `deep-space`, `midnight-cinema` e `underwater`.
 - Default: `light`.
-- Tokens e aplicação: `src/app/providers` e `src/shared/constants/theme.ts`.
+- Catálogo: `src/shared/constants/theme.ts`; tokens e aplicação: `src/app/providers`.
+- Seletor compartilhado: `src/shared/components/ThemePicker.tsx`; composição de cenários: `ThemeBackground.tsx`; motor procedural: `LivingThemeCanvas.tsx`.
+- Cenários ficam atrás das superfícies, não recebem eventos e respeitam movimento reduzido.
+- A ação frontal de `web-city` usa SVG local sem eventos; no mobile, o acesso à galeria passa pelo drawer de `ControlSidebar`, que permanece montado fora do corpo desktop.
 
 ## Idiomas e conteúdo estático
 

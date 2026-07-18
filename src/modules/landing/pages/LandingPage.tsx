@@ -2,8 +2,7 @@ import { Film, LogIn, UserPlus, History } from 'lucide-react'
 import { useState } from 'react'
 import { ModeSelector } from '../../../components/ui/ModeSelector'
 import { GameLayout } from '../../../shared/components/GameLayout'
-import { BrazilBackground } from '../../../shared/components/BrazilBackground'
-import { EasterBackground } from '../../../shared/components/EasterBackground'
+import { ThemeBackground } from '../../../shared/components/ThemeBackground'
 import { useThemeMode } from '../../../app/providers/useThemeMode'
 import { isSupabaseConfigured } from '../../../shared/services/supabase.client'
 import { AuthPanel } from '../../auth/components/AuthPanel'
@@ -12,6 +11,8 @@ import { useTranslation } from '@/shared/i18n'
 import { useNavigate } from 'react-router-dom'
 import { createSessionRepository } from '@/modules/game/infrastructure/repository.factory'
 import type { TriviaSession } from '@/modules/trivia/types'
+import { ParticipantAvatar } from '@/shared/components/ParticipantAvatar'
+import { useMyProfileIdentity } from '@/modules/auth/hooks/useMyProfileIdentity'
 
 type AuthTab = 'signin' | 'signup'
 
@@ -21,11 +22,16 @@ export function LandingPage() {
   const { theme } = useThemeMode()
   const supabaseEnabled = isSupabaseConfigured()
   const { user } = useAuth()
+  const { identity: accountIdentity, setIdentity: setAccountIdentity } = useMyProfileIdentity(
+    user?.id ?? null,
+    supabaseEnabled,
+  )
   const [authOpen, setAuthOpen] = useState(false)
   const [authTab, setAuthTab] = useState<AuthTab>('signin')
   const navigate = useNavigate()
 
   const displayName =
+    accountIdentity?.accountDisplayName ??
     (user?.user_metadata as Record<string, string> | undefined)?.display_name ??
     user?.email?.split('@')[0] ??
     tCommon('account.label')
@@ -53,8 +59,7 @@ export function LandingPage() {
 
   return (
     <GameLayout className="relative flex items-center justify-center">
-      {theme === 'brazil' && <BrazilBackground />}
-      {theme === 'easter' && <EasterBackground />}
+      <ThemeBackground theme={theme} />
 
       {/* Modal de autenticação */}
       {supabaseEnabled && authOpen && (
@@ -66,6 +71,7 @@ export function LandingPage() {
             initialTab={authTab}
             onClose={() => setAuthOpen(false)}
             onOpenHistoricalCopy={openHistoricalCopy}
+            onProfileIdentityChange={setAccountIdentity}
           />
         </div>
       )}
@@ -97,9 +103,7 @@ export function LandingPage() {
             {user ? (
               <>
                 <div className="flex items-center gap-3">
-                  <span className="flex h-9 w-9 items-center justify-center rounded-full bg-[var(--color-primary)]/15 text-sm font-semibold uppercase text-[var(--color-primary)]">
-                    {displayName.charAt(0)}
-                  </span>
+                  <ParticipantAvatar name={displayName} src={accountIdentity?.avatarUrl} size={36} />
                   <div>
                     <p className="text-sm font-semibold text-[var(--color-text)]">{t('auth.signedInAs', { name: displayName })}</p>
                     <p className="text-xs text-[var(--color-muted)]">{t('auth.signedInDescription')}</p>

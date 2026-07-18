@@ -44,6 +44,34 @@ describe('ControlTopbar — botão de conta (item A)', () => {
     fireEvent.click(screen.getByRole('button', { name: /minha conta/i }))
     expect(onOpenAccount).toHaveBeenCalledTimes(1)
   })
+
+  it('mostra a foto da conta quando o perfil possui avatar', () => {
+    render(
+      <ControlTopbar
+        {...baseProps}
+        onOpenAccount={jest.fn()}
+        accountName="Raphael Rocha"
+        accountAvatarUrl="https://cdn.test/raphael.webp"
+      />,
+    )
+
+    expect(screen.getByRole('img', { name: /raphael rocha/i })).toHaveAttribute(
+      'src',
+      'https://cdn.test/raphael.webp',
+    )
+  })
+
+  it('usa iniciais quando a conta está logada mas não possui foto', () => {
+    render(
+      <ControlTopbar
+        {...baseProps}
+        onOpenAccount={jest.fn()}
+        accountName="Raphael Rocha"
+      />,
+    )
+
+    expect(screen.getByRole('img', { name: /iniciais.*raphael rocha/i })).toHaveTextContent('RR')
+  })
 })
 
 describe('ControlTopbar — ícone de modo (item C)', () => {

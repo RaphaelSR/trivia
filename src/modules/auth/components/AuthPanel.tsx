@@ -11,6 +11,7 @@ import { DeleteGameDialog } from './DeleteGameDialog'
 import { ProfileAvatarEditor } from './ProfileAvatarEditor'
 import { useTranslation } from '@/shared/i18n'
 import type { TriviaSession } from '@/modules/trivia/types'
+import type { ProfileIdentity } from '../services/profile-avatar.service'
 
 type Tab = 'signin' | 'signup'
 
@@ -27,6 +28,8 @@ interface AuthPanelProps {
   context?: 'default' | 'claim'
   /** Abre uma cópia independente de uma partida finalizada. */
   onOpenHistoricalCopy?: (session: TriviaSession) => boolean | Promise<boolean>
+  /** Mantém avatares externos ao painel atualizados sem duplicar estado global. */
+  onProfileIdentityChange?: (identity: ProfileIdentity) => void
 }
 
 // ---------------------------------------------------------------------------
@@ -39,6 +42,7 @@ interface LoggedInPanelProps {
   onLogout: () => Promise<void>
   onClose: () => void
   onOpenHistoricalCopy?: (session: TriviaSession) => boolean | Promise<boolean>
+  onProfileIdentityChange?: (identity: ProfileIdentity) => void
 }
 
 function formatDate(iso: string, locale: string): string {
@@ -58,7 +62,7 @@ function buildScoreLine(entry: NormalizedGameSummary): string {
   return entry.teams.map((t) => `${t.name} ${t.score}`).join(' × ')
 }
 
-function LoggedInPanel({ user, loading, onLogout, onClose, onOpenHistoricalCopy }: LoggedInPanelProps) {
+function LoggedInPanel({ user, loading, onLogout, onClose, onOpenHistoricalCopy, onProfileIdentityChange }: LoggedInPanelProps) {
   const { t, i18n } = useTranslation(['auth', 'common'])
   const name =
     (user.user_metadata as Record<string, string> | undefined)?.display_name ??
@@ -127,7 +131,7 @@ function LoggedInPanel({ user, loading, onLogout, onClose, onOpenHistoricalCopy 
 
       {/* Cabeçalho do usuário */}
       <div className="flex flex-col items-center gap-3 pb-4">
-        <ProfileAvatarEditor name={name} />
+        <ProfileAvatarEditor name={name} onChanged={onProfileIdentityChange} />
         <p className="text-sm font-medium text-zinc-100">{name}</p>
         <p className="text-xs text-zinc-400">{user.email}</p>
         <button
@@ -477,6 +481,7 @@ export function AuthPanel({
   initialTab = 'signin',
   context = 'default',
   onOpenHistoricalCopy,
+  onProfileIdentityChange,
 }: AuthPanelProps) {
   const { t } = useTranslation('auth')
   const { user, loading, login, register, logout, resend, requestReset } = useAuth()
@@ -548,6 +553,7 @@ export function AuthPanel({
         onLogout={handleLogout}
         onClose={onClose}
         onOpenHistoricalCopy={onOpenHistoricalCopy}
+        onProfileIdentityChange={onProfileIdentityChange}
       />
     )
   }

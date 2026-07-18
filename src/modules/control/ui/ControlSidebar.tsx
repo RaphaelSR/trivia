@@ -15,7 +15,7 @@ interface ControlSidebarProps {
 function SidebarBody({ collapsed, title, onToggleCollapsed, children }: Omit<ControlSidebarProps, 'mobileOpen' | 'onCloseMobile'>) {
   const { t } = useTranslation('control')
   return (
-    <aside className="sidebar-surface flex h-full flex-col p-2.5">
+    <aside className="sidebar-surface hidden h-full flex-col p-2.5 xl:flex">
       <div className="mb-2 flex items-center justify-between gap-2 border-b border-white/12 pb-2">
         {!collapsed ? (
           <p className="truncate text-xs font-semibold text-[var(--sidebar-active-text)]">{title}</p>

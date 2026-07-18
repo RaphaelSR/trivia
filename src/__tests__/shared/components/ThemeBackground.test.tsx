@@ -1,0 +1,41 @@
+import '@testing-library/jest-dom'
+import { render } from '@testing-library/react'
+import { ThemeBackground } from '@/shared/components/ThemeBackground'
+
+jest.mock('@/shared/components/LivingThemeCanvas', () => ({
+  LivingThemeCanvas: ({ theme }: { theme: string }) => <canvas data-living-scene={theme} />,
+}))
+
+describe('ThemeBackground', () => {
+  it.each([
+    'world-cup-2026',
+    'kawaii',
+    'neon-city',
+    'storybook',
+    'web-city',
+    'deep-space',
+    'midnight-cinema',
+    'underwater',
+  ] as const)('renderiza o cenário decorativo %s fora da interação', (theme) => {
+    const { container } = render(<ThemeBackground theme={theme} />)
+    const scene = container.querySelector(`[data-theme-scene="${theme}"]`)
+
+    expect(scene).toHaveAttribute('aria-hidden', 'true')
+    expect(scene).toHaveClass('pointer-events-none')
+    expect(container.querySelector(`[data-living-scene="${theme}"]`)).toBeInTheDocument()
+  })
+
+  it('não adiciona camada extra para temas que usam somente tokens', () => {
+    const { container } = render(<ThemeBackground theme="light" />)
+    expect(container).toBeEmptyDOMElement()
+  })
+
+  it('mantém a ação frontal da Teia Urbana decorativa e sem interceptar interação', () => {
+    const { container } = render(<ThemeBackground theme="web-city" />)
+    const action = container.querySelector('[data-web-city-action]')
+
+    expect(action).toHaveAttribute('aria-hidden', 'true')
+    expect(action).toHaveClass('pointer-events-none')
+    expect(action?.querySelector('svg')).toHaveAttribute('role', 'presentation')
+  })
+})
