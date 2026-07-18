@@ -1,6 +1,6 @@
-import { Check, Clapperboard, Sparkles } from 'lucide-react'
+import { Check, Clapperboard, Gamepad2, Sparkles } from 'lucide-react'
 import clsx from 'clsx'
-import { THEME_OPTIONS } from '@/shared/constants/theme'
+import { THEME_OPTIONS, type ThemeCategory } from '@/shared/constants/theme'
 import type { ThemeMode } from '@/shared/types/game'
 import { useTranslation } from '@/shared/i18n'
 
@@ -18,19 +18,25 @@ export function ThemePicker({ value, onChange, className }: ThemePickerProps) {
       id: 'classic',
       title: t('onboarding.themes.groups.classic.title'),
       description: t('onboarding.themes.groups.classic.description'),
-      options: THEME_OPTIONS.filter((option) => !option.animated),
+      options: THEME_OPTIONS.filter((option) => option.category === 'classic'),
     },
     {
       id: 'animated',
       title: t('onboarding.themes.groups.animated.title'),
       description: t('onboarding.themes.groups.animated.description'),
-      options: THEME_OPTIONS.filter((option) => option.animated && !option.cinematic),
+      options: THEME_OPTIONS.filter((option) => option.category === 'animated'),
     },
     {
-      id: 'cinematic',
-      title: t('onboarding.themes.groups.cinematic.title'),
-      description: t('onboarding.themes.groups.cinematic.description'),
-      options: THEME_OPTIONS.filter((option) => option.cinematic),
+      id: 'game',
+      title: t('onboarding.themes.groups.game.title'),
+      description: t('onboarding.themes.groups.game.description'),
+      options: THEME_OPTIONS.filter((option) => option.category === 'game'),
+    },
+    {
+      id: 'cinema',
+      title: t('onboarding.themes.groups.cinema.title'),
+      description: t('onboarding.themes.groups.cinema.description'),
+      options: THEME_OPTIONS.filter((option) => option.category === 'cinema'),
     },
   ]
 
@@ -67,8 +73,9 @@ export function ThemePicker({ value, onChange, className }: ThemePickerProps) {
                   <ThemePreview
                     theme={option.id}
                     animated={option.animated}
-                    cinematic={option.cinematic}
-                    cinematicLabel={t('onboarding.themes.livingBadge')}
+                    category={option.category}
+                    gameLabel={t('onboarding.themes.gameBadge')}
+                    cinemaLabel={t('onboarding.themes.cinemaBadge')}
                   />
                   <span className="flex min-h-[84px] items-start gap-3 px-3.5 py-3">
                     <span className="min-w-0 flex-1">
@@ -80,7 +87,7 @@ export function ThemePicker({ value, onChange, className }: ThemePickerProps) {
                       className={clsx(
                         'mt-0.5 inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-full border transition',
                         selected
-                          ? 'border-[var(--color-primary)] bg-[var(--color-primary)] text-white'
+                          ? 'border-[var(--color-primary)] bg-[var(--color-primary)] text-[var(--color-on-primary)]'
                           : 'border-[var(--color-border)] text-transparent',
                       )}
                     >
@@ -100,22 +107,28 @@ export function ThemePicker({ value, onChange, className }: ThemePickerProps) {
 function ThemePreview({
   theme,
   animated,
-  cinematic = false,
-  cinematicLabel,
+  category,
+  gameLabel,
+  cinemaLabel,
 }: {
   theme: ThemeMode
   animated: boolean
-  cinematic?: boolean
-  cinematicLabel: string
+  category: ThemeCategory
+  gameLabel: string
+  cinemaLabel: string
 }) {
   return (
     <span className="theme-preview relative block h-16 overflow-hidden" data-theme-preview={theme} aria-hidden="true">
       <span className="theme-preview__shape theme-preview__shape--one" />
       <span className="theme-preview__shape theme-preview__shape--two" />
       <span className="theme-preview__shape theme-preview__shape--three" />
-      {cinematic ? (
+      {category === 'cinema' ? (
         <span className="absolute left-2 top-2 z-[2] inline-flex items-center gap-1 rounded-full border border-white/20 bg-black/35 px-2 py-1 text-[9px] font-semibold uppercase tracking-wider text-white backdrop-blur-sm">
-          <Clapperboard className="h-3 w-3" /> {cinematicLabel}
+          <Clapperboard className="h-3 w-3" /> {cinemaLabel}
+        </span>
+      ) : category === 'game' ? (
+        <span className="absolute left-2 top-2 z-[2] inline-flex items-center gap-1 rounded-full border border-white/20 bg-black/35 px-2 py-1 text-[9px] font-semibold uppercase tracking-wider text-white backdrop-blur-sm">
+          <Gamepad2 className="h-3 w-3" /> {gameLabel}
         </span>
       ) : animated ? (
         <Sparkles className="absolute right-2.5 top-2.5 h-3.5 w-3.5 text-white/85 drop-shadow" />

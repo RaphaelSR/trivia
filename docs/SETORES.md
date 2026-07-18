@@ -75,10 +75,12 @@ Mapa enxuto para navegar pelo produto sem depender de notas operacionais ou cont
 
 ## Interface e temas
 
-- Temas válidos: `light`, `dark`, `cinema`, `retro`, `matrix`, `brazil`, `easter`, `world-cup-2026`, `kawaii`, `neon-city`, `storybook`, `web-city`, `deep-space`, `midnight-cinema` e `underwater`.
+- Temas válidos: `light`, `dark`, `cinema`, `retro`, `matrix`, `brazil`, `easter`, `world-cup-2026`, `kawaii`, `neon-city`, `storybook`, `web-city`, `deep-space`, `midnight-cinema`, `underwater`, `neon-grand-prix`, `pixel-bomb-arena`, `shadow-dojo`, `wasteland-rooftops`, `enchanted-kingdom`, `starfighter-battle`, `moonlit-liner`, `castaway-island` e `family-noir`.
 - Default: `light`.
 - Catálogo: `src/shared/constants/theme.ts`; tokens e aplicação: `src/app/providers`.
+- Grupos da galeria: `classic`, `animated`, `game` e `cinema`.
 - Seletor compartilhado: `src/shared/components/ThemePicker.tsx`; composição de cenários: `ThemeBackground.tsx`; motor procedural: `LivingThemeCanvas.tsx`.
+- Artes dos 13 cenários completos: pares AVIF/WebP locais em `src/assets/themes`, compostos com vinheta e Canvas; nenhum asset externo participa do runtime.
 - Cenários ficam atrás das superfícies, não recebem eventos e respeitam movimento reduzido.
 - A ação frontal de `web-city` usa SVG local sem eventos; no mobile, o acesso à galeria passa pelo drawer de `ControlSidebar`, que permanece montado fora do corpo desktop.
 

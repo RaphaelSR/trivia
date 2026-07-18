@@ -16,6 +16,15 @@ export type ThemeMode =
   | 'deep-space'
   | 'midnight-cinema'
   | 'underwater'
+  | 'neon-grand-prix'
+  | 'pixel-bomb-arena'
+  | 'shadow-dojo'
+  | 'wasteland-rooftops'
+  | 'enchanted-kingdom'
+  | 'starfighter-battle'
+  | 'moonlit-liner'
+  | 'castaway-island'
+  | 'family-noir'
 
 export type TileState = 'available' | 'active' | 'answered'
 

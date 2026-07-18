@@ -133,7 +133,7 @@ export function LandingPage() {
                   </button>
                   <button
                     onClick={() => openAuth('signup')}
-                    className="inline-flex items-center gap-2 rounded-2xl bg-[var(--color-primary)] px-4 py-2 text-sm font-semibold text-[var(--color-background)] transition-colors hover:bg-[color:color-mix(in_srgb,var(--color-primary)_88%,var(--color-background)_12%)]"
+                    className="inline-flex items-center gap-2 rounded-2xl bg-[var(--color-primary)] px-4 py-2 text-sm font-semibold text-[var(--color-on-primary)] transition-colors hover:bg-[color:color-mix(in_srgb,var(--color-primary)_88%,var(--color-background)_12%)]"
                   >
                     <UserPlus className="h-4 w-4" />
                     {tCommon('account.signUp')}

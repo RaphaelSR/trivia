@@ -223,7 +223,7 @@ export function ScoringControls({
                   onClick={() => handleSuggestedPointsSelect(preset.points)}
                   className={`rounded-full px-2.5 py-1 text-[11px] font-semibold transition ${
                     suggestedPoints === preset.points
-                      ? 'bg-[var(--color-primary)] text-white'
+                      ? 'bg-[var(--color-primary)] text-[var(--color-on-primary)]'
                       : 'border border-[var(--color-border)] bg-[var(--color-surface)] text-[var(--color-text)]'
                   }`}
                 >

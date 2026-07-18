@@ -82,11 +82,13 @@ Mapa funcional do projeto com foco no que existe hoje, no que esta em migracao e
 ## Tema e interface
 - `ativo`: temas base `light`, `dark`, `cinema`, `retro`, `matrix`, `brazil` e `easter`
 - `ativo`: cenários leves `world-cup-2026` (Final Espanha × Argentina), `kawaii`, `neon-city` e `storybook`
-- `ativo`: cenários cinematográficos `web-city`, `deep-space`, `midnight-cinema` e `underwater`
+- `ativo`: mundos de jogo `web-city`, `neon-grand-prix`, `pixel-bomb-arena`, `shadow-dojo`, `wasteland-rooftops`, `enchanted-kingdom` e `starfighter-battle`
+- `ativo`: cenas de cinema `deep-space`, `midnight-cinema`, `underwater`, `moonlit-liner`, `castaway-island` e `family-noir`
 - `ativo`: troca de tema em runtime com persistencia local
 - `ativo`: catálogo visual único no onboarding e nas configurações, com miniaturas em CSS
-- `ativo`: animações locais sem chamadas de rede e com fallback de movimento reduzido
+- `ativo`: artes AVIF/WebP e animações locais, sem APIs ou assets externos, com fallback de movimento reduzido
 - `ativo`: motor procedural a 30 FPS, com DPR máximo de 1,5, densidade adaptativa e pausa automática em aba oculta
+- `ativo`: code splitting por cena; arte e renderer do tema ativo carregam sem trazer os demais renderers para o bundle inicial
 - `ativo`: drawer lateral funcional no mobile e ação cinematográfica com escala/trajetória adaptadas a 375 px
 - `ativo`: configuração inicial opcional da partida completa, com tema claro selecionado por padrão
 - `ativo`: foto da conta no cabeçalho e na landing, com fallback por iniciais

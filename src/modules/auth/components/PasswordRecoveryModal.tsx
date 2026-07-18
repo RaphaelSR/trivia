@@ -123,7 +123,7 @@ export function PasswordRecoveryModal() {
           <button
             type="submit"
             disabled={saving}
-            className="mt-1 w-full rounded-lg bg-[var(--color-primary)] py-2 text-sm font-semibold text-black transition-opacity hover:opacity-90 disabled:opacity-50"
+            className="mt-1 w-full rounded-lg bg-[var(--color-primary)] py-2 text-sm font-semibold text-[var(--color-on-primary)] transition-opacity hover:opacity-90 disabled:opacity-50"
           >
             {saving ? t('actions.saving', { ns: 'common' }) : t('recovery.save', { ns: 'auth' })}
           </button>

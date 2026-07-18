@@ -117,6 +117,121 @@
 }
 
 @layer components {
+  .theme-scene[data-theme-art="true"]::before,
+  .theme-scene[data-theme-art="true"]::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+  }
+
+  .theme-scene[data-theme-art="true"]::before {
+    z-index: 0;
+    background-position: var(--theme-art-position, center);
+    background-size: cover;
+    filter: saturate(1.04) contrast(1.02);
+    transform: scale(1.015);
+  }
+
+  .theme-scene[data-theme-art="true"]::after {
+    z-index: 1;
+    background:
+      radial-gradient(circle at 50% 42%, transparent 22%, rgba(2, 6, 23, 0.14) 76%, rgba(2, 6, 23, 0.34) 100%),
+      linear-gradient(180deg, rgba(2, 6, 23, 0.08), rgba(2, 6, 23, 0.2));
+  }
+
+  .theme-scene[data-theme-art="true"] > canvas {
+    z-index: 2;
+  }
+
+  .theme-scene[data-theme-scene="web-city"]::before {
+    background-image: url("../assets/themes/web-city.webp");
+    background-image: image-set(url("../assets/themes/web-city.avif") type("image/avif"), url("../assets/themes/web-city.webp") type("image/webp"));
+  }
+
+  .theme-scene[data-theme-scene="deep-space"]::before {
+    background-image: url("../assets/themes/deep-space.webp");
+    background-image: image-set(url("../assets/themes/deep-space.avif") type("image/avif"), url("../assets/themes/deep-space.webp") type("image/webp"));
+  }
+
+  .theme-scene[data-theme-scene="midnight-cinema"]::before {
+    background-image: url("../assets/themes/midnight-cinema.webp");
+    background-image: image-set(url("../assets/themes/midnight-cinema.avif") type("image/avif"), url("../assets/themes/midnight-cinema.webp") type("image/webp"));
+  }
+
+  .theme-scene[data-theme-scene="underwater"]::before {
+    background-image: url("../assets/themes/underwater.webp");
+    background-image: image-set(url("../assets/themes/underwater.avif") type("image/avif"), url("../assets/themes/underwater.webp") type("image/webp"));
+  }
+
+  .theme-scene[data-theme-scene="neon-grand-prix"]::before {
+    background-image: url("../assets/themes/neon-grand-prix.webp");
+    background-image: image-set(url("../assets/themes/neon-grand-prix.avif") type("image/avif"), url("../assets/themes/neon-grand-prix.webp") type("image/webp"));
+  }
+
+  .theme-scene[data-theme-scene="pixel-bomb-arena"]::before {
+    background-image: url("../assets/themes/pixel-bomb-arena.webp");
+    background-image: image-set(url("../assets/themes/pixel-bomb-arena.avif") type("image/avif"), url("../assets/themes/pixel-bomb-arena.webp") type("image/webp"));
+    image-rendering: pixelated;
+  }
+
+  .theme-scene[data-theme-scene="shadow-dojo"]::before {
+    background-image: url("../assets/themes/shadow-dojo.webp");
+    background-image: image-set(url("../assets/themes/shadow-dojo.avif") type("image/avif"), url("../assets/themes/shadow-dojo.webp") type("image/webp"));
+  }
+
+  .theme-scene[data-theme-scene="wasteland-rooftops"]::before {
+    background-image: url("../assets/themes/wasteland-rooftops.webp");
+    background-image: image-set(url("../assets/themes/wasteland-rooftops.avif") type("image/avif"), url("../assets/themes/wasteland-rooftops.webp") type("image/webp"));
+  }
+
+  .theme-scene[data-theme-scene="enchanted-kingdom"]::before {
+    --theme-art-position: 58% center;
+    background-image: url("../assets/themes/enchanted-kingdom.webp");
+    background-image: image-set(url("../assets/themes/enchanted-kingdom.avif") type("image/avif"), url("../assets/themes/enchanted-kingdom.webp") type("image/webp"));
+  }
+
+  .theme-scene[data-theme-scene="starfighter-battle"]::before {
+    background-image: url("../assets/themes/starfighter-battle.webp");
+    background-image: image-set(url("../assets/themes/starfighter-battle.avif") type("image/avif"), url("../assets/themes/starfighter-battle.webp") type("image/webp"));
+  }
+
+  .theme-scene[data-theme-scene="moonlit-liner"]::before {
+    --theme-art-position: 36% center;
+    background-image: url("../assets/themes/moonlit-liner.webp");
+    background-image: image-set(url("../assets/themes/moonlit-liner.avif") type("image/avif"), url("../assets/themes/moonlit-liner.webp") type("image/webp"));
+  }
+
+  .theme-scene[data-theme-scene="castaway-island"]::before {
+    background-image: url("../assets/themes/castaway-island.webp");
+    background-image: image-set(url("../assets/themes/castaway-island.avif") type("image/avif"), url("../assets/themes/castaway-island.webp") type("image/webp"));
+  }
+
+  .theme-scene[data-theme-scene="family-noir"]::before {
+    --theme-art-position: 58% center;
+    background-image: url("../assets/themes/family-noir.webp");
+    background-image: image-set(url("../assets/themes/family-noir.avif") type("image/avif"), url("../assets/themes/family-noir.webp") type("image/webp"));
+  }
+
+  @media (max-width: 640px) and (orientation: portrait) {
+    .theme-scene[data-theme-scene="castaway-island"]::before {
+      --theme-art-position: 28% center;
+    }
+
+    .theme-scene[data-theme-scene="family-noir"]::before {
+      --theme-art-position: 66% center;
+    }
+  }
+
+  canvas:is(
+    [data-living-scene="web-city"],
+    [data-living-scene="deep-space"],
+    [data-living-scene="midnight-cinema"],
+    [data-living-scene="underwater"]
+  ) {
+    mix-blend-mode: screen;
+    opacity: 0.72;
+  }
+
   /* Miniaturas do catálogo: usam apenas CSS para continuar leves e offline. */
   .theme-preview {
     background: var(--preview-background, var(--gradient-primary));
@@ -165,8 +280,35 @@
   .theme-preview[data-theme-preview="underwater"] { --preview-background: radial-gradient(ellipse at 50% -10%, rgba(163,244,255,.34), transparent 46%), linear-gradient(#075271, #063047 56%, #020c18); }
   .theme-preview[data-theme-preview="underwater"] .theme-preview__shape--one { left: 65%; top: 14%; width: 24px; height: 18px; border-radius: 50% 50% 42% 42%; background: rgba(168,140,255,.4); box-shadow: 0 0 14px rgba(168,140,255,.4); }
   .theme-preview[data-theme-preview="underwater"] .theme-preview__shape--two { left: -6%; bottom: -24px; width: 112%; height: 46px; background: rgba(2,18,28,.75); }
+  .theme-preview[data-theme-preview="neon-grand-prix"] { --preview-background: radial-gradient(circle at 76% 24%, rgba(255,64,95,.7) 0 9%, transparent 10%), linear-gradient(180deg, #111536 0 48%, #050611 49%); }
+  .theme-preview[data-theme-preview="neon-grand-prix"] .theme-preview__shape--two { left: 22%; bottom: -18px; width: 58%; height: 62px; border: 0; border-radius: 45% 45% 0 0; background: repeating-linear-gradient(90deg, transparent 0 47%, rgba(45,226,230,.72) 48% 52%, transparent 53% 100%), linear-gradient(110deg, transparent 0 43%, rgba(255,255,255,.16) 44% 46%, #111827 47% 53%, rgba(255,255,255,.16) 54% 56%, transparent 57%); }
+  .theme-preview[data-theme-preview="neon-grand-prix"] .theme-preview__shape--one { left: 13%; top: 31%; width: 38px; height: 13px; border-radius: 5px 14px 4px 4px; background: #ff405f; box-shadow: 9px 9px 0 -5px #050611, 27px 9px 0 -5px #050611, 0 0 13px rgba(255,64,95,.5); }
+  .theme-preview[data-theme-preview="pixel-bomb-arena"] { --preview-background: linear-gradient(rgba(255,255,255,.07) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,.07) 1px, transparent 1px), linear-gradient(135deg, #1b0e2e, #3a1b53); background-size: 16px 16px, 16px 16px, auto; }
+  .theme-preview[data-theme-preview="pixel-bomb-arena"] .theme-preview__shape--one { left: 19%; top: 24%; width: 25px; height: 25px; border: 3px solid #ffc83d; border-radius: 50%; background: #111018; box-shadow: 43px 19px 0 -5px #ff5492, 0 0 13px rgba(255,200,61,.52); }
+  .theme-preview[data-theme-preview="pixel-bomb-arena"] .theme-preview__shape--two { left: 46%; bottom: -7px; width: 17px; height: 52px; border: 0; border-radius: 0; background: repeating-linear-gradient(0deg, #5cf2c2 0 13px, #241338 14px 17px); }
+  .theme-preview[data-theme-preview="shadow-dojo"] { --preview-background: radial-gradient(circle at 72% 26%, #d74b4f 0 12%, rgba(125,31,44,.52) 13% 23%, transparent 24%), linear-gradient(180deg, #150b0d, #2b1115 64%, #070405); }
+  .theme-preview[data-theme-preview="shadow-dojo"] .theme-preview__shape--two { left: -5%; bottom: -13px; width: 110%; height: 42px; border: 0; border-radius: 0; clip-path: polygon(0 48%, 28% 48%, 34% 20%, 47% 20%, 50% 0, 53% 20%, 66% 20%, 72% 48%, 100% 48%, 100% 100%, 0 100%); background: #080607; }
+  .theme-preview[data-theme-preview="shadow-dojo"] .theme-preview__shape--one { left: 22%; top: 32%; width: 5px; height: 27px; border: 0; border-radius: 50% 50% 4px 4px; background: #e8b55b; box-shadow: 0 0 12px rgba(232,181,91,.62), 58px 4px 0 #e8b55b; }
+  .theme-preview[data-theme-preview="wasteland-rooftops"] { --preview-background: radial-gradient(circle at 75% 25%, #f4b35e 0 11%, rgba(201,104,58,.28) 12% 25%, transparent 26%), linear-gradient(#754332, #3d3028 62%, #141513); }
+  .theme-preview[data-theme-preview="wasteland-rooftops"] .theme-preview__shape--two { left: -5%; bottom: -9px; width: 110%; height: 40px; border: 0; border-radius: 0; clip-path: polygon(0 38%, 16% 38%, 16% 18%, 30% 18%, 30% 54%, 48% 54%, 48% 8%, 63% 8%, 63% 44%, 78% 44%, 78% 25%, 100% 25%, 100% 100%, 0 100%); background: #171817; }
+  .theme-preview[data-theme-preview="wasteland-rooftops"] .theme-preview__shape--one { left: 14%; top: 23%; width: 55px; height: 2px; border: 0; border-radius: 0; background: rgba(245,224,188,.42); box-shadow: 19px 9px 0 rgba(89,195,180,.34), 64px 17px 0 rgba(245,224,188,.28); transform: rotate(-7deg); }
+  .theme-preview[data-theme-preview="enchanted-kingdom"] { --preview-background: radial-gradient(circle at 77% 23%, #f5e7bb 0 9%, rgba(200,148,255,.2) 10% 23%, transparent 24%), linear-gradient(180deg, #15193c, #293765 62%, #0b211c); }
+  .theme-preview[data-theme-preview="enchanted-kingdom"] .theme-preview__shape--two { left: 38%; bottom: -8px; width: 54px; height: 48px; border: 0; border-radius: 0; clip-path: polygon(0 100%, 0 46%, 14% 46%, 14% 20%, 25% 20%, 25% 43%, 42% 43%, 50% 0, 58% 43%, 75% 43%, 75% 20%, 86% 20%, 86% 46%, 100% 46%, 100% 100%); background: #111a2d; box-shadow: 0 0 16px rgba(101,230,168,.25); }
+  .theme-preview[data-theme-preview="enchanted-kingdom"] .theme-preview__shape--one { left: 12%; top: 31%; width: 29px; height: 15px; border: 0; border-radius: 70% 20% 65% 20%; background: rgba(101,230,168,.46); transform: rotate(-13deg); box-shadow: 48px 8px 0 -5px rgba(200,148,255,.56); }
+  .theme-preview[data-theme-preview="starfighter-battle"] { --preview-background: radial-gradient(circle at 28% 34%, rgba(72,89,224,.55), transparent 32%), radial-gradient(circle at 70% 58%, rgba(255,95,117,.25), transparent 25%), #02040e; }
+  .theme-preview[data-theme-preview="starfighter-battle"] .theme-preview__shape--one { left: 18%; top: 39%; width: 55px; height: 14px; border: 0; border-radius: 0; clip-path: polygon(0 45%, 38% 35%, 58% 0, 71% 36%, 100% 50%, 70% 62%, 56% 100%, 38% 63%); background: #9bc8ff; transform: rotate(-12deg); box-shadow: 0 0 13px rgba(97,169,255,.58); }
+  .theme-preview[data-theme-preview="starfighter-battle"] .theme-preview__shape--two { left: 61%; bottom: 11px; width: 62px; height: 2px; border: 0; border-radius: 0; background: #ff5f75; box-shadow: -35px -24px 0 #61a9ff, 0 0 10px rgba(255,95,117,.8); transform: rotate(18deg); }
+  .theme-preview[data-theme-preview="moonlit-liner"] { --preview-background: radial-gradient(circle at 77% 20%, #e6edf0 0 10%, rgba(126,200,232,.16) 11% 25%, transparent 26%), linear-gradient(180deg, #091728, #1d4058 61%, #06131d); }
+  .theme-preview[data-theme-preview="moonlit-liner"] .theme-preview__shape--two { left: 18%; bottom: 5px; width: 74%; height: 25px; border: 0; border-radius: 3px 3px 55% 35%; clip-path: polygon(0 25%, 24% 25%, 28% 0, 35% 0, 39% 25%, 100% 25%, 88% 100%, 15% 100%); background: linear-gradient(#f2e5c8 0 24%, #15181d 25% 72%, #8d2d34 73%); box-shadow: 0 7px 13px rgba(0,0,0,.4); }
+  .theme-preview[data-theme-preview="moonlit-liner"] .theme-preview__shape--one { left: 27%; top: 16%; width: 3px; height: 23px; border: 0; border-radius: 0; background: #d7b878; box-shadow: 13px 2px 0 #d7b878, 26px 5px 0 #d7b878; }
+  .theme-preview[data-theme-preview="castaway-island"] { --preview-background: radial-gradient(circle at 72% 25%, #ffca6b 0 11%, rgba(240,112,74,.3) 12% 28%, transparent 29%), linear-gradient(180deg, #274e59, #d57951 58%, #0d4a45 59%); }
+  .theme-preview[data-theme-preview="castaway-island"] .theme-preview__shape--two { left: -4%; bottom: -20px; width: 112%; height: 45px; border: 0; border-radius: 50% 45% 0 0; background: #102d25; }
+  .theme-preview[data-theme-preview="castaway-island"] .theme-preview__shape--one { left: 27%; top: 23%; width: 5px; height: 43px; border: 0; border-radius: 3px; background: #241d17; transform: rotate(12deg); box-shadow: 9px -7px 0 7px rgba(20,55,36,.94), -5px -12px 0 6px rgba(20,55,36,.88); }
+  .theme-preview[data-theme-preview="family-noir"] { --preview-background: repeating-linear-gradient(0deg, rgba(201,154,93,.13) 0 2px, transparent 3px 10px), linear-gradient(120deg, #090807, #2b201a 58%, #100b0b); }
+  .theme-preview[data-theme-preview="family-noir"] .theme-preview__shape--two { left: 22%; bottom: -9px; width: 66%; height: 31px; border: 0; border-radius: 3px 3px 0 0; background: #090807; box-shadow: inset 0 6px 0 rgba(143,48,64,.35); }
+  .theme-preview[data-theme-preview="family-noir"] .theme-preview__shape--one { left: 66%; top: 17%; width: 20px; height: 20px; border-radius: 50%; border-color: rgba(201,154,93,.32); background: rgba(201,154,93,.15); box-shadow: 0 0 18px rgba(201,154,93,.3), -48px 10px 0 -8px #8f3040; }
 
-  /* Cenários animados. Todos são decorativos, sem assets remotos ou custo de rede. */
+  /* Cenários animados. Todos são decorativos e não dependem de assets externos. */
   .theme-scene {
     isolation: isolate;
   }

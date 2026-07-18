@@ -45,6 +45,7 @@ import {
 import { ProfileAvatarEditor } from '../components/ProfileAvatarEditor'
 import { useTranslation } from '@/shared/i18n'
 import { useThemeMode } from '@/app/providers/useThemeMode'
+import { themeTokens } from '@/app/providers/themeTokens'
 import { Button } from '@/components/ui/Button'
 import type { User } from '@supabase/supabase-js'
 
@@ -419,7 +420,7 @@ function SuccessCard({
       )}
       <Link
         to={HOME_ROUTE}
-        className="mt-4 inline-flex min-h-11 items-center justify-center rounded-xl bg-[var(--color-primary)] px-5 py-2 text-sm font-semibold text-[var(--color-surface)] transition-opacity hover:opacity-90"
+        className="mt-4 inline-flex min-h-11 items-center justify-center rounded-xl bg-[var(--color-primary)] px-5 py-2 text-sm font-semibold text-[var(--color-on-primary)] transition-opacity hover:opacity-90"
       >
         {t('claim.dashboard')}
       </Link>
@@ -558,7 +559,7 @@ function SessionClaimPage({ gameToken }: SessionClaimPageProps) {
                     onClick={() => void handleClaim(p.participantId)}
                     disabled={claimingId !== null}
                     aria-label={t('claim.iAmName', { name: p.displayName })}
-                    className="min-h-11 shrink-0 rounded-xl bg-[var(--color-primary)] px-4 py-2 text-xs font-semibold text-[var(--color-surface)] transition-opacity hover:opacity-90 disabled:opacity-50"
+                    className="min-h-11 shrink-0 rounded-xl bg-[var(--color-primary)] px-4 py-2 text-xs font-semibold text-[var(--color-on-primary)] transition-opacity hover:opacity-90 disabled:opacity-50"
                   >
                     {claimingId === p.participantId ? (
                       <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />
@@ -672,17 +673,21 @@ function ClaimPageInner({ token }: ClaimPageInnerProps) {
 function PageShell({ children }: { children: React.ReactNode }) {
   const { t } = useTranslation('auth')
   const { theme, setTheme } = useThemeMode()
-  const dark = theme === 'dark'
-
-  useEffect(() => {
-    if (theme !== 'light' && theme !== 'dark') setTheme('light')
-  }, [setTheme, theme])
+  const claimTheme = theme === 'dark' ? 'dark' : 'light'
+  const dark = claimTheme === 'dark'
+  const claimStyle = {
+    ...themeTokens[claimTheme],
+    colorScheme: claimTheme,
+  } as React.CSSProperties
 
   return (
-    <div className="min-h-dvh bg-[var(--color-background)] text-[var(--color-text)]">
+    <div
+      className="min-h-dvh bg-[var(--color-background)] text-[var(--color-text)]"
+      style={claimStyle}
+    >
       <header className="mx-auto flex w-full max-w-5xl items-center justify-between px-4 py-4 sm:px-6 sm:py-6">
         <Link to={HOME_ROUTE} className="inline-flex min-h-11 items-center gap-3 rounded-xl pr-3">
-          <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-[var(--color-primary)] text-[var(--color-surface)] shadow-sm">
+          <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-[var(--color-primary)] text-[var(--color-on-primary)] shadow-sm">
             <Film className="h-5 w-5" aria-hidden="true" />
           </span>
           <span>

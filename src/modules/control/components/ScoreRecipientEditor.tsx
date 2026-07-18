@@ -56,7 +56,7 @@ export function ScoreRecipientEditor({
           onClick={() => onToggle(!isEnabled)}
           className={`shrink-0 rounded-full px-2 py-1 text-[11px] font-semibold transition ${
             isEnabled
-              ? 'bg-[var(--color-primary)] text-white'
+              ? 'bg-[var(--color-primary)] text-[var(--color-on-primary)]'
               : 'border border-[var(--color-border)] bg-[var(--color-surface)] text-[var(--color-text)]'
           }`}
         >

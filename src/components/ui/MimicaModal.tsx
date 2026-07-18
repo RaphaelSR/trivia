@@ -236,7 +236,7 @@ export function MimicaModal({
                   onClick={() => setTimerSeconds(preset)}
                   className={`rounded-lg px-2 py-1 text-xs font-medium transition ${
                     timerSeconds === preset
-                      ? 'bg-[var(--color-primary)] text-white'
+                      ? 'bg-[var(--color-primary)] text-[var(--color-on-primary)]'
                       : 'bg-[var(--color-border)]/40 text-[var(--color-muted)] hover:bg-[var(--color-border)]'
                   }`}
                 >
@@ -440,7 +440,7 @@ export function MimicaModal({
                     }`}
                   >
                     <span className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-[10px] font-bold ${
-                      isActive ? 'bg-[var(--color-primary)] text-white' : 'bg-[var(--color-border)]/50 text-[var(--color-muted)]'
+                      isActive ? 'bg-[var(--color-primary)] text-[var(--color-on-primary)]' : 'bg-[var(--color-border)]/50 text-[var(--color-muted)]'
                     }`}>
                       {index + 1}
                     </span>
