@@ -66,6 +66,11 @@ Mapa funcional do projeto com foco no que existe hoje, no que esta em migracao e
 - `ativo`: carregar sessao salva
 - `ativo`: manter historico de ate 20 sessoes
 - `ativo`: restaurar a partida completa ativa a partir do armazenamento local
+- `ativo`: escolher explicitamente entre continuar uma sessão do dispositivo/conta ou começar uma partida realmente nova antes da sincronização
+- `ativo`: comparar versões da mesma sessão por histórico de eventos e mostrar a última ação, progresso, placar, times e horário de cada origem
+- `ativo`: tratar IDs diferentes como partidas independentes, preservando ambas em vez de aplicar last-write-wins entre jogos distintos
+- `ativo`: consultar e retomar sessões locais ou remotas arquivadas; falha da nuvem mantém o estado local e oferece retry
+- `ativo`: trocar a sessão ativa na nuvem por RPC atômica, com retry seguro do autosave e do keepalive
 - `ativo`: reset granular de pontos, perguntas, filmes, tema, times e participantes
 
 ## PIN e acesso

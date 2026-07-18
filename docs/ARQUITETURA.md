@@ -65,6 +65,17 @@
 - A UI usa `ParticipantAvatar` com fallback local por iniciais; somente `demo` não aciona serviços de identidade. Partidas completas deslogadas também permanecem totalmente locais.
 - Detalhes: [`docs/online/ARQUITETURA-ONLINE.md`](./online/ARQUITETURA-ONLINE.md).
 
+## Ciclo de vida e recuperacao de sessoes
+
+- `src/modules/game/domain/session-start.ts` compara versões sem acessar storage ou rede. Identidades diferentes retornam `different-sessions`; somente o mesmo ID pode resultar em `local-ahead`, `cloud-ahead` ou `conflict`.
+- `useSessionStartup` reúne a sessão ativa e o histórico do dispositivo com as sessões ativas/arquivadas da conta antes de habilitar o sync automático. A escolha do host encerra esse gate para a abertura atual.
+- `useOfflineSession` opera somente o repositório/cache do navegador. `useCloudSync` é o único writer remoto do dashboard, evitando flush duplicado ou uma escrita que contorne o gate de entrada.
+- `SessionStartModal` é não descartável: a aplicação não inicia reconciliação enquanto houver uma decisão de recuperação pendente ou a nuvem estiver indisponível.
+- O repositório local preserva snapshots por ID e emite um evento interno depois de mutações. O evento cobre múltiplos consumidores React na mesma aba, porque o evento nativo `storage` não é disparado no documento que fez a escrita.
+- A migration `0011_session_lifecycle.sql` materializa `online_sessions.session_client_id` e oferece `save_online_session_snapshot`. A RPC usa `auth.uid()`, lock transacional por conta e arquivamento atômico da sessão ativa anterior antes de inserir ou reativar a escolhida.
+- Autosave, flush explícito e keepalive usam a mesma RPC. Se ela falhar, o snapshot fica pendente; o cliente não recorre a uma escrita parcial que possa arquivar uma sessão sem salvar a próxima.
+- O modal de conflito do sync continua como proteção de baixo nível, mas o dashboard só habilita o sync depois da decisão de entrada. Pontuação, turnos, mímica e a API pública de `useTriviaSession` não participam desse fluxo.
+
 ## Internacionalização
 
 - `src/shared/i18n/i18n.ts` inicializa `i18next` e `react-i18next`, aplica o idioma no elemento `<html>` e persiste a preferência pelo `storageService`.

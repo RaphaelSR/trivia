@@ -54,7 +54,6 @@ export class LocalSessionRepository implements SessionRepository {
 
     // Quota do localStorage é finita: escrita falhando NÃO pode passar em
     // silêncio (o usuário acharia que salvou). null sinaliza ao chamador.
-    const savedActive = storageService.setJson(STORAGE_KEYS.activeSession, sessionData)
     const savedById = storageService.setJson(STORAGE_KEYS.sessionById(sessionId), sessionData)
 
     const replacedLegacyId = current?.metadata.id
@@ -66,14 +65,18 @@ export class LocalSessionRepository implements SessionRepository {
     const keptHistory = nextHistory.slice(0, MAX_SESSION_HISTORY)
     const savedHistory = storageService.setJson(STORAGE_KEYS.sessionHistory, keptHistory)
 
-    // Sessões que saíram do índice pelo limite deixavam o arquivo
-    // trivia-session-{id} órfão para sempre — remove junto.
+    // O ponteiro ativo e gravado por ultimo. Se quota/storage falhar antes,
+    // a partida que estava aberta continua sendo a recuperada no proximo F5.
+    if (!savedById || !savedHistory) {
+      return null
+    }
+    const savedActive = storageService.setJson(STORAGE_KEYS.activeSession, sessionData)
+    if (!savedActive) return null
+
+    // Só poda depois do commit das três chaves; uma tentativa incompleta não
+    // pode remover a sessão mais antiga que ainda era válida.
     for (const pruned of nextHistory.slice(MAX_SESSION_HISTORY)) {
       storageService.remove(STORAGE_KEYS.sessionById(pruned.id))
-    }
-
-    if (!savedActive || !savedById || !savedHistory) {
-      return null
     }
 
     if (shouldRemoveLegacy && replacedLegacyId) {
@@ -104,9 +107,22 @@ export class LocalSessionRepository implements SessionRepository {
   }
 
   saveCompleteSession(sessionData: SessionRecord): boolean {
-    const savedSession = storageService.setJson(STORAGE_KEYS.sessionById(sessionData.metadata.id), sessionData)
-    const savedActive = storageService.setJson(STORAGE_KEYS.activeSession, sessionData)
-    return savedSession && savedActive
+    const activeRecord: SessionRecord = {
+      ...sessionData,
+      metadata: { ...sessionData.metadata, isActive: true, isSaved: true },
+    }
+    const savedSession = storageService.setJson(STORAGE_KEYS.sessionById(activeRecord.metadata.id), activeRecord)
+    const nextHistory = this.loadSessionHistory().filter((item) => item.id !== activeRecord.metadata.id)
+    nextHistory.unshift(activeRecord.metadata)
+    const keptHistory = nextHistory.slice(0, MAX_SESSION_HISTORY)
+    const savedHistory = storageService.setJson(STORAGE_KEYS.sessionHistory, keptHistory)
+    if (!savedSession || !savedHistory) return false
+    const savedActive = storageService.setJson(STORAGE_KEYS.activeSession, activeRecord)
+    if (!savedActive) return false
+    for (const pruned of nextHistory.slice(MAX_SESSION_HISTORY)) {
+      storageService.remove(STORAGE_KEYS.sessionById(pruned.id))
+    }
+    return true
   }
 
   getBackendLabel(): string {

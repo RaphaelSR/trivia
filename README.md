@@ -29,6 +29,7 @@ npm run dev
 - `Demo` simula partidas pequenas, médias ou grandes com dados prontos e não salva progresso.
 - `Partida completa` inicia a configuração real e salva automaticamente neste navegador.
 - Entrar em uma conta acrescenta sincronização, restauração entre dispositivos, histórico, QR de reivindicação e avatares sem mudar as regras da partida.
+- Ao voltar ao jogo, o host escolhe qual sessão abrir ou inicia uma nova; versões local/nuvem da mesma sessão são comparadas sem permitir que uma partida diferente sobrescreva a atual.
 - Os valores internos `demo | offline | online` continuam aceitos para compatibilidade de rotas e sessões antigas; eles não definem sozinhos se a conta está conectada.
 - Contas podem usar avatar opcional, exibido somente entre participantes de uma sessão ou partida compartilhada; o nome continua específico de cada jogo.
 - A interface usa catálogos i18n em `src/shared/i18n`; português do Brasil é o idioma ativo e espanhol/inglês podem ser adicionados sem espalhar texto pelos componentes.

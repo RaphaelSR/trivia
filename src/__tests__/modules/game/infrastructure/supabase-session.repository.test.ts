@@ -256,6 +256,30 @@ describe('SupabaseSessionRepository — debounce coalescing', () => {
   })
 })
 
+describe('SupabaseSessionRepository — RPC de ciclo de vida', () => {
+  it('usa a troca atomica quando o cliente real expõe rpc', async () => {
+    localStorage.clear()
+    mockIsConfigured.mockReturnValue(true)
+    const rpc = jest.fn().mockResolvedValue({ data: 'row-id', error: null })
+    const from = jest.fn()
+    mockGetClient.mockReturnValue({ auth: buildAuthMock(), rpc, from })
+    const repo = new SupabaseSessionRepository()
+    const session = makeSession({ id: 'brand-new-id', title: 'Nova partida' })
+
+    repo.saveSession(session, 'online')
+    await repo.flushNow()
+
+    expect(rpc).toHaveBeenCalledWith('save_online_session_snapshot', {
+      p_session: session,
+      p_title: 'Nova partida',
+      p_mode: 'online',
+    })
+    expect(from).not.toHaveBeenCalled()
+    repo.dispose()
+    localStorage.clear()
+  })
+})
+
 describe('SupabaseSessionRepository — network failure retry', () => {
   let repo: SupabaseSessionRepository
 

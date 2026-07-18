@@ -4,7 +4,7 @@
  * Strategy:
  * - Mock @/shared/services/supabase.client to control getSupabaseRestConfig()
  *   and getCachedAuth()
- * - Mock global.fetch and assert the request shape (keepalive, headers, URL)
+ * - Mock global.fetch and assert the RPC request shape (keepalive, headers, URL)
  */
 
 jest.mock('@/shared/services/supabase.client', () => ({
@@ -81,30 +81,31 @@ describe('sendKeepaliveSessionPatch', () => {
     expect(fetchMock).not.toHaveBeenCalled()
   })
 
-  it('fires a PATCH with keepalive:true to the active session row', () => {
+  it('fires the atomic lifecycle RPC with keepalive:true', () => {
     expect(sendKeepaliveSessionPatch(makeSnapshot())).toBe(true)
     expect(fetchMock).toHaveBeenCalledTimes(1)
 
     const [url, init] = fetchMock.mock.calls[0]
     expect(url).toBe(
-      'https://proj.supabase.co/rest/v1/online_sessions?user_id=eq.user-abc&status=eq.active',
+      'https://proj.supabase.co/rest/v1/rpc/save_online_session_snapshot',
     )
-    expect(init.method).toBe('PATCH')
+    expect(init.method).toBe('POST')
     expect(init.keepalive).toBe(true)
     expect(init.headers.apikey).toBe('anon-key')
     expect(init.headers.Authorization).toBe('Bearer jwt-token')
 
     const body = JSON.parse(init.body)
-    expect(body.title).toBe('Minha sessão')
-    expect(body.mode).toBe('cloud')
-    expect(body.session.id).toBe('session-1')
+    expect(body.p_title).toBe('Minha sessão')
+    expect(body.p_mode).toBe('cloud')
+    expect(body.p_session.id).toBe('session-1')
   })
 
-  it('encodes the userId in the URL', () => {
+  it('não expõe userId na URL; a RPC usa auth.uid()', () => {
     mockCachedAuth.mockReturnValue({ accessToken: 't', userId: 'a&b=c' })
     sendKeepaliveSessionPatch(makeSnapshot())
     const [url] = fetchMock.mock.calls[0]
-    expect(url).toContain(`user_id=eq.${encodeURIComponent('a&b=c')}`)
+    expect(url).toBe('https://proj.supabase.co/rest/v1/rpc/save_online_session_snapshot')
+    expect(url).not.toContain('a&b')
   })
 
   it('returns false without fetching when the body exceeds the keepalive budget', () => {

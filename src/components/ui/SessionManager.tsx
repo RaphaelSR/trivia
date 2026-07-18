@@ -38,9 +38,11 @@ interface SessionManagerProps {
   cloudLastSyncedAt?: string | null;
   /** Abre o histórico de versões da partida atual (T4). Ausente quando indisponível. */
   onOpenVersions?: () => void;
+  /** Reabre a comparação segura entre este dispositivo e a conta. */
+  onReviewSessionSources?: () => void;
 }
 
-export function SessionManager({ isOpen, onClose, onLoadSession, onNewSession, onResetGame, onOpenAccount, cloudStatus, cloudLastSyncedAt, onOpenVersions }: SessionManagerProps) {
+export function SessionManager({ isOpen, onClose, onLoadSession, onNewSession, onResetGame, onOpenAccount, cloudStatus, cloudLastSyncedAt, onOpenVersions, onReviewSessionSources }: SessionManagerProps) {
   const { t, i18n } = useTranslation(['game', 'common']);
   const locale = i18n.resolvedLanguage ?? i18n.language;
   const { gameMode } = useGameMode();
@@ -336,10 +338,18 @@ export function SessionManager({ isOpen, onClose, onLoadSession, onNewSession, o
                     <p className="text-xs text-[var(--color-muted)]">{t('sessions.accountSaved', { ns: 'game' })}</p>
                   </div>
                 </div>
-                <Button variant="outline" onClick={() => { onClose(); onOpenAccount(); }} className="shrink-0">
-                  <CircleUser className="h-4 w-4 mr-2" />
-                  {t('sessions.myGames', { ns: 'game' })}
-                </Button>
+                <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row">
+                  {onReviewSessionSources ? (
+                    <Button variant="outline" onClick={() => { onClose(); onReviewSessionSources(); }} className="min-h-11 shrink-0">
+                      <RefreshCw className="h-4 w-4 mr-2" />
+                      {t('sessions.compareSources', { ns: 'game' })}
+                    </Button>
+                  ) : null}
+                  <Button variant="outline" onClick={() => { onClose(); onOpenAccount(); }} className="min-h-11 shrink-0">
+                    <CircleUser className="h-4 w-4 mr-2" />
+                    {t('sessions.myGames', { ns: 'game' })}
+                  </Button>
+                </div>
               </>
             ) : (
               <>

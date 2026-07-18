@@ -8,6 +8,8 @@ O jogo funciona normalmente como sessão local. Não há QR, histórico na conta
 
 O snapshot é sincronizado em background independentemente de a rota antiga carregar `mode=offline` ou `mode=online`. O host pode restaurar outra versão, consultar o histórico normalizado e abrir `Gestão de times > Convidar jogadores`.
 
+Ao abrir o dashboard, o host vê primeiro as sessões relevantes deste dispositivo e da conta. Pode continuar a recomendada, escolher outra sessão salva ou começar uma partida realmente nova. As fichas mostram progresso e última ação; partidas com IDs diferentes nunca são fundidas ou escolhidas automaticamente. Se a conta estiver temporariamente indisponível, é possível tentar a consulta novamente sem perder o estado local.
+
 Antes de mostrar o QR, o app força o envio da versão atual. Se falhar, oferece nova tentativa e mantém o jogo intacto.
 
 ## Reivindicar durante o jogo

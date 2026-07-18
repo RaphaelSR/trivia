@@ -7,7 +7,7 @@
  * Only rendered when gameMode !== 'demo' (enforced by the caller).
  */
 
-import { CheckCheck, CloudUpload, HardDrive, RefreshCw } from 'lucide-react'
+import { CheckCheck, CloudAlert, CloudUpload, HardDrive, RefreshCw } from 'lucide-react'
 import type { CloudSyncStatus } from '@/modules/game/application/useCloudSync'
 import { useTranslation } from '@/shared/i18n'
 import type { TFunction } from 'i18next'
@@ -66,6 +66,13 @@ function getConfig(status: CloudSyncStatus, t: TFunction<'control'>, locale: str
           : t('syncStatus.pendingTitle'),
         className: 'text-amber-400',
       }
+    case 'review-needed':
+      return {
+        icon: <CloudAlert size={12} className="shrink-0" />,
+        text: t('syncStatus.reviewNeeded'),
+        title: t('syncStatus.reviewNeededTitle'),
+        className: 'text-amber-400',
+      }
     case 'local-only':
     default:
       return {
@@ -85,13 +92,16 @@ export function SyncStatusIndicator({ status, onForceSync, lastSyncedAt }: SyncS
   const sharedClassName = `flex items-center gap-1.5 rounded-full border border-white/8 bg-black/15 px-2.5 py-1 backdrop-blur-sm ${config.className}${isClickable ? ' cursor-pointer' : ''}`
 
   if (isClickable) {
+    const actionLabel = status === 'review-needed'
+      ? t('syncStatus.reviewAction')
+      : t('syncStatus.syncNow')
     return (
       <button
         type="button"
         aria-live="polite"
         aria-atomic="true"
-        title={t('syncStatus.syncNow')}
-        aria-label={t('syncStatus.syncNow')}
+        title={actionLabel}
+        aria-label={actionLabel}
         onClick={() => { void onForceSync() }}
         className={sharedClassName}
       >

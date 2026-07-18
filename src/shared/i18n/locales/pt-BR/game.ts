@@ -331,6 +331,7 @@ export const game = {
     signedInAs: 'Conectado como {{name}}',
     accountSaved: 'Suas partidas ficam sincronizadas com a sua conta.',
     myGames: 'Minhas partidas',
+    compareSources: 'Comparar dispositivo e conta',
     signInTitle: 'Entre para sincronizar e gerenciar suas partidas',
     signInDescription: 'Opcional: suas partidas continuam salvas neste navegador mesmo sem conta.',
     signIn: 'Entrar',

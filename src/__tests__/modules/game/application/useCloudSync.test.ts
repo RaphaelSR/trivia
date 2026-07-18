@@ -177,6 +177,20 @@ describe('useCloudSync — PUSH', () => {
 // ── Suite 2: RECONCILE ────────────────────────────────────────────────────────
 
 describe('useCloudSync — RECONCILE use-cloud', () => {
+  it('não reconcilia novamente quando a escolha inicial já foi feita pela UI', async () => {
+    await act(async () => {
+      renderHook(
+        (props) => useCloudSync(props),
+        { initialProps: { ...defaultProps, reconcileOnEnable: false } },
+      )
+      await Promise.resolve()
+    })
+
+    expect(mockReconcile).not.toHaveBeenCalled()
+    // O backup da sessão escolhida continua ativo.
+    expect(mockPushSnapshot).toHaveBeenCalled()
+  })
+
   it('chama onRestore com cloudSession quando action=use-cloud', async () => {
     const cloudSession = makeSession({ id: 'cloud-1', title: 'From Cloud' })
     mockReconcile.mockResolvedValue({ action: 'use-cloud', cloudSession })

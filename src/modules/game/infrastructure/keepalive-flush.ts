@@ -7,12 +7,12 @@
  * progresso pendente se perde — em aba anônima, junto com o localStorage.
  * `fetch` com `keepalive: true` é a única forma de um request sobreviver ao
  * unload, desde que seja disparado de forma síncrona: aqui o token vem do
- * cache de auth (getCachedAuth) e o PATCH vai direto ao REST do PostgREST.
+ * cache de auth (getCachedAuth) e a RPC vai direto ao REST do PostgREST.
  *
  * Best-effort por design: não dá para confirmar sucesso nem limpar o estado
  * pendente. Se a página continuar viva (ex.: beforeunload cancelado), o
- * caminho assíncrono re-envia o mesmo snapshot — last-write-wins torna o
- * request duplicado inofensivo.
+ * caminho assíncrono re-envia o mesmo snapshot — a RPC localiza a sessão pelo
+ * mesmo ID, tornando o request duplicado idempotente.
  */
 
 import { getCachedAuth, getSupabaseRestConfig } from '../../../shared/services/supabase.client'
@@ -31,9 +31,9 @@ export interface KeepaliveSnapshot {
 }
 
 /**
- * Dispara um PATCH keepalive atualizando a linha ativa de online_sessions do
- * usuário logado. Retorna true se o request foi disparado (não confirma que
- * chegou). Nunca lança.
+ * Dispara a RPC transacional com keepalive. Ela arquiva uma partida ativa
+ * diferente antes de ativar a identidade enviada, exatamente como o flush
+ * normal. Retorna true se o request foi disparado (não confirma que chegou).
  */
 export function sendKeepaliveSessionPatch(snapshot: KeepaliveSnapshot): boolean {
   const rest = getSupabaseRestConfig()
@@ -44,9 +44,9 @@ export function sendKeepaliveSessionPatch(snapshot: KeepaliveSnapshot): boolean 
   let body: string
   try {
     body = JSON.stringify({
-      title: snapshot.title,
-      mode: snapshot.mode,
-      session: snapshot.session,
+      p_title: snapshot.title,
+      p_mode: snapshot.mode,
+      p_session: snapshot.session,
     })
   } catch {
     return false
@@ -55,15 +55,14 @@ export function sendKeepaliveSessionPatch(snapshot: KeepaliveSnapshot): boolean 
 
   try {
     void fetch(
-      `${rest.restUrl}/online_sessions?user_id=eq.${encodeURIComponent(auth.userId)}&status=eq.active`,
+      `${rest.restUrl}/rpc/save_online_session_snapshot`,
       {
-        method: 'PATCH',
+        method: 'POST',
         keepalive: true,
         headers: {
           'Content-Type': 'application/json',
           apikey: rest.anonKey,
           Authorization: `Bearer ${auth.accessToken}`,
-          Prefer: 'return=minimal',
         },
         body,
       },

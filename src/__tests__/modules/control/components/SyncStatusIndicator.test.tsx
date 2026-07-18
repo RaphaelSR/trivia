@@ -32,6 +32,12 @@ describe('SyncStatusIndicator', () => {
     expect(screen.getByText('Salvo neste navegador · sincroniza ao reconectar')).toBeInTheDocument()
   })
 
+  it('explica quando a conta precisa ser comparada antes do sync', () => {
+    render(<SyncStatusIndicator status="review-needed" onForceSync={jest.fn()} />)
+    expect(screen.getByText('Conta ainda não comparada')).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Comparar dispositivo e conta' })).toBeInTheDocument()
+  })
+
   it('possui aria-live="polite" para anunciar mudanças a leitores de tela', () => {
     const { container } = render(<SyncStatusIndicator status="local-only" />)
     const indicator = container.firstChild as HTMLElement
@@ -39,7 +45,7 @@ describe('SyncStatusIndicator', () => {
   })
 
   it('renderiza corretamente para todos os status conhecidos', () => {
-    const statuses: CloudSyncStatus[] = ['local-only', 'syncing', 'synced', 'pending']
+    const statuses: CloudSyncStatus[] = ['local-only', 'review-needed', 'syncing', 'synced', 'pending']
     for (const status of statuses) {
       const { unmount } = render(<SyncStatusIndicator status={status} />)
       unmount()
