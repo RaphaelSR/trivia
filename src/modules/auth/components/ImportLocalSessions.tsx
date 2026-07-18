@@ -133,7 +133,7 @@ function EmailForm({ record, onConfirm, onCancel, importing }: EmailFormProps) {
         <button
           type="submit"
           disabled={importing}
-          className="flex flex-1 items-center justify-center gap-1.5 rounded-lg bg-[var(--color-primary)] py-2 text-[11px] font-semibold text-black transition-opacity hover:opacity-90 disabled:opacity-50"
+          className="flex flex-1 items-center justify-center gap-1.5 rounded-lg bg-[var(--color-primary)] py-2 text-[11px] font-semibold text-[var(--color-on-primary)] transition-opacity hover:opacity-90 disabled:opacity-50"
         >
           {importing && <Loader2 className="h-3 w-3 animate-spin" />}
           {importing ? t('localImport.importing', { ns: 'auth' }) : t('localImport.confirm', { ns: 'auth' })}

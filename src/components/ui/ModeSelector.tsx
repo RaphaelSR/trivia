@@ -48,7 +48,7 @@ function DemoOptionSelector({ label, value, options, valueLabel, onChange }: Sel
               onClick={() => onChange(option)}
               className={`rounded-full border px-3 py-1.5 text-sm font-semibold transition ${
                 selected
-                  ? 'border-[var(--color-primary)] bg-[var(--color-primary)] text-[var(--color-background)]'
+                  ? 'border-[var(--color-primary)] bg-[var(--color-primary)] text-[var(--color-on-primary)]'
                   : 'border-white/10 bg-black/10 text-[var(--color-text)] hover:border-white/20 hover:bg-white/[0.04]'
               }`}
             >

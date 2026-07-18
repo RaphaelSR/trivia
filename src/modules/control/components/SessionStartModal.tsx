@@ -80,7 +80,7 @@ function CandidateCard({
           </div>
         </div>
         {recommended ? (
-          <span className="shrink-0 rounded-full bg-[var(--color-primary)] px-2.5 py-1 text-[10px] font-semibold text-[var(--color-background)]">
+          <span className="shrink-0 rounded-full bg-[var(--color-primary)] px-2.5 py-1 text-[10px] font-semibold text-[var(--color-on-primary)]">
             {t('sessionStart.recommended')}
           </span>
         ) : null}

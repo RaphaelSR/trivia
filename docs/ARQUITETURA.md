@@ -68,9 +68,12 @@
 
 ## Temas e cenários
 
-- `THEME_OPTIONS` é o catálogo canônico; onboarding e configurações renderizam o mesmo `ThemePicker`.
+- `THEME_OPTIONS` é o catálogo canônico; onboarding e configurações renderizam o mesmo `ThemePicker`, organizado pelas categorias explícitas `classic`, `animated`, `game` e `cinema`.
 - `themeTokens.ts` controla cor, contraste, superfícies e backdrop. `ThemeBackground` adiciona somente decoração visual e nunca participa do domínio ou da persistência da partida.
-- Cenários leves usam CSS/DOM local; `LivingThemeCanvas` adiciona camadas procedurais aos novos temas e renderiza as cenas completas `web-city`, `deep-space`, `midnight-cinema` e `underwater`. Não existem downloads, chaves ou dependências de runtime.
+- Cenários leves usam CSS/DOM local; os 13 cenários completos combinam arte raster local em AVIF/WebP, vinheta de contraste e uma camada procedural resolvida pelo registro de `LivingThemeCanvas`.
+- O navegador seleciona AVIF ou WebP e só aplica o par do tema ativo. O renderer procedural também é importado sob demanda; a arte fica visível enquanto o pequeno chunk da cena carrega.
+- Não há API, serviço, asset externo, chave ou nova dependência de runtime.
+- Os mundos de jogo vivos são `web-city`, `neon-grand-prix`, `pixel-bomb-arena`, `shadow-dojo`, `wasteland-rooftops`, `enchanted-kingdom` e `starfighter-battle`. As cenas de cinema vivas são `deep-space`, `midnight-cinema`, `underwater`, `moonlit-liner`, `castaway-island` e `family-noir`.
 - Elementos narrativos que precisam cruzar o primeiro plano, como a silhueta de `web-city`, vivem em uma camada SVG separada, marcada como decorativa e `pointer-events: none`; no mobile recebem trajetória e escala próprias para não cobrir as cartas.
 - O canvas limita a animação a 30 FPS, DPR a 1,5 e quantidade de elementos conforme a largura. A animação pausa quando `document.hidden` e vira um quadro estático em `prefers-reduced-motion`.
 - O tema Brasil permanece exatamente como estava; o canvas legado de Páscoa continua isolado e congela em movimento reduzido.

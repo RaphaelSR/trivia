@@ -151,7 +151,8 @@ export const game = {
     themes: {
       title: 'Escolha o tema visual',
       description: 'Selecione o visual que combina melhor com o ambiente.',
-      livingBadge: 'Cenário vivo',
+      gameBadge: 'Fase viva',
+      cinemaBadge: 'Cena viva',
       groups: {
         classic: {
           title: 'Estilos clássicos',
@@ -161,9 +162,13 @@ export const game = {
           title: 'Temas animados',
           description: 'Elementos e ambientes leves em movimento.',
         },
-        cinematic: {
-          title: 'Cenários vivos',
-          description: 'Experiências em camadas que se comportam como uma cena de filme ou fase de jogo.',
+        game: {
+          title: 'Mundos de jogo',
+          description: 'Fases vivas com corridas, arenas, aventuras e batalhas em movimento.',
+        },
+        cinema: {
+          title: 'Cenas de cinema',
+          description: 'Ambientes narrativos originais que evocam grandes gêneros e momentos da tela.',
         },
       },
       dark: { name: 'Tema escuro', description: 'Cores escuras e elegantes' },
@@ -204,6 +209,42 @@ export const game = {
       underwater: {
         name: 'Cidade Submersa',
         description: 'Ruínas, águas-vivas, cardumes, corais e luz atravessando o oceano',
+      },
+      neonGrandPrix: {
+        name: 'Grande Prêmio Neon',
+        description: 'Monopostos em disputa, boxes iluminados, chuva e ultrapassagens em alta velocidade',
+      },
+      pixelBombArena: {
+        name: 'Labirinto Explosivo',
+        description: 'Arena 16-bit com bombas, blocos, rivais e reações em cadeia imprevisíveis',
+      },
+      shadowDojo: {
+        name: 'Dojo das Sombras',
+        description: 'Torneio marcial, silhuetas em combate, tochas e tempestade sobre um templo antigo',
+      },
+      wastelandRooftops: {
+        name: 'Telhados do Fim do Mundo',
+        description: 'Sobreviventes, criaturas e tempestades de poeira cruzando uma cidade abandonada',
+      },
+      enchantedKingdom: {
+        name: 'Reino Encantado',
+        description: 'Castelo vivo, dragões ao longe, cavaleiros e magia atravessando uma floresta luminosa',
+      },
+      starfighterBattle: {
+        name: 'Batalha de Caças Estelares',
+        description: 'Esquadrões rivais, cruzadores, asteroides e disparos cortando uma nebulosa profunda',
+      },
+      moonlitLiner: {
+        name: 'Transatlântico ao Luar',
+        description: 'Convés de época, oceano gelado, música distante e icebergs sob um céu estrelado',
+      },
+      castawayIsland: {
+        name: 'Ilha do Náufrago',
+        description: 'Praia remota, jangada, fogueira e anos de sobrevivência marcados pela maré',
+      },
+      familyNoir: {
+        name: 'Família em Noir',
+        description: 'Gabinete siciliano, persianas, casamento no jardim e decisões tomadas em silêncio',
       },
     },
     pin: {

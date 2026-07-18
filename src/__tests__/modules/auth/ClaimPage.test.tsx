@@ -37,8 +37,11 @@ jest.mock('@/modules/auth/hooks/useAuth', () => ({
   useAuth: jest.fn(),
 }))
 
+let mockThemeMode = 'light'
+const mockSetTheme = jest.fn()
+
 jest.mock('@/app/providers/useThemeMode', () => ({
-  useThemeMode: () => ({ theme: 'light', setTheme: jest.fn() }),
+  useThemeMode: () => ({ theme: mockThemeMode, setTheme: mockSetTheme }),
 }))
 
 // Mock do AuthPanel para evitar renderização completa
@@ -103,6 +106,7 @@ const defaultAuthState = {
 
 beforeEach(() => {
   jest.clearAllMocks()
+  mockThemeMode = 'light'
   mockIsConfigured.mockReturnValue(true)
   mockUseAuth.mockReturnValue(defaultAuthState)
   mockListLive.mockResolvedValue({ participants: [], error: null })
@@ -124,6 +128,27 @@ it('mantém o link inicial dentro do basename do GitHub Pages sem duplicá-lo', 
     'href',
     '/trivia',
   )
+})
+
+it('mantém um cenário salvo enquanto usa o visual claro local do claim', () => {
+  mockThemeMode = 'moonlit-liner'
+
+  renderClaimPage()
+
+  expect(mockSetTheme).not.toHaveBeenCalled()
+  expect(screen.getByRole('banner').parentElement).toHaveStyle({
+    '--color-background': '#ffffff',
+    colorScheme: 'light',
+  })
+})
+
+it('persiste light ou dark somente após escolha explícita no claim', () => {
+  mockThemeMode = 'moonlit-liner'
+
+  renderClaimPage()
+  fireEvent.click(screen.getByRole('button', { name: 'Usar tema escuro' }))
+
+  expect(mockSetTheme).toHaveBeenCalledWith('dark')
 })
 
 describe('ClaimPage — modo ?session= permanente', () => {

@@ -331,4 +331,35 @@ describe('useSessionManagement', () => {
       expect(restoredSession.teams[1].score).toBe(50)
     })
   })
+
+  it('restaura o tema visual para o default canônico', () => {
+    const { result } = renderHook(() =>
+      useSessionManagement(
+        mockTeams,
+        mockParticipants,
+        mockBoard,
+        mockUpdateTeamsAndParticipants,
+        mockRemoveQuestionTile,
+        mockRemoveFilmColumn,
+        mockSetTheme,
+        mockSaveCustomPin,
+        mockLoadSession,
+        mockRestoreSession,
+        mockSetGameEndNotified
+      )
+    )
+
+    act(() => {
+      result.current.resetGame({
+        teams: false,
+        participants: false,
+        questions: false,
+        points: false,
+        films: false,
+        themes: true,
+      })
+    })
+
+    expect(mockSetTheme).toHaveBeenCalledWith('light')
+  })
 })

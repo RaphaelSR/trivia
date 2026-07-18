@@ -1,22 +1,14 @@
 import '@testing-library/jest-dom'
 import { render } from '@testing-library/react'
 import { ThemeBackground } from '@/shared/components/ThemeBackground'
+import { LIVING_THEME_IDS } from '@/shared/theme/living/types'
 
 jest.mock('@/shared/components/LivingThemeCanvas', () => ({
   LivingThemeCanvas: ({ theme }: { theme: string }) => <canvas data-living-scene={theme} />,
 }))
 
 describe('ThemeBackground', () => {
-  it.each([
-    'world-cup-2026',
-    'kawaii',
-    'neon-city',
-    'storybook',
-    'web-city',
-    'deep-space',
-    'midnight-cinema',
-    'underwater',
-  ] as const)('renderiza o cenário decorativo %s fora da interação', (theme) => {
+  it.each(LIVING_THEME_IDS)('renderiza o cenário decorativo %s fora da interação', (theme) => {
     const { container } = render(<ThemeBackground theme={theme} />)
     const scene = container.querySelector(`[data-theme-scene="${theme}"]`)
 

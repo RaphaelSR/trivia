@@ -7,6 +7,7 @@ import { storageService } from '@/shared/services/storage.service'
 import { STORAGE_KEYS } from '@/shared/constants/storage'
 import type { ThemeMode } from '@/shared/types/game'
 import { useTranslation } from '@/shared/i18n'
+import { getDefaultThemeMode } from '@/shared/constants/theme'
 
 /**
  * Hook para gerenciar sessão (load, reset, onboarding)
@@ -98,7 +99,7 @@ export function useSessionManagement(
       }
 
       if (options.themes) {
-        setTheme('dark')
+        setTheme(getDefaultThemeMode())
       }
 
       if (options.teams || options.participants) {

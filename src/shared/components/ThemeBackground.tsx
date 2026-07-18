@@ -1,8 +1,12 @@
 import type { CSSProperties } from 'react'
 import type { ThemeMode } from '@/shared/types/game'
+import {
+  isFullLivingTheme,
+  isLivingTheme,
+} from '@/shared/theme/living/registry'
 import { BrazilBackground } from './BrazilBackground'
 import { EasterBackground } from './EasterBackground'
-import { LivingThemeCanvas, type LivingTheme } from './LivingThemeCanvas'
+import { LivingThemeCanvas } from './LivingThemeCanvas'
 
 type ThemeBackgroundProps = {
   theme: ThemeMode
@@ -17,21 +21,17 @@ type SceneStyle = CSSProperties & Record<`--${string}`, string | number>
 export function ThemeBackground({ theme }: ThemeBackgroundProps) {
   if (theme === 'brazil') return <BrazilBackground />
   if (theme === 'easter') return <EasterBackground />
-  const livingTheme = [
-    'world-cup-2026',
-    'kawaii',
-    'neon-city',
-    'storybook',
-    'web-city',
-    'deep-space',
-    'midnight-cinema',
-    'underwater',
-  ].includes(theme) ? theme as LivingTheme : null
+  const livingTheme = isLivingTheme(theme) ? theme : null
   if (!livingTheme) return null
 
   return (
     <>
-      <div className="theme-scene pointer-events-none fixed inset-0 z-0 overflow-hidden" data-theme-scene={theme} aria-hidden="true">
+      <div
+        className="theme-scene pointer-events-none fixed inset-0 z-0 overflow-hidden"
+        data-theme-scene={theme}
+        data-theme-art={isFullLivingTheme(livingTheme) ? 'true' : undefined}
+        aria-hidden="true"
+      >
         {theme === 'world-cup-2026' ? <WorldCupScene /> : null}
         {theme === 'kawaii' ? <KawaiiScene /> : null}
         {theme === 'neon-city' ? <NeonCityScene /> : null}

@@ -124,7 +124,7 @@ export function TurnOrderPreview({
                       <span className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: entry.teamColor }} aria-hidden="true" />
                       <span className="font-medium text-[var(--color-text)]">{entry.participantName}</span>
                       <span className="text-[var(--color-muted)]">· {entry.teamName || t('turnPreview.teamFallback')}</span>
-                      {isCurrent ? <span className="rounded-full bg-[var(--color-primary)] px-2 py-0.5 text-[10px] font-bold uppercase tracking-[0.12em] text-white">{t('turnPreview.current')}</span> : null}
+                      {isCurrent ? <span className="rounded-full bg-[var(--color-primary)] px-2 py-0.5 text-[10px] font-bold uppercase tracking-[0.12em] text-[var(--color-on-primary)]">{t('turnPreview.current')}</span> : null}
                       {entry.repeatedInGroup ? <span className="rounded-full bg-[var(--color-secondary)]/10 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.18em] text-[var(--color-secondary)]">{t('turnPreview.repeats')}</span> : null}
                     </div>
                   )

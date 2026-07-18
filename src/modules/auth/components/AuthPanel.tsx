@@ -463,7 +463,7 @@ function ForgotPasswordPanel({ initialEmail, onBack, onClose, onRequestReset }: 
         <button
           type="submit"
           disabled={sending || cooldown > 0}
-          className="mt-1 min-h-11 w-full rounded-xl bg-[var(--color-primary)] py-2 text-sm font-semibold text-[var(--color-surface)] transition-opacity hover:opacity-90 disabled:opacity-50"
+          className="mt-1 min-h-11 w-full rounded-xl bg-[var(--color-primary)] py-2 text-sm font-semibold text-[var(--color-on-primary)] transition-opacity hover:opacity-90 disabled:opacity-50"
         >
           {buttonLabel}
         </button>
@@ -690,7 +690,7 @@ export function AuthPanel({
         <button
           type="submit"
           disabled={loading}
-          className="mt-1 min-h-12 w-full rounded-xl bg-[var(--color-primary)] py-2 text-sm font-semibold text-[var(--color-surface)] transition-opacity hover:opacity-90 disabled:opacity-50"
+          className="mt-1 min-h-12 w-full rounded-xl bg-[var(--color-primary)] py-2 text-sm font-semibold text-[var(--color-on-primary)] transition-opacity hover:opacity-90 disabled:opacity-50"
         >
           {loading
             ? tab === 'signin'

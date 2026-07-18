@@ -89,7 +89,7 @@ export function ScoreDetailView({
             onClick={() => setActiveTab('summary')}
             className={`flex-1 rounded-lg px-3 py-2 text-sm font-medium transition ${
               activeTab === 'summary'
-                ? 'bg-[var(--color-primary)] text-white'
+                ? 'bg-[var(--color-primary)] text-[var(--color-on-primary)]'
                 : 'text-[var(--color-muted)] hover:text-[var(--color-text)]'
             }`}
           >
@@ -100,7 +100,7 @@ export function ScoreDetailView({
             onClick={() => setActiveTab('trivia')}
             className={`flex-1 rounded-lg px-3 py-2 text-sm font-medium transition ${
               activeTab === 'trivia'
-                ? 'bg-[var(--color-primary)] text-white'
+                ? 'bg-[var(--color-primary)] text-[var(--color-on-primary)]'
                 : 'text-[var(--color-muted)] hover:text-[var(--color-text)]'
             }`}
           >
@@ -111,7 +111,7 @@ export function ScoreDetailView({
             onClick={() => setActiveTab('mimica')}
             className={`flex-1 rounded-lg px-3 py-2 text-sm font-medium transition ${
               activeTab === 'mimica'
-                ? 'bg-[var(--color-primary)] text-white'
+                ? 'bg-[var(--color-primary)] text-[var(--color-on-primary)]'
                 : 'text-[var(--color-muted)] hover:text-[var(--color-text)]'
             }`}
           >

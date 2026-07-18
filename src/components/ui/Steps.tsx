@@ -31,7 +31,7 @@ export function Steps({ steps, onStepClick }: StepsProps) {
                   step.completed
                     ? 'bg-[var(--color-success)] border-[var(--color-success)] text-white'
                     : step.current
-                    ? 'bg-[var(--color-primary)] border-[var(--color-primary)] text-white'
+                    ? 'bg-[var(--color-primary)] border-[var(--color-primary)] text-[var(--color-on-primary)]'
                     : step.clickable
                     ? 'bg-[var(--color-background)] border-[var(--color-border)] text-[var(--color-muted)] hover:border-[var(--color-primary)]/50'
                     : 'bg-[var(--color-background)] border-[var(--color-border)] text-[var(--color-muted)]'

@@ -23,7 +23,7 @@
 
 ## Regras Essenciais
 - `GameMode`: `demo | offline | online`
-- `ThemeMode`: `light | dark | cinema | retro | matrix | brazil | easter | world-cup-2026 | kawaii | neon-city | storybook | web-city | deep-space | midnight-cinema | underwater`
+- `ThemeMode`: `light | dark | cinema | retro | matrix | brazil | easter | world-cup-2026 | kawaii | neon-city | storybook | web-city | deep-space | midnight-cinema | underwater | neon-grand-prix | pixel-bomb-arena | shadow-dojo | wasteland-rooftops | enchanted-kingdom | starfighter-battle | moonlit-liner | castaway-island | family-noir`
 - `TileState`: `available | active | answered`
 - `MimicaScoringMode`: `full-current | half-current | steal | everyone | void`
 - Jogo termina quando todas as tiles estão `answered`.
