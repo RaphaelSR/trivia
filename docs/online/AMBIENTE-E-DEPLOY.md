@@ -48,6 +48,23 @@ npm run build
 
 Também testar `Demo` e `Partida completa`, com e sem conta, em desktop e 375 px. Demo não pode chamar RPCs de convite ou avatar; partida completa autenticada deve disponibilizá-las mesmo usando a rota interna `mode=offline`.
 
+## Verificação do keep-alive
+
+O workflow `Supabase keep-alive` deve permanecer habilitado na branch `main`.
+Ele depende dos GitHub Actions Secrets `VITE_SUPABASE_URL` e
+`VITE_SUPABASE_ANON_KEY`; nunca substituir a anon key por `service_role`.
+
+Depois de alterar o workflow ou retomar manualmente um projeto pausado:
+
+1. executar o workflow pela opção `Run workflow` no GitHub Actions;
+2. confirmar que as três consultas retornaram HTTP 200;
+3. verificar no próximo dia se a execução agendada também concluiu com sucesso.
+
+Falha de resolução de endereço normalmente indica que o projeto ainda está
+pausado ou retomando. HTTP diferente de 200 indica configuração, credencial ou
+disponibilidade incorreta. O keep-alive e suas escolhas de custo estão descritos
+em [INFRAESTRUTURA-E-CUSTOS.md](./INFRAESTRUTURA-E-CUSTOS.md).
+
 ## Rollback
 
 O rollback preferido do frontend é reverter o commit. As colunas/tabela aditivas da migration podem permanecer sem uso; não remover dados reais automaticamente. Qualquer rollback destrutivo do banco exige backup e revisão manual.
