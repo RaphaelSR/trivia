@@ -1,12 +1,12 @@
 # Evita o pause por inatividade do Supabase free tier (~1 semana sem uso):
-# uma consulta REST mínima 2x por semana conta como atividade do projeto.
+# consultas REST mínimas diárias mantêm atividade de banco sem alterar dados.
 # Em 2026-07-06 o projeto pausou e derrubou login/sync/reset de senha em produção.
 name: Supabase keep-alive
 
 on:
   schedule:
-    # Segunda e quinta, 12:00 UTC
-    - cron: '0 12 * * 1,4'
+    # Diariamente, 12:17 UTC. O minuto fora da hora cheia reduz atrasos do scheduler.
+    - cron: '17 12 * * *'
   workflow_dispatch:
 
 jobs:
@@ -18,12 +18,25 @@ jobs:
           SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
           SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
         run: |
-          code=$(curl -s -o /dev/null -w '%{http_code}' --max-time 30 \
-            "$SUPABASE_URL/rest/v1/online_sessions?select=id&limit=1" \
-            -H "apikey: $SUPABASE_ANON_KEY" \
-            -H "Authorization: Bearer $SUPABASE_ANON_KEY")
-          echo "Supabase respondeu HTTP $code"
-          # 200 = RLS devolve lista vazia para anon (esperado).
-          # Qualquer outra coisa indica projeto pausado ou config quebrada —
-          # falha o job para o e-mail de aviso do GitHub chegar.
-          [ "$code" = "200" ]
+          set -uo pipefail
+
+          for request in 1 2 3; do
+            if ! code=$(curl --silent --show-error --output /dev/null \
+              --write-out '%{http_code}' \
+              --connect-timeout 10 \
+              --max-time 30 \
+              "$SUPABASE_URL/rest/v1/online_sessions?select=id&limit=1" \
+              -H "apikey: $SUPABASE_ANON_KEY" \
+              -H "Authorization: Bearer $SUPABASE_ANON_KEY"); then
+              echo "::error::Não foi possível alcançar o Supabase (consulta $request/3)."
+              exit 1
+            fi
+
+            echo "Consulta $request/3: Supabase respondeu HTTP $code"
+            # 200 = RLS devolve lista vazia para anon (esperado).
+            # Qualquer outra coisa indica projeto pausado ou configuração quebrada.
+            if [ "$code" != "200" ]; then
+              echo "::error::Resposta inesperada do Supabase: HTTP $code."
+              exit 1
+            fi
+          done
