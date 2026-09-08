@@ -12,7 +12,7 @@ type AppProvidersProps = {
 export function AppProviders({ children }: AppProvidersProps) {
   const [queryClient] = useState(() => new QueryClient())
   
-  const basename = import.meta.env.PROD ? '/trivia' : '/'
+  const basename = import.meta.env.BASE_URL
 
   return (
     <QueryClientProvider client={queryClient}>
