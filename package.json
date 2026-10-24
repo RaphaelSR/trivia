@@ -3,12 +3,16 @@
   "private": true,
   "version": "1.0.1",
   "type": "module",
+  "overrides": {
+    "postcss-selector-parser": "7.1.6"
+  },
   "scripts": {
     "dev": "vite --host 127.0.0.1",
     "build": "tsc -b && vite build",
     "lint": "eslint .",
     "preview": "vite preview",
     "test": "jest",
+    "test:security:db": "node scripts/test-supabase-security.mjs",
     "test:watch": "jest --watch",
     "test:coverage": "jest --coverage",
     "i18n:check": "node scripts/check-static-ui-copy.mjs"

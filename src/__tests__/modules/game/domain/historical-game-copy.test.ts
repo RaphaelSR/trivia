@@ -117,3 +117,29 @@ it('recomeca com a mesma estrutura e zera somente o progresso', () => {
   expect(copy.turnSequence).toHaveLength(1)
   expect(copy.activeParticipantId).toBe('a1')
 })
+
+it.each(['continue', 'restart'] as const)('copia %s com elenco sem contatos preserva todos os campos de jogo', (mode) => {
+  const source: TriviaSession = {
+    ...SOURCE,
+    participants: [
+      { id: 'host', name: 'Host', role: 'host', email: 'host@example.test' },
+      ...SOURCE.participants.map(participant => ({ ...participant, email: `${participant.id}@example.test` })),
+    ],
+  }
+  const projected: TriviaSession = {
+    ...source,
+    participants: source.participants.map(({ id, name, role, teamId }) => ({ id, name, role, teamId })),
+  }
+
+  const copy = createFinishedGameCopy(projected, mode, { id: 'private-copy', title: 'Cópia sem contatos' })
+
+  expect(copy.participants).toEqual(projected.participants)
+  expect(copy.participants.every(participant => participant.email === undefined)).toBe(true)
+  expect(copy.teams.map(team => ({ ...team, score: 0 }))).toEqual(SOURCE.teams.map(team => ({ ...team, score: 0 })))
+  expect(copy.theme).toEqual(SOURCE.theme)
+  expect(copy.board[0].tiles[0].question).toBe(SOURCE.board[0].tiles[0].question)
+  expect(copy.board[0].tiles[0].answer).toBe(SOURCE.board[0].tiles[0].answer)
+  expect(copy.activeParticipantId).toBe('a1')
+  expect(copy.activeTeamId).toBe('a')
+  expect(source.participants[0].email).toBe('host@example.test')
+})
