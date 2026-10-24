@@ -723,7 +723,7 @@ export async function listNormalizedGames(): Promise<NormalizedGameSummary[]> {
 /**
  * Lê o snapshot lossless de uma partida finalizada.
  *
- * A RLS de `game_raw_snapshots` limita a leitura ao dono e aos participantes
+ * A RPC preserva o original para o dono e remove contatos para participantes
  * vinculados. A função não altera nem reativa a linha arquivada; a UI deve
  * sempre criar uma nova TriviaSession antes de permitir edições.
  */
@@ -737,14 +737,10 @@ export async function getNormalizedGameSnapshot(gameId: string): Promise<TriviaS
   if (!authSession?.user) return null
 
   try {
-    const { data, error } = await client
-      .from('game_raw_snapshots')
-      .select('snapshot')
-      .eq('game_id', gameId)
-      .single()
+    const { data, error } = await client.rpc('get_game_snapshot', { p_game_id: gameId })
 
-    if (error || !isTriviaSessionSnapshot(data?.snapshot)) return null
-    return data.snapshot
+    if (error || !isTriviaSessionSnapshot(data)) return null
+    return data
   } catch {
     return null
   }

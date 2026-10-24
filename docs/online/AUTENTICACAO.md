@@ -23,7 +23,7 @@ O avatar é opcional e pertence a `profiles`, não ao participante do snapshot. 
 - link histórico genérico: `claim_participant_by_game(game_token, participant_id)`;
 - convite permanente: `claim_session_participant(join_token, participant_client_id)`.
 
-As três RPCs antigas permanecem com as mesmas assinaturas. A migration `0009` adiciona o fluxo permanente sem reescrevê-las nem executar backfill sobre dados reais.
+As três RPCs antigas permanecem com as mesmas assinaturas. A migration `0012` protege as reservas na escrita das tabelas, para que links antigos e o fluxo permanente exijam a mesma identidade confirmada. A confirmação de e-mail deve estar habilitada no Auth; contas previamente auto-confirmadas exigem revisão do operador antes do rollout (veja `supabase/README.md`).
 
 Repetir o próprio `claim_session_participant` é sucesso idempotente. A interface aplica timeout local de 15 segundos tanto ao confirmar a sessão autenticada quanto às RPCs do fluxo ao vivo; listas e botões sempre saem do carregamento quando a rede não responde. Tentar novamente não cria outro vínculo. Ao reabrir o QR, `claimed_by_me` leva diretamente ao estado confirmado, com nome, time e gerenciamento opcional de avatar.
 
@@ -32,7 +32,7 @@ Repetir o próprio `claim_session_participant` é sucesso idempotente. A interfa
 - o host reutiliza apenas e-mails que ele próprio já convidou;
 - a UI não consulta se um endereço possui conta;
 - listas de claim nunca retornam e-mail;
-- e-mail válido atua somente como comparação server-side com `auth.email()`;
+- vínculos por e-mail consultam o endereço confirmado em `auth.users` no servidor; um e-mail informado pelo cliente ou um endereço não confirmado não autoriza a reserva;
 - e-mail vazio ou inválido não reserva slot e não bloqueia o jogo;
 - QR é gerado localmente com `qrcode`, sem request a geradores externos.
 - o bucket de avatar é público para servir a imagem por URL, mas upload, troca e remoção continuam restritos por RLS à pasta do próprio `auth.uid()`;
@@ -46,3 +46,5 @@ Claims não são apagados. Uma correção muda o estado para `revoked`, grava da
 ## RLS
 
 RLS está habilitado em todas as tabelas. O host lê/escreve seus snapshots; leitores de um jogo são o host ou participantes vinculados; convites com PII são owner-only. O ledger não aceita escrita direta de `authenticated`, `anon` ou `public`. Objetos de avatar aceitam escrita e remoção somente pelo dono; a API de Storage é usada para apagar arquivos.
+
+Depois do rollout `0012` → frontend → `0013`, o snapshot bruto da partida finalizada é exclusivo do host. `get_game_snapshot` retorna o original para o host e uma projeção de participantes apenas com `id`, `name`, `role` e `teamId` para leitores vinculados, sem contatos/tokens. A política vale também para snapshots antigos, sem reescrever os dados do host. A UI não possui fallback para leitura da tabela bruta. Convites novos devem apontar para um participante do mesmo jogo; pares legados inconsistentes são preservados, mas não concedem auto-vínculo.
